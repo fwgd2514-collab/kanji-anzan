@@ -10,6 +10,7 @@
     flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14 },
   };
   const DEFAULT_COUNTS = { write: 10, read: 10, math: 10, flash: 10 };
+  const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
 
   const kanjiProblems = [
     { kanji: "泳", reading: "およぐ", word: "水泳", strokes: 8 },
@@ -74,7 +75,10 @@
     level: 24,
     xp: 68,
     streak: 7,
-    learnerName: "",
+    learnerName: DEFAULT_NAMES[0],
+    learnerNames: [...DEFAULT_NAMES],
+    namesSource: "初期名簿",
+    profiles: {},
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
     placementOpen: false,
@@ -87,20 +91,28 @@
     kanjiImage: "",
     readingChoice: "",
     readingChecked: false,
+    readingChoices: [],
+    lastReadingAnswerIndex: -1,
     mathAnswer: "",
     mathResult: "idle",
     flashSequence: [],
     flashAnswer: "",
     flashResult: "idle",
     flashPhase: "ready",
-    flashCue: "スタートします",
+    flashCue: "3",
     flashTimer: 0,
     flashRunToken: 0,
   };
 
   loadProgress();
+  initializeLearnerProfiles();
   render();
+  loadLearnerNames();
   app.addEventListener("click", handleClick);
+  app.addEventListener("change", handleChange);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && location.protocol !== "file:") loadLearnerNames();
+  });
 
   function loadProgress() {
     try {
@@ -108,7 +120,24 @@
       if (!saved) return;
       if (Number.isFinite(saved.level)) state.level = clamp(saved.level, 1, 100);
       if (Number.isFinite(saved.xp)) state.xp = clamp(saved.xp, 0, 100);
-      if (typeof saved.learnerName === "string") state.learnerName = saved.learnerName.slice(0, 20);
+      if (Number.isFinite(saved.streak)) state.streak = Math.max(0, Number(saved.streak));
+      if (typeof saved.learnerName === "string" && saved.learnerName.trim()) {
+        state.learnerName = saved.learnerName.trim().slice(0, 20);
+      }
+      if (Array.isArray(saved.learnerNames)) {
+        const savedNames = parseLearnerNames(saved.learnerNames.join("\n"));
+        if (savedNames.length) {
+          state.learnerNames = savedNames;
+          state.namesSource = "保存済み名簿";
+        }
+      }
+      if (saved.profiles && typeof saved.profiles === "object") {
+        Object.entries(saved.profiles).forEach(([name, profile]) => {
+          const cleanName = String(name).trim().slice(0, 20);
+          if (!cleanName || !profile || typeof profile !== "object") return;
+          state.profiles[cleanName] = normalizeProfile(profile);
+        });
+      }
       if (saved.counts && typeof saved.counts === "object") {
         Object.keys(DEFAULT_COUNTS).forEach((mode) => {
           state.counts[mode] = clamp(saved.counts[mode] || 10, 3, 50);
@@ -122,14 +151,128 @@
     }
   }
 
+  function initializeLearnerProfiles() {
+    if (state.learnerName && !state.learnerNames.includes(state.learnerName)) {
+      state.learnerNames.unshift(state.learnerName);
+    }
+    state.learnerNames.forEach((name, index) => {
+      if (!state.profiles[name]) {
+        state.profiles[name] = normalizeProfile(
+          index === 0
+            ? { level: state.level, xp: state.xp, streak: state.streak }
+            : { level: 1, xp: 0, streak: 0 },
+        );
+      }
+    });
+    if (!state.learnerName) state.learnerName = state.learnerNames[0];
+    applyActiveProfile();
+  }
+
+  async function loadLearnerNames(showFeedback = false) {
+    if (location.protocol === "file:") {
+      if (showFeedback) {
+        showToast("下の「names.txtを選ぶ」から読み込んでください");
+        render();
+      }
+      return;
+    }
+    try {
+      const response = await fetch(`./names.txt?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (!response.ok) throw new Error("names.txt was not found");
+      const names = parseLearnerNames(await response.text());
+      if (!names.length) throw new Error("names.txt is empty");
+      const changed = applyLearnerNames(names, "GitHubのnames.txt");
+      if (showFeedback) {
+        showToast(changed ? `${names.length}人の名簿を読み込みました` : "名簿は最新です");
+        render();
+      }
+    } catch {
+      if (showFeedback) {
+        showToast("names.txtを読み込めませんでした");
+        render();
+      }
+    }
+  }
+
+  function parseLearnerNames(text) {
+    const names = String(text || "")
+      .replace(/^\uFEFF/, "")
+      .split(/\r?\n/)
+      .map((name) => name.trim().slice(0, 20))
+      .filter((name) => name && !name.startsWith("#"));
+    return [...new Set(names)].slice(0, 50);
+  }
+
+  function applyLearnerNames(names, source) {
+    const changed = state.learnerNames.join("\n") !== names.join("\n");
+    syncActiveProfile();
+    state.learnerNames = [...names];
+    state.namesSource = source;
+    state.learnerNames.forEach((name) => ensureProfile(name));
+    if (!state.learnerNames.includes(state.learnerName)) {
+      activateLearner(state.learnerNames[0], false);
+    }
+    saveProgress();
+    if (changed) render();
+    return changed;
+  }
+
+  function normalizeProfile(profile) {
+    return {
+      level: clamp(profile?.level ?? 1, 1, 100),
+      xp: clamp(profile?.xp ?? 0, 0, 100),
+      streak: Math.max(0, Number(profile?.streak) || 0),
+    };
+  }
+
+  function ensureProfile(name) {
+    if (!state.profiles[name]) {
+      state.profiles[name] = normalizeProfile({ level: 1, xp: 0, streak: 0 });
+    }
+    return state.profiles[name];
+  }
+
+  function syncActiveProfile() {
+    if (!state.learnerName) return;
+    state.profiles[state.learnerName] = normalizeProfile({
+      level: state.level,
+      xp: state.xp,
+      streak: state.streak,
+    });
+  }
+
+  function applyActiveProfile() {
+    const profile = ensureProfile(state.learnerName);
+    state.level = profile.level;
+    state.xp = profile.xp;
+    state.streak = profile.streak;
+  }
+
+  function activateLearner(name, persist = true) {
+    const cleanName = String(name || "").trim().slice(0, 20);
+    if (!cleanName || !state.learnerNames.includes(cleanName)) return;
+    syncActiveProfile();
+    state.learnerName = cleanName;
+    applyActiveProfile();
+    if (persist) saveProgress();
+  }
+
   function saveProgress() {
     try {
+      syncActiveProfile();
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
+          version: 2,
           level: state.level,
           xp: state.xp,
+          streak: state.streak,
           learnerName: state.learnerName,
+          learnerNames: state.learnerNames,
+          profiles: state.profiles,
           counts: state.counts,
           checkpointEvery: state.checkpointEvery,
         }),
@@ -200,7 +343,7 @@
 
         <section class="welcome">
           <div>
-            <p class="eyebrow">おかえり、${escapeHtml(displayName())}さん</p>
+            <p class="eyebrow">おかえり、${escapeHtml(displayName())}</p>
             <h1>きょうも、ひとつ<br /><span>のびよう。</span></h1>
           </div>
           <button class="profile-dot" type="button" data-view="profile" aria-label="プロフィールを開く">
@@ -208,13 +351,11 @@
           </button>
         </section>
 
-        ${state.learnerName ? "" : `
-          <button type="button" class="registration-prompt" data-view="profile">
-            <span class="registration-icon">＋</span>
-            <span><b>なまえを登録しよう</b><small>学習画面に自分の名前が表示されます</small></span>
-            <i>›</i>
-          </button>
-        `}
+        <button type="button" class="registration-prompt" data-view="profile">
+          <span class="registration-icon">人</span>
+          <span><b>学習する人：${escapeHtml(displayName())}</b><small>タップして名前を切り替えられます</small></span>
+          <i>›</i>
+        </button>
 
         <section class="level-card" aria-label="現在レベル${state.level}">
           <div class="level-copy">
@@ -409,6 +550,7 @@
 
   function readTemplate() {
     const problem = readingProblems[state.session.completed % readingProblems.length];
+    const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
         ? '<div class="reading-feedback correct"><b>正解！</b> よく読めました。</div>'
@@ -423,7 +565,7 @@
           <div class="reading-card"><span>${problem.kanji}</span></div>
         </section>
         <div class="reading-options">
-          ${problem.choices.map((choice) => {
+          ${choices.map((choice) => {
             const selected = state.readingChoice === choice;
             const correct = state.readingChecked && choice === problem.answer;
             const wrong = state.readingChecked && selected && choice !== problem.answer;
@@ -480,7 +622,7 @@
           <span class="flash-symbol">瞬</span>
           <h1>数字を見て、<br />ぜんぶ足そう</h1>
           <p>${state.flashSequence.length}つの数字が順番に出ます。</p>
-          <button type="button" class="primary-button wide" data-action="start-flash">準備してスタート</button>
+          <button type="button" class="primary-button wide" data-action="start-flash">カウントを始める</button>
         </div>
       `;
     } else if (state.flashPhase === "countdown") {
@@ -497,6 +639,7 @@
           <p>よく見てね</p>
           <strong id="flashNumber">${state.flashSequence[0]}</strong>
           <div class="flash-dots">${state.flashSequence.map(() => "<i></i>").join("")}</div>
+          <span class="flash-step" id="flashStep">1 / ${state.flashSequence.length}</span>
         </div>
       `;
     } else {
@@ -548,7 +691,7 @@
     const max = state.level >= 69 ? 30 : state.level >= 33 ? 20 : 9;
     state.flashSequence = Array.from({ length }, () => randomInt(1, max));
     state.flashPhase = "ready";
-    state.flashCue = "スタートします";
+    state.flashCue = "3";
     state.flashAnswer = "";
     state.flashResult = "idle";
   }
@@ -557,7 +700,7 @@
     stopFlash();
     const token = ++state.flashRunToken;
     state.flashPhase = "countdown";
-    state.flashCue = "スタートします";
+    state.flashCue = "3";
     render();
 
     const cues = ["3", "2", "1", "スタート！"];
@@ -579,7 +722,7 @@
       render();
       runFlashNumbers(token);
     };
-    state.flashTimer = window.setTimeout(showCue, 850);
+    showCue();
   }
 
   function runFlashNumbers(token) {
@@ -588,11 +731,23 @@
       if (token !== state.flashRunToken || state.view !== "flash") return;
       const numberElement = document.querySelector("#flashNumber");
       const dots = [...document.querySelectorAll(".flash-dots i")];
+      const stepElement = document.querySelector("#flashStep");
       if (numberElement && index < state.flashSequence.length) {
+        numberElement.classList.remove("is-separator");
         numberElement.textContent = state.flashSequence[index];
         dots.forEach((dot, dotIndex) => dot.classList.toggle("active", dotIndex === index));
+        if (stepElement) stepElement.textContent = `${index + 1} / ${state.flashSequence.length}`;
         index += 1;
-        state.flashTimer = window.setTimeout(step, 850);
+        state.flashTimer = window.setTimeout(() => {
+          if (token !== state.flashRunToken || state.view !== "flash") return;
+          if (index < state.flashSequence.length) {
+            numberElement.textContent = "＋";
+            numberElement.classList.add("is-separator");
+            state.flashTimer = window.setTimeout(step, 240);
+          } else {
+            step();
+          }
+        }, 700);
         return;
       }
       state.flashPhase = "answer";
@@ -609,6 +764,31 @@
 
   function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function shuffled(values) {
+    const result = [...values];
+    for (let index = result.length - 1; index > 0; index -= 1) {
+      const swapIndex = randomInt(0, index);
+      [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+    }
+    return result;
+  }
+
+  function prepareReadingChoices() {
+    if (!state.session || state.session.mode !== "read") {
+      state.readingChoices = [];
+      return;
+    }
+    const problem = readingProblems[state.session.completed % readingProblems.length];
+    const possibleIndexes = problem.choices
+      .map((_, index) => index)
+      .filter((index) => index !== state.lastReadingAnswerIndex);
+    const answerIndex = possibleIndexes[randomInt(0, possibleIndexes.length - 1)];
+    const wrongChoices = shuffled(problem.choices.filter((choice) => choice !== problem.answer));
+    wrongChoices.splice(answerIndex, 0, problem.answer);
+    state.readingChoices = wrongChoices;
+    state.lastReadingAnswerIndex = answerIndex;
   }
 
   function finishQuestion(correct) {
@@ -674,7 +854,7 @@
           <span class="result-burst">${session.endedEarly ? "休" : "★"}</span>
           <p class="eyebrow">${session.endedEarly ? "GOOD PAUSE" : "SESSION COMPLETE"}</p>
           <h1>${session.endedEarly ? "ここまで、よくできました。" : "さいごまで、できました！"}</h1>
-          <p>${escapeHtml(displayName())}さんの「${MODE_INFO[session.mode].label}」</p>
+          <p>${escapeHtml(displayName())}の「${MODE_INFO[session.mode].label}」</p>
         </section>
         <div class="result-score-card">
           <div class="result-main-score"><b>${session.completed}</b><span>問できた</span></div>
@@ -699,6 +879,7 @@
           <div><p class="eyebrow">LEVEL 1–100</p><h1>レベルロード</h1></div>
         </header>
         <div class="map-intro"><span>現在地</span><b>Lv.${state.level}</b><p>${gradeForLevel(state.level)}</p></div>
+        ${learnerLevelListTemplate()}
         <div class="level-groups">
           ${levelGroups.map((group) => {
             const complete = state.level > group.end;
@@ -728,6 +909,34 @@
     `;
   }
 
+  function learnerLevelListTemplate() {
+    return `
+      <section class="learner-levels-card">
+        <div class="settings-heading">
+          <div><p class="eyebrow">LEARNERS</p><h2>みんなのレベル</h2></div>
+          <span>${state.learnerNames.length}人</span>
+        </div>
+        <div class="learner-level-list">
+          ${state.learnerNames.map((name) => {
+            const profile =
+              name === state.learnerName
+                ? { level: state.level, xp: state.xp }
+                : ensureProfile(name);
+            const active = name === state.learnerName;
+            return `
+              <button type="button" class="${active ? "active" : ""}" data-select-learner="${escapeHtml(name)}">
+                <span class="learner-avatar">${escapeHtml(name.slice(0, 1))}</span>
+                <span class="learner-copy"><b>${escapeHtml(name)}</b><small>${gradeForLevel(profile.level)}</small></span>
+                <span class="learner-level-value"><b>Lv.${profile.level}</b><small>${profile.xp}%</small></span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+        <p class="settings-note">名前をタップすると、学習する人を切り替えられます。</p>
+      </section>
+    `;
+  }
+
   function profileTemplate() {
     return `
       <div class="screen sub-screen profile-screen">
@@ -739,12 +948,27 @@
         <section class="settings-card name-settings">
           <div class="settings-title">
             <span class="settings-icon name-icon">${escapeHtml(displayName().slice(0, 1))}</span>
-            <div><p class="eyebrow">LEARNER</p><h2>なまえを登録</h2></div>
+            <div><p class="eyebrow">LEARNER</p><h2>なまえを選ぶ</h2></div>
           </div>
           <label class="name-field">
             <span>学習する人のなまえ</span>
-            <input id="learnerName" type="text" maxlength="20" value="${escapeHtml(state.learnerName)}" placeholder="例：ゆうき" autocomplete="name" />
+            <select id="learnerName" aria-label="学習する人のなまえ">
+              ${state.learnerNames.map((name) => `
+                <option value="${escapeHtml(name)}" ${name === state.learnerName ? "selected" : ""}>${escapeHtml(name)}</option>
+              `).join("")}
+            </select>
           </label>
+          <div class="name-file-actions">
+            <button type="button" data-action="reload-names">名簿を再読み込み</button>
+            <label>
+              names.txtを選ぶ
+              <input id="namesFileInput" type="file" accept=".txt,text/plain" />
+            </label>
+          </div>
+          <p class="settings-note names-file-note">
+            読込元：${escapeHtml(state.namesSource)}<br />
+            GitHubでは「再読み込み」、このファイルを直接開いている場合は「names.txtを選ぶ」を使います。
+          </p>
         </section>
 
         <section class="settings-card">
@@ -859,6 +1083,14 @@
       state.placementOpen = false;
       saveProgress();
       showToast(`レベル ${state.level} からスタート！`);
+      render();
+      return;
+    }
+
+    const learnerButton = event.target.closest("[data-select-learner]");
+    if (learnerButton) {
+      activateLearner(learnerButton.dataset.selectLearner);
+      showToast(`${displayName()}に切り替えました`);
       render();
       return;
     }
@@ -1022,8 +1254,39 @@
       "save-settings"() {
         saveSettingsFromForm();
       },
+      "reload-names"() {
+        loadLearnerNames(true);
+      },
     };
     actions[action]?.();
+  }
+
+  async function handleChange(event) {
+    if (event.target.id !== "namesFileInput") return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text =
+        typeof file.text === "function"
+          ? await file.text()
+          : await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.addEventListener("load", () => resolve(reader.result), { once: true });
+              reader.addEventListener("error", reject, { once: true });
+              reader.readAsText(file, "UTF-8");
+            });
+      const names = parseLearnerNames(text);
+      if (!names.length) {
+        showToast("名前が1件も見つかりませんでした");
+      } else {
+        applyLearnerNames(names, "選択したnames.txt");
+        showToast(`${names.length}人の名簿を読み込みました`);
+      }
+    } catch {
+      showToast("選択したファイルを読み込めませんでした");
+    }
+    event.target.value = "";
+    render();
   }
 
   function advanceAfterCompletedQuestion() {
@@ -1041,7 +1304,7 @@
 
   function saveSettingsFromForm() {
     const nameField = document.querySelector("#learnerName");
-    state.learnerName = String(nameField?.value || "").trim().slice(0, 20);
+    activateLearner(nameField?.value || state.learnerName, false);
     document.querySelectorAll("[data-count-mode]").forEach((input) => {
       state.counts[input.dataset.countMode] = clamp(input.value || 10, 3, 50);
     });
@@ -1058,11 +1321,12 @@
     state.kanjiImage = "";
     state.readingChoice = "";
     state.readingChecked = false;
+    prepareReadingChoices();
     state.mathAnswer = "";
     state.mathResult = "idle";
     state.flashAnswer = "";
     state.flashResult = "idle";
-    state.flashCue = "スタートします";
+    state.flashCue = "3";
     if (state.session?.mode !== "flash") state.flashPhase = "ready";
   }
 
