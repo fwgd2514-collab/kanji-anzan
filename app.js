@@ -195,6 +195,8 @@
     cloudStatus: "端末内保存（Firebase未設定）",
     cloudTone: "local",
     cloudSaveTimers: {},
+    cloudPendingSaves: {},
+    cloudLastSyncedAt: 0,
   };
 
   updateViewportMetrics();
@@ -212,11 +214,15 @@
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) return;
+    if (document.hidden) {
+      flushPendingCloudSaves();
+      return;
+    }
     const namesTask =
       location.protocol === "file:" ? Promise.resolve() : loadLearnerNames();
-    namesTask.finally(syncCloudProfiles);
+    namesTask.finally(() => syncCloudProfiles());
   });
+  window.addEventListener?.("pagehide", flushPendingCloudSaves);
 
   function loadProgress() {
     try {
@@ -457,11 +463,25 @@
     state.cloudTone = tone;
     const text = document.querySelector("#cloudStatusText");
     const badge = document.querySelector("#cloudStatusBadge");
+    const syncedAt = document.querySelector("#cloudLastSyncedAt");
     if (text) text.textContent = message;
     if (badge) {
       badge.textContent = tone === "online" ? "同期ON" : tone === "busy" ? "同期中" : "端末保存";
       badge.className = `cloud-status-badge ${tone}`;
     }
+    if (syncedAt) syncedAt.textContent = cloudLastSyncedText();
+  }
+
+  function cloudLastSyncedText() {
+    if (!state.cloudLastSyncedAt) return "最終同期：まだ同期していません";
+    return `最終同期：${new Date(state.cloudLastSyncedAt).toLocaleTimeString(
+      "ja-JP",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      },
+    )}`;
   }
 
   async function initializeCloudSync() {
@@ -536,6 +556,7 @@
       saveProgress();
       state.cloudApplying = false;
       await Promise.all(uploads.map(([name, profile]) => cloud.saveProfile(name, profile)));
+      state.cloudLastSyncedAt = Date.now();
       setCloudStatus("Firebaseと同期済み", "online");
       if (["home", "levels", "profile"].includes(state.view)) render();
     } catch {
@@ -558,18 +579,40 @@
     }
     const timerKey = `${name}:${mode}`;
     window.clearTimeout(state.cloudSaveTimers[timerKey]);
+    state.cloudPendingSaves[timerKey] = { name, mode };
     state.cloudSaveTimers[timerKey] = window.setTimeout(() => {
+      delete state.cloudSaveTimers[timerKey];
+      delete state.cloudPendingSaves[timerKey];
       pushCloudProfile(name, mode);
-    }, 650);
+    }, 120);
   }
 
-  async function pushCloudProfile(name, mode) {
+  function flushPendingCloudSaves() {
+    if (!state.cloudReady) return Promise.resolve([]);
+    const pending = Object.entries(state.cloudPendingSaves);
+    if (!pending.length) return Promise.resolve([]);
+    pending.forEach(([key]) => {
+      window.clearTimeout(state.cloudSaveTimers[key]);
+      delete state.cloudSaveTimers[key];
+      delete state.cloudPendingSaves[key];
+    });
+    return Promise.allSettled(
+      pending.map(([, request]) =>
+        pushCloudProfile(request.name, request.mode, false),
+      ),
+    );
+  }
+
+  async function pushCloudProfile(name, mode, showBusy = true) {
     const cloud = window.NobiruCloud;
     if (!state.cloudReady || !cloud) return;
     const profile = normalizeProfile(ensureProfile(name));
-    setCloudStatus("4分野のレベルをFirebaseへ保存しています…", "busy");
+    if (showBusy) {
+      setCloudStatus("学習結果をFirebaseへ保存しています…", "busy");
+    }
     try {
       await cloud.saveProfile(name, profile, mode);
+      state.cloudLastSyncedAt = Date.now();
       setCloudStatus("Firebaseと同期済み", "online");
     } catch {
       setCloudStatus("クラウド保存に失敗（端末内には保存済み）", "error");
@@ -1834,6 +1877,9 @@
               `).join("")}
             </select>
           </label>
+          <button type="button" class="primary-button wide save-learner-button" data-action="save-learner">
+            この名前で学習する
+          </button>
           <div class="name-file-actions">
             <button type="button" data-action="reload-names">名簿を再読み込み</button>
             <label>
@@ -1855,13 +1901,16 @@
             </span>
           </div>
           <p id="cloudStatusText" class="cloud-status-text">${escapeHtml(state.cloudStatus)}</p>
+          <p id="cloudLastSyncedAt" class="cloud-sync-time">${escapeHtml(cloudLastSyncedText())}</p>
           <button
             type="button"
             class="secondary-button wide cloud-sync-button"
             data-action="sync-cloud"
             ${window.NobiruCloud?.isConfigured?.() ? "" : "disabled"}
           >今すぐ同期する</button>
-          <p class="settings-note">同じGitHub Pagesを開く端末では、名前ごとに4分野のレベルとXPが共有されます。</p>
+          <p class="settings-note">
+            正解・レベル調整の直後に自動保存します。アプリを開いた時、画面へ戻った時、名前を切り替えた時に最新データを取得します。
+          </p>
         </section>
 
         <section class="settings-card">
@@ -1896,7 +1945,7 @@
           </div>
         </section>
 
-        <button type="button" class="primary-button wide save-settings-button" data-action="save-settings">設定を保存する</button>
+        <button type="button" class="primary-button wide save-settings-button" data-action="save-settings">問題数・間隔を保存する</button>
 
         <section class="profile-summary">
           <div class="profile-summary-heading">
@@ -2048,6 +2097,7 @@
       activateLearner(learnerButton.dataset.selectLearner);
       showToast(`${displayName()}に切り替えました`);
       render();
+      if (state.cloudReady) syncCloudProfiles();
       return;
     }
 
@@ -2238,12 +2288,15 @@
       "save-settings"() {
         saveSettingsFromForm();
       },
+      "save-learner"() {
+        saveLearnerSelection();
+      },
       "reload-names"() {
         loadLearnerNames(true);
       },
       "sync-cloud"() {
         if (state.cloudReady) {
-          syncCloudProfiles();
+          flushPendingCloudSaves().finally(() => syncCloudProfiles());
         } else {
           initializeCloudSync();
         }
@@ -2306,6 +2359,20 @@
     saveProgress();
     showToast("設定を保存しました");
     render();
+  }
+
+  async function saveLearnerSelection() {
+    const nameField = document.querySelector("#learnerName");
+    activateLearner(nameField?.value || state.learnerName, false);
+    saveProgress();
+    showToast(`${displayName()}に切り替えました`);
+    render();
+    if (state.cloudReady) {
+      await flushPendingCloudSaves();
+      await syncCloudProfiles();
+    } else if (window.NobiruCloud?.isConfigured?.()) {
+      await initializeCloudSync();
+    }
   }
 
   function resetQuestionState() {

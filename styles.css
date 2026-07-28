@@ -2371,6 +2371,17 @@ canvas:focus-visible {
   cursor: pointer;
 }
 
+.save-learner-button.primary-button.wide {
+  margin-top: 10px;
+}
+
+.cloud-sync-time {
+  margin: -4px 0 10px;
+  color: #868d99;
+  font-size: 9px;
+  font-weight: 800;
+}
+
 .names-file-note {
   padding-left: 2px;
 }
