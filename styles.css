@@ -1819,6 +1819,94 @@ canvas:focus-visible {
   margin-top: 22px;
 }
 
+.mikkun-training {
+  margin-top: 8px;
+  padding: 18px 14px 16px;
+  border: 2px solid #ffd983;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(255, 218, 105, 0.35), transparent 28%),
+    linear-gradient(145deg, #fffdf3, #fff8df);
+}
+
+.mikkun-training .section-heading {
+  margin-bottom: 12px;
+}
+
+.mikkun-training .section-heading h1 {
+  color: #e9634b;
+  font-size: 26px;
+}
+
+.mikkun-training .daily-count {
+  background: #ffe49c;
+  color: #705728;
+}
+
+.mikkun-intro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+  padding: 10px 12px;
+  border-radius: 15px;
+  background: white;
+  color: #51472f;
+  box-shadow: 0 5px 14px rgba(132, 99, 28, 0.08);
+}
+
+.mikkun-intro > span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 12px;
+  background: #ffdc64;
+  color: #9a641c;
+  font-size: 20px;
+}
+
+.mikkun-intro p {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: 12px;
+}
+
+.mikkun-intro small {
+  margin-top: 2px;
+  color: #9a8154;
+  font-size: 10px;
+}
+
+.mikkun-subject-card {
+  min-height: 181px;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 0 0 1px rgba(100, 80, 30, 0.06),
+    0 7px 14px rgba(102, 80, 30, 0.08);
+}
+
+.mikkun-subject-card .subject-level-chip {
+  background: rgba(255, 255, 255, 0.72);
+  color: #725d2a;
+}
+
+.mikkun-subject-card .subject-name {
+  font-size: 17px;
+}
+
+.mikkun-lesson-level {
+  background: #fff6d6;
+  color: #7d6226;
+}
+
+.mikkun-lesson-level > span:first-child {
+  background: #ffdd69;
+  color: #624a16;
+}
+
 .registration-prompt > span:nth-child(2) {
   display: flex;
   flex-direction: column;

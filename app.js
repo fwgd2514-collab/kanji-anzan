@@ -9,9 +9,18 @@
     math: { label: "暗算する", short: "暗算", xp: 16 },
     flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14 },
   };
+  const MIKKUN_MODE_LABELS = {
+    write: "かいてみよう",
+    read: "よんでみよう",
+    math: "かずあそび",
+    flash: "ピカッとあんざん",
+  };
   const SKILL_MODES = Object.keys(MODE_INFO);
   const DEFAULT_COUNTS = { write: 10, read: 10, math: 10, flash: 10 };
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
+  const MIKKUN_NAME = "みっくん";
+  const PRESCHOOL_QUESTION_COUNT = 5;
+  let tapAudioContext = null;
 
   const kanjiProblems = [
     { band: 1, kanji: "山", reading: "やま", word: "山道", strokes: 3 },
@@ -137,6 +146,28 @@
     { band: 10, kanji: "踏襲", answer: "とうしゅう", choices: ["とうしゅう", "ふしゅう", "とうじゅう", "ふみおそい"] },
     { band: 10, kanji: "漸進", answer: "ぜんしん", choices: ["ぜんしん", "ざんしん", "せんしん", "ぜんじん"] },
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
+  ];
+
+  const mikkunKanjiProblems = [
+    { kanji: "一", reading: "いち", word: "ひとつ", strokes: 1 },
+    { kanji: "二", reading: "に", word: "ふたつ", strokes: 2 },
+    { kanji: "三", reading: "さん", word: "みっつ", strokes: 3 },
+    { kanji: "山", reading: "やま", word: "やま", strokes: 3 },
+    { kanji: "川", reading: "かわ", word: "かわ", strokes: 3 },
+    { kanji: "口", reading: "くち", word: "くち", strokes: 3 },
+    { kanji: "日", reading: "ひ", word: "おひさま", strokes: 4 },
+    { kanji: "月", reading: "つき", word: "おつきさま", strokes: 4 },
+  ];
+
+  const mikkunReadingProblems = [
+    { kanji: "一", answer: "いち", choices: ["いち", "に", "さん"] },
+    { kanji: "二", answer: "に", choices: ["に", "いち", "さん"] },
+    { kanji: "三", answer: "さん", choices: ["さん", "に", "よん"] },
+    { kanji: "山", answer: "やま", choices: ["やま", "かわ", "そら"] },
+    { kanji: "川", answer: "かわ", choices: ["かわ", "やま", "うみ"] },
+    { kanji: "人", answer: "ひと", choices: ["ひと", "いぬ", "ねこ"] },
+    { kanji: "日", answer: "ひ", choices: ["ひ", "つき", "ほし"] },
+    { kanji: "月", answer: "つき", choices: ["つき", "ひ", "そら"] },
   ];
 
   const levelGroups = [
@@ -668,8 +699,40 @@
     return state.learnerName || "ゲスト";
   }
 
+  function isMikkunLearner(name = state.learnerName) {
+    return String(name || "").trim() === MIKKUN_NAME;
+  }
+
+  function playTapSound() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      if (!tapAudioContext) tapAudioContext = new AudioContextClass();
+      if (tapAudioContext.state === "suspended") tapAudioContext.resume();
+      const oscillator = tapAudioContext.createOscillator();
+      const gain = tapAudioContext.createGain();
+      const now = tapAudioContext.currentTime;
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(920, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.035, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+      oscillator.connect(gain);
+      gain.connect(tapAudioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.06);
+    } catch {
+      // 音が使えないブラウザでも、操作そのものは止めません。
+    }
+  }
+
   function currentNumber() {
     return state.session ? state.session.completed + 1 : 1;
+  }
+
+  function currentLessonLabel(mode = state.session?.mode) {
+    if (state.session?.preschool) return MIKKUN_MODE_LABELS[mode] || "みっくんメニュー";
+    return MODE_INFO[mode]?.label || "学習";
   }
 
   function render() {
@@ -696,6 +759,7 @@
   }
 
   function homeTemplate() {
+    const mikkun = isMikkunLearner();
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -707,16 +771,34 @@
           </div>
         </header>
 
-        <section class="today-section home-training-primary">
+        <section class="today-section home-training-primary ${mikkun ? "mikkun-training" : ""}">
           <div class="section-heading">
-            <div><p class="eyebrow">おかえり、${escapeHtml(displayName())}</p><h1>きょうのトレーニング</h1></div>
-            <button class="daily-count settings-link" type="button" data-view="profile">問題数を変更</button>
+            <div>
+              <p class="eyebrow">${mikkun ? "ねんちゅうさんコース" : `おかえり、${escapeHtml(displayName())}`}</p>
+              <h1>${mikkun ? "みっくんメニュー" : "きょうのトレーニング"}</h1>
+            </div>
+            <button class="daily-count settings-link" type="button" data-view="profile">${mikkun ? "5もんずつ" : "問題数を変更"}</button>
           </div>
+          ${mikkun ? `
+            <div class="mikkun-intro">
+              <span>★</span>
+              <p><b>できるところから、ゆっくりやろう！</b><small>やさしい もじと かずのれんしゅう</small></p>
+            </div>
+          ` : ""}
           <div class="subject-grid">
-            ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
-            ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
-            ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
-            ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
+            ${mikkun
+              ? `
+                ${mikkunSubjectCard("write", "一", "かいてみよう", "やさしい かんじ", "kanji-card", "kanji-icon")}
+                ${mikkunSubjectCard("read", "あ", "よんでみよう", "3つから えらぶ", "reading-subject-card", "reading-icon")}
+                ${mikkunSubjectCard("math", "5", "かずあそび", "5までの たしひき", "math-card", "math-icon")}
+                ${mikkunSubjectCard("flash", "★", "ピカッとあんざん", "ゆっくり 2つのかず", "flash-subject-card", "flash-icon")}
+              `
+              : `
+                ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
+                ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
+                ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
+                ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
+              `}
           </div>
         </section>
 
@@ -728,9 +810,9 @@
 
         <section class="level-card" aria-label="4分野の総合レベル${state.level}">
           <div class="level-copy">
-            <span class="level-kicker">4分野の総合レベル</span>
+            <span class="level-kicker">${mikkun ? "みっくんの がんばりレベル" : "4分野の総合レベル"}</span>
             <div class="level-number"><small>Lv.</small>${state.level}</div>
-            <span class="grade-chip">${gradeForLevel(state.level)}</span>
+            <span class="grade-chip">${mikkun ? "年中さんコース" : gradeForLevel(state.level)}</span>
             <button type="button" class="text-link" data-action="open-placement" data-mode="write">
               分野別の開始レベルを調整 <span aria-hidden="true">›</span>
             </button>
@@ -759,7 +841,7 @@
               `;
             }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> 選んだ分野のレベルに合う問題が出ます</p>
+          <p class="road-note"><span>◆</span> ${mikkun ? "みっくんメニューは年中さん向けのやさしい問題です" : "選んだ分野のレベルに合う問題が出ます"}</p>
         </section>
 
         <div class="encouragement">
@@ -784,14 +866,30 @@
     `;
   }
 
-  function startSession(mode) {
+  function mikkunSubjectCard(mode, icon, name, detail, cardClass, iconClass) {
+    return `
+      <button type="button" class="subject-card mikkun-subject-card ${cardClass}" data-start="${mode}" data-preschool="true">
+        <span class="subject-icon ${iconClass}">${icon}</span>
+        <span class="subject-time">ゆっくり</span>
+        <span class="subject-level-chip">ねんちゅう</span>
+        <span class="subject-name">${name}</span>
+        <span class="subject-detail">${PRESCHOOL_QUESTION_COUNT}もん ・ ${detail}</span>
+        <span class="start-arrow" aria-hidden="true">→</span>
+      </button>
+    `;
+  }
+
+  function startSession(mode, preschool = false) {
     stopFlash();
     stopAutoAdvance();
     const skill = activeSkill(mode);
-    const problems = createSessionProblems(mode, state.counts[mode], skill.level);
+    const usePreschoolMenu = Boolean(preschool && isMikkunLearner());
+    const total = usePreschoolMenu ? PRESCHOOL_QUESTION_COUNT : state.counts[mode];
+    const problems = createSessionProblems(mode, total, skill.level, usePreschoolMenu);
     state.session = {
       mode,
-      total: state.counts[mode],
+      total,
+      preschool: usePreschoolMenu,
       levelAtStart: skill.level,
       skillAtStart: {
         level: skill.level,
@@ -830,6 +928,13 @@
   }
 
   function lessonLevelRow(extra = "") {
+    if (state.session?.preschool) {
+      return `
+        <div class="lesson-level-row mikkun-lesson-level">
+          <span>みっくんメニュー</span><span>年中さん</span>${extra}
+        </div>
+      `;
+    }
     const lessonLevel =
       state.session?.levelAtStart ??
       activeSkill(state.session?.mode || state.levelViewMode).level;
@@ -842,14 +947,15 @@
 
   function writeTemplate() {
     const problem = currentSessionProblem();
+    const preschool = state.session?.preschool;
     return `
       <div class="screen lesson-screen kanji-lesson">
-        ${lessonHeader("漢字を書く")}
+        ${lessonHeader(preschool ? "かいてみよう" : "漢字を書く")}
         ${lessonLevelRow()}
         <section class="prompt-area">
-          <p class="eyebrow">お題</p>
-          <h1>「${problem.reading}」を<br />漢字で書こう</h1>
-          <p class="word-example">ことば：<b>${problem.word}</b> ・ ${problem.strokes}画</p>
+          <p class="eyebrow">${preschool ? "ゆびで なぞってみよう" : "お題"}</p>
+          <h1>「${problem.reading}」を<br />${preschool ? "かいてみよう" : "漢字で書こう"}</h1>
+          <p class="word-example">${preschool ? "ことば" : "ことば"}：<b>${problem.word}</b> ・ ${problem.strokes}かく</p>
         </section>
         <div class="writing-pad ${state.kanjiChecking ? "checking" : ""}">
           <span class="guide-kanji" aria-hidden="true">${problem.kanji}</span>
@@ -928,18 +1034,19 @@
 
   function readTemplate() {
     const problem = currentSessionProblem();
+    const preschool = state.session?.preschool;
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
-        ? '<div class="reading-feedback correct"><b>正解！</b> よく読めました。</div>'
+        ? `<div class="reading-feedback correct"><b>${preschool ? "はなまる！" : "正解！"}</b> よく読めました。</div>`
         : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」です。</div>`
       : "";
     return `
       <div class="screen lesson-screen reading-lesson">
-        ${lessonHeader("漢字を読む")}
+        ${lessonHeader(preschool ? "よんでみよう" : "漢字を読む")}
         ${lessonLevelRow()}
         <section class="reading-prompt">
-          <p class="eyebrow">この漢字、なんて読む？</p>
+          <p class="eyebrow">${preschool ? "どれかな？" : "この漢字、なんて読む？"}</p>
           <div class="reading-card"><span>${problem.kanji}</span></div>
         </section>
         <div class="reading-options">
@@ -967,6 +1074,7 @@
 
   function mathTemplate() {
     const problem = currentSessionProblem();
+    const preschool = state.session?.preschool;
     const message =
       state.mathResult === "wrong"
         ? '<p class="result-message">おしい！ もう一度考えよう</p>'
@@ -975,8 +1083,8 @@
           : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
     return `
       <div class="screen lesson-screen math-lesson">
-        ${lessonHeader("暗算する")}
-        ${lessonLevelRow('<span class="timer">◷ テンポよく</span>')}
+        ${lessonHeader(preschool ? "かずあそび" : "暗算する")}
+        ${lessonLevelRow(`<span class="timer">${preschool ? "★ ゆっくり" : "◷ テンポよく"}</span>`)}
         <section class="math-question">
           <p class="eyebrow">こたえはいくつ？</p>
           <h1 class="${problem.question.length > 12 ? "compact" : ""}">${problem.question}</h1>
@@ -996,13 +1104,14 @@
   }
 
   function flashTemplate() {
+    const preschool = state.session?.preschool;
     const total = state.flashSequence.reduce((sum, number) => sum + number, 0);
     let stage = "";
     if (state.flashPhase === "ready") {
       stage = `
         <div class="flash-ready">
-          <span class="flash-symbol">瞬</span>
-          <h1>数字を見て、<br />ぜんぶ足そう</h1>
+          <span class="flash-symbol">${preschool ? "★" : "瞬"}</span>
+          <h1>${preschool ? "ゆっくり見て、" : "数字を見て、"}<br />ぜんぶ足そう</h1>
           <p>${state.flashSequence.length}つの数字が順番に出ます。</p>
           <button type="button" class="primary-button wide" data-action="start-flash">カウントを始める</button>
         </div>
@@ -1048,8 +1157,8 @@
     }
     return `
       <div class="screen lesson-screen flash-lesson">
-        ${lessonHeader("フラッシュ暗算")}
-        ${lessonLevelRow('<span class="timer">● 集中モード</span>')}
+        ${lessonHeader(preschool ? "ピカッとあんざん" : "フラッシュ暗算")}
+        ${lessonLevelRow(`<span class="timer">${preschool ? "★ ゆっくり" : "● 集中モード"}</span>`)}
         <section class="flash-stage">${stage}</section>
       </div>
     `;
@@ -1073,6 +1182,27 @@
   }
 
   function prepareFlashQuestion() {
+    if (state.session?.preschool) {
+      let sequence = [];
+      let signature = "";
+      let attempts = 0;
+      do {
+        sequence = [randomInt(1, 3), randomInt(1, 3)];
+        signature = sequence.join("+");
+        attempts += 1;
+      } while (
+        state.session.completed === 0 &&
+        signature === state.lastFirstByMode.flash &&
+        attempts < 20
+      );
+      state.flashSequence = sequence;
+      if (state.session.completed === 0) state.lastFirstByMode.flash = signature;
+      state.flashPhase = "ready";
+      state.flashCue = "3";
+      state.flashAnswer = "";
+      state.flashResult = "idle";
+      return;
+    }
     const band = bandForLevel(
       state.session?.levelAtStart ?? activeSkill("flash").level,
     );
@@ -1131,6 +1261,8 @@
 
   function runFlashNumbers(token) {
     let index = 0;
+    const numberDelay = state.session?.preschool ? 1100 : 700;
+    const separatorDelay = state.session?.preschool ? 360 : 240;
     const step = () => {
       if (token !== state.flashRunToken || state.view !== "flash") return;
       const numberElement = document.querySelector("#flashNumber");
@@ -1147,11 +1279,11 @@
           if (index < state.flashSequence.length) {
             numberElement.textContent = "＋";
             numberElement.classList.add("is-separator");
-            state.flashTimer = window.setTimeout(step, 240);
+            state.flashTimer = window.setTimeout(step, separatorDelay);
           } else {
             step();
           }
-        }, 700);
+        }, numberDelay);
         return;
       }
       state.flashPhase = "answer";
@@ -1186,8 +1318,43 @@
     return `${problem.question}:${problem.answer}`;
   }
 
-  function createSessionProblems(mode, total, level) {
+  function createSessionProblems(mode, total, level, preschool = false) {
     if (mode === "flash") return [];
+    if (preschool) {
+      if (mode === "math") {
+        const result = [];
+        const used = new Set();
+        while (result.length < total) {
+          let problem = generateMikkunMathProblem();
+          let signature = problemSignature(mode, problem);
+          let attempts = 0;
+          while (used.has(signature) && attempts < 30) {
+            problem = generateMikkunMathProblem();
+            signature = problemSignature(mode, problem);
+            attempts += 1;
+          }
+          used.add(signature);
+          result.push(problem);
+        }
+        state.lastFirstByMode.math = problemSignature(mode, result[0]);
+        return result;
+      }
+
+      const bank = mode === "write" ? mikkunKanjiProblems : mikkunReadingProblems;
+      const result = [];
+      while (result.length < total) {
+        const cycle = shuffled(bank);
+        result.push(...cycle.slice(0, total - result.length));
+      }
+      if (
+        result.length > 1 &&
+        problemSignature(mode, result[0]) === state.lastFirstByMode[mode]
+      ) {
+        [result[0], result[1]] = [result[1], result[0]];
+      }
+      state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
+      return result;
+    }
     if (mode === "math") {
       const result = [];
       const used = new Set();
@@ -1239,6 +1406,34 @@
     }
     state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
     return result;
+  }
+
+  function generateMikkunMathProblem() {
+    const kind = randomInt(0, 2);
+    if (kind === 0) {
+      const count = randomInt(1, 5);
+      return {
+        question: Array.from({ length: count }, () => "●").join("　"),
+        answer: String(count),
+        hint: "まるを ゆっくり かぞえてみよう",
+      };
+    }
+    if (kind === 1) {
+      const left = randomInt(1, 4);
+      const right = randomInt(1, 5 - left);
+      return {
+        question: `${left} + ${right}`,
+        answer: String(left + right),
+        hint: `${left}から、あと${right}こ かぞえてみよう`,
+      };
+    }
+    const left = randomInt(2, 5);
+    const right = randomInt(1, left - 1);
+    return {
+      question: `${left} − ${right}`,
+      answer: String(left - right),
+      hint: `${left}こから ${right}こ へらしてみよう`,
+    };
   }
 
   function currentSessionProblem() {
@@ -1693,7 +1888,7 @@
           <span class="checkpoint-mark">✓</span>
           <p class="eyebrow">GOOD PAUSE</p>
           <h2 id="checkpoint-title">${session.completed}問できました！</h2>
-          <p>${MODE_INFO[session.mode].label}はあと${remaining}問です。<br />もう少し続けますか？</p>
+          <p>${currentLessonLabel(session.mode)}はあと${remaining}問です。<br />もう少し続けますか？</p>
           <div class="checkpoint-stats">
             <span><b>${session.completed}</b>問完了</span>
             <span><b>${session.correct}</b>問できた</span>
@@ -1714,7 +1909,7 @@
           <p class="eyebrow">QUIT SESSION</p>
           <h2 id="exit-confirm-title">途中でやめますか？</h2>
           <p>
-            今回の「${mode ? MODE_INFO[mode].label : "学習"}」で増えたXPやレベルは、
+            今回の「${mode ? currentLessonLabel(mode) : "学習"}」で増えたXPやレベルは、
             すべて開始前の状態に戻ります。
           </p>
           <button type="button" class="primary-button wide" data-action="continue-learning">学習を続ける</button>
@@ -1739,8 +1934,8 @@
           <p class="eyebrow">${session.endedEarly ? "GOOD PAUSE" : "SESSION COMPLETE"}</p>
           <h1>${session.endedEarly ? "ここまで、よくできました。" : "さいごまで、できました！"}</h1>
           <p>
-            ${escapeHtml(displayName())}の「${MODE_INFO[session.mode].label}」
-            ・ Lv.${activeSkill(session.mode).level}
+            ${escapeHtml(displayName())}の「${currentLessonLabel(session.mode)}」
+            ・ ${session.preschool ? "年中さんコース" : `Lv.${activeSkill(session.mode).level}`}
           </p>
         </section>
         <div class="result-score-card">
@@ -2018,9 +2213,17 @@
   }
 
   function handleClick(event) {
+    const tappedControl = event.target.closest(
+      "button, select, input, label, [role='button']",
+    );
+    if (tappedControl && !tappedControl.disabled) playTapSound();
+
     const startButton = event.target.closest("[data-start]");
     if (startButton) {
-      startSession(startButton.dataset.start);
+      startSession(
+        startButton.dataset.start,
+        startButton.dataset.preschool === "true",
+      );
       return;
     }
 
@@ -2273,7 +2476,8 @@
       },
       "restart-session"() {
         const mode = state.session.mode;
-        startSession(mode);
+        const preschool = state.session.preschool;
+        startSession(mode, preschool);
       },
       "save-settings"() {
         saveSettingsFromForm();
