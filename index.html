@@ -21,7 +21,7 @@
     </main>
     <script>
       (() => {
-        const fallbackVersion = "20260728-level-random-5";
+        const fallbackVersion = "20260728-firebase-sync-6";
         let loadedVersion = "";
         let checkingForUpdate = false;
 
@@ -35,13 +35,22 @@
           stylesheet.href = `./styles.css?v=${versionQuery}`;
 
           let scriptStarted = false;
-          const startScript = () => {
+          const appendScript = (source) =>
+            new Promise((resolve) => {
+              const script = document.createElement("script");
+              script.src = source;
+              script.async = false;
+              script.addEventListener("load", () => resolve(true), { once: true });
+              script.addEventListener("error", () => resolve(false), { once: true });
+              document.body.appendChild(script);
+            });
+
+          const startScript = async () => {
             if (scriptStarted) return;
             scriptStarted = true;
-            const script = document.createElement("script");
-            script.src = `./app.js?v=${versionQuery}`;
-            script.async = false;
-            document.body.appendChild(script);
+            await appendScript(`./firebase-config.js?v=${versionQuery}`);
+            await appendScript(`./firebase-sync.js?v=${versionQuery}`);
+            await appendScript(`./app.js?v=${versionQuery}`);
           };
 
           stylesheet.addEventListener("load", startScript, { once: true });

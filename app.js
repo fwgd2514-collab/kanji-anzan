@@ -184,16 +184,25 @@
     flashCue: "3",
     flashTimer: 0,
     flashRunToken: 0,
+    cloudReady: false,
+    cloudApplying: false,
+    cloudSyncing: false,
+    cloudStatus: "端末内保存（Firebase未設定）",
+    cloudTone: "local",
+    cloudSaveTimers: {},
   };
 
   loadProgress();
   initializeLearnerProfiles();
   render();
-  loadLearnerNames();
+  loadLearnerNames().finally(initializeCloudSync);
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && location.protocol !== "file:") loadLearnerNames();
+    if (document.hidden) return;
+    const namesTask =
+      location.protocol === "file:" ? Promise.resolve() : loadLearnerNames();
+    namesTask.finally(syncCloudProfiles);
   });
 
   function loadProgress() {
@@ -306,6 +315,7 @@
     }
     saveProgress();
     if (changed) render();
+    if (state.cloudReady) syncCloudProfiles();
     return changed;
   }
 
@@ -314,6 +324,7 @@
       level: clamp(profile?.level ?? 1, 1, 100),
       xp: clamp(profile?.xp ?? 0, 0, 100),
       streak: Math.max(0, Number(profile?.streak) || 0),
+      updatedAt: Math.max(0, Math.floor(Number(profile?.updatedAt) || 0)),
     };
   }
 
@@ -325,12 +336,20 @@
   }
 
   function syncActiveProfile() {
-    if (!state.learnerName) return;
+    if (!state.learnerName) return false;
+    const previous = state.profiles[state.learnerName];
+    const changed =
+      !previous ||
+      previous.level !== state.level ||
+      previous.xp !== state.xp ||
+      previous.streak !== state.streak;
     state.profiles[state.learnerName] = normalizeProfile({
       level: state.level,
       xp: state.xp,
       streak: state.streak,
+      updatedAt: changed ? Date.now() : previous.updatedAt,
     });
+    return changed;
   }
 
   function applyActiveProfile() {
@@ -350,8 +369,8 @@
   }
 
   function saveProgress() {
+    const profileChanged = syncActiveProfile();
     try {
-      syncActiveProfile();
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
@@ -369,6 +388,95 @@
       );
     } catch {
       // 保存できない環境では画面内だけで学習を続ける。
+    }
+    if (profileChanged) queueCloudSave(state.learnerName);
+  }
+
+  function setCloudStatus(message, tone = "local") {
+    state.cloudStatus = message;
+    state.cloudTone = tone;
+    const text = document.querySelector("#cloudStatusText");
+    const badge = document.querySelector("#cloudStatusBadge");
+    if (text) text.textContent = message;
+    if (badge) {
+      badge.textContent = tone === "online" ? "同期ON" : tone === "busy" ? "同期中" : "端末保存";
+      badge.className = `cloud-status-badge ${tone}`;
+    }
+  }
+
+  async function initializeCloudSync() {
+    const cloud = window.NobiruCloud;
+    if (!cloud?.isConfigured?.()) {
+      setCloudStatus("端末内保存（Firebase未設定）", "local");
+      return;
+    }
+    setCloudStatus("Firebaseへ接続しています…", "busy");
+    try {
+      await cloud.initialize();
+      state.cloudReady = true;
+      await syncCloudProfiles();
+    } catch {
+      state.cloudReady = false;
+      setCloudStatus("Firebaseへ接続できません（端末内へ保存中）", "error");
+    }
+  }
+
+  async function syncCloudProfiles() {
+    const cloud = window.NobiruCloud;
+    if (!state.cloudReady || state.cloudSyncing || !cloud) return;
+    state.cloudSyncing = true;
+    setCloudStatus("クラウドのレベルを確認しています…", "busy");
+    try {
+      const remoteProfiles = await cloud.loadProfiles(state.learnerNames);
+      const uploads = [];
+      state.cloudApplying = true;
+      state.learnerNames.forEach((name) => {
+        const local = ensureProfile(name);
+        const remoteValue = remoteProfiles[name];
+        if (!remoteValue) {
+          uploads.push([name, local]);
+          return;
+        }
+        const remote = normalizeProfile(remoteValue);
+        if (remote.updatedAt >= local.updatedAt) {
+          state.profiles[name] = remote;
+        } else {
+          uploads.push([name, local]);
+        }
+      });
+      applyActiveProfile();
+      saveProgress();
+      state.cloudApplying = false;
+      await Promise.all(uploads.map(([name, profile]) => cloud.saveProfile(name, profile)));
+      setCloudStatus("Firebaseと同期済み", "online");
+      if (["home", "levels", "profile"].includes(state.view)) render();
+    } catch {
+      state.cloudApplying = false;
+      setCloudStatus("同期できません（端末内へ保存中）", "error");
+    } finally {
+      state.cloudApplying = false;
+      state.cloudSyncing = false;
+    }
+  }
+
+  function queueCloudSave(name) {
+    if (!state.cloudReady || state.cloudApplying || !name) return;
+    window.clearTimeout(state.cloudSaveTimers[name]);
+    state.cloudSaveTimers[name] = window.setTimeout(() => {
+      pushCloudProfile(name);
+    }, 650);
+  }
+
+  async function pushCloudProfile(name) {
+    const cloud = window.NobiruCloud;
+    if (!state.cloudReady || !cloud) return;
+    const profile = normalizeProfile(ensureProfile(name));
+    setCloudStatus("レベルをFirebaseへ保存しています…", "busy");
+    try {
+      await cloud.saveProfile(name, profile);
+      setCloudStatus("Firebaseと同期済み", "online");
+    } catch {
+      setCloudStatus("クラウド保存に失敗（端末内には保存済み）", "error");
     }
   }
 
@@ -1472,6 +1580,23 @@
           </p>
         </section>
 
+        <section class="settings-card cloud-sync-card">
+          <div class="settings-heading">
+            <div><p class="eyebrow">FIREBASE SYNC</p><h2>端末間のレベル共有</h2></div>
+            <span id="cloudStatusBadge" class="cloud-status-badge ${state.cloudTone}">
+              ${state.cloudTone === "online" ? "同期ON" : state.cloudTone === "busy" ? "同期中" : "端末保存"}
+            </span>
+          </div>
+          <p id="cloudStatusText" class="cloud-status-text">${escapeHtml(state.cloudStatus)}</p>
+          <button
+            type="button"
+            class="secondary-button wide cloud-sync-button"
+            data-action="sync-cloud"
+            ${window.NobiruCloud?.isConfigured?.() ? "" : "disabled"}
+          >今すぐ同期する</button>
+          <p class="settings-note">同じGitHub Pagesを開く端末では、名前ごとのレベルとXPが共有されます。</p>
+        </section>
+
         <section class="settings-card">
           <div class="settings-heading">
             <div><p class="eyebrow">QUESTION COUNT</p><h2>1回の問題数</h2></div>
@@ -1757,6 +1882,13 @@
       },
       "reload-names"() {
         loadLearnerNames(true);
+      },
+      "sync-cloud"() {
+        if (state.cloudReady) {
+          syncCloudProfiles();
+        } else {
+          initializeCloudSync();
+        }
       },
     };
     actions[action]?.();
