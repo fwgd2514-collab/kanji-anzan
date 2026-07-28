@@ -1015,6 +1015,11 @@ canvas:focus-visible {
   box-shadow: 0 3px 0 #e4e0d7;
 }
 
+.number-pad button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .number-pad .pad-blank {
   visibility: hidden;
 }
@@ -1581,6 +1586,190 @@ canvas:focus-visible {
   .road-step span {
     width: 39px;
     height: 39px;
+  }
+}
+
+/* iPhone dynamic toolbar and lesson controls */
+
+:root {
+  --app-viewport-height: 100dvh;
+  --visual-viewport-bottom: 0px;
+}
+
+.bottom-nav {
+  bottom: var(--visual-viewport-bottom);
+}
+
+.screen {
+  padding-bottom: calc(128px + env(safe-area-inset-bottom));
+}
+
+.lesson-screen {
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.lesson-header {
+  grid-template-columns: 76px minmax(0, 1fr) 42px;
+  gap: 10px;
+}
+
+.lesson-exit-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 9px;
+  border: 1px solid #e5d8d1;
+  border-radius: 999px;
+  background: #fff5f1;
+  color: #a95643;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lesson-exit-button span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.auto-next-note {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 17px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #e2f4ef;
+  color: #267f70;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.exit-confirm-sheet {
+  width: min(100% - 30px, 430px);
+  margin: 0 auto calc(18px + env(safe-area-inset-bottom));
+  padding: 25px 22px;
+  border-radius: 25px;
+  background: var(--paper);
+  text-align: center;
+  box-shadow: 0 18px 55px rgba(24, 35, 52, 0.28);
+}
+
+.exit-confirm-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  border-radius: 15px;
+  background: #ffe7de;
+  color: var(--coral-dark);
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.exit-confirm-sheet h2 {
+  margin: 4px 0 10px;
+  font-size: 21px;
+}
+
+.exit-confirm-sheet > p:not(.eyebrow) {
+  margin: 0 0 18px;
+  color: #777e8b;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.exit-confirm-sheet .secondary-button {
+  margin-top: 9px;
+}
+
+.math-lesson {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.math-lesson .math-question {
+  padding: clamp(16px, 3.2dvh, 28px) 0 10px;
+}
+
+.math-lesson .math-question h1 {
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.math-lesson .answer-box {
+  height: 60px;
+}
+
+.math-lesson .hint-box {
+  margin-bottom: 9px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.math-lesson .number-pad {
+  gap: 6px;
+  margin-bottom: 76px;
+}
+
+.math-lesson .number-pad button {
+  height: clamp(44px, 5.7dvh, 51px);
+}
+
+.math-answer-dock {
+  position: fixed;
+  z-index: 19;
+  left: 50%;
+  bottom: calc(
+    10px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom)
+  );
+  width: min(calc(100% - 44px), 476px);
+  padding-top: 10px;
+  background: linear-gradient(
+    to bottom,
+    rgba(251, 250, 245, 0),
+    rgba(251, 250, 245, 0.96) 30%
+  );
+  transform: translateX(-50%);
+}
+
+.math-answer-dock .primary-button.wide,
+.math-answer-dock .auto-next-note {
+  margin: 0;
+}
+
+@media (max-width: 699px) {
+  body,
+  .app-shell,
+  .phone-app,
+  .screen {
+    min-height: var(--app-viewport-height);
+  }
+}
+
+@media (max-height: 760px) {
+  .lesson-header {
+    min-height: 70px;
+  }
+
+  .lesson-level-row {
+    margin-top: 0;
+  }
+
+  .math-lesson .math-question {
+    padding-top: 10px;
+  }
+
+  .math-lesson .math-question h1 {
+    font-size: clamp(34px, 10vw, 50px);
+  }
+
+  .math-lesson .number-pad button {
+    height: 43px;
   }
 }
 
@@ -2815,4 +3004,10 @@ canvas:focus-visible {
   .result-score-card {
     grid-template-columns: 1.15fr 1fr 1fr;
   }
+}
+
+.result-screen {
+  padding-bottom: calc(
+    48px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom)
+  );
 }

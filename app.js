@@ -168,8 +168,10 @@
     placementMode: "write",
     placementOpen: false,
     checkpointOpen: false,
+    exitConfirmOpen: false,
     toast: "",
     toastTimer: 0,
+    answerAdvanceTimer: 0,
     session: null,
     kanjiMarks: 0,
     kanjiChecking: false,
@@ -195,6 +197,14 @@
     cloudSaveTimers: {},
   };
 
+  updateViewportMetrics();
+  window.addEventListener?.("resize", updateViewportMetrics, { passive: true });
+  window.visualViewport?.addEventListener("resize", updateViewportMetrics, {
+    passive: true,
+  });
+  window.visualViewport?.addEventListener("scroll", updateViewportMetrics, {
+    passive: true,
+  });
   loadProgress();
   initializeLearnerProfiles();
   render();
@@ -570,6 +580,35 @@
     return Math.min(max, Math.max(min, Number(value)));
   }
 
+  function updateViewportMetrics() {
+    const viewport = window.visualViewport;
+    const height = Math.max(
+      320,
+      Math.round(viewport?.height || window.innerHeight || 0),
+    );
+    const coveredBottom = viewport
+      ? Math.max(
+          0,
+          Math.min(
+            96,
+            Math.round(
+              (window.innerHeight || viewport.height) -
+                viewport.height -
+                viewport.offsetTop,
+            ),
+          ),
+        )
+      : 0;
+    document.documentElement?.style?.setProperty(
+      "--app-viewport-height",
+      `${height}px`,
+    );
+    document.documentElement?.style?.setProperty(
+      "--visual-viewport-bottom",
+      `${coveredBottom}px`,
+    );
+  }
+
   function gradeForLevel(level) {
     const group = levelGroups.find((item) => level >= item.start && level <= item.end);
     return group ? group.label : "高校入試チャレンジ";
@@ -607,6 +646,7 @@
       ${showNav ? bottomNavTemplate() : ""}
       ${state.placementOpen ? placementTemplate() : ""}
       ${state.checkpointOpen ? checkpointTemplate() : ""}
+      ${state.exitConfirmOpen ? exitConfirmTemplate() : ""}
       ${state.toast ? `<div class="toast" role="status"><span>★</span> ${state.toast}</div>` : ""}
     `;
     if (state.view === "write") setupWritingCanvas();
@@ -713,18 +753,25 @@
 
   function startSession(mode) {
     stopFlash();
+    stopAutoAdvance();
     const skill = activeSkill(mode);
     const problems = createSessionProblems(mode, state.counts[mode], skill.level);
     state.session = {
       mode,
       total: state.counts[mode],
       levelAtStart: skill.level,
+      skillAtStart: {
+        level: skill.level,
+        xp: skill.xp,
+        updatedAt: skill.updatedAt,
+      },
       problems,
       completed: 0,
       correct: 0,
       attempts: 0,
       endedEarly: false,
     };
+    state.exitConfirmOpen = false;
     state.view = mode;
     resetQuestionState();
     if (mode === "flash") prepareFlashQuestion();
@@ -737,7 +784,9 @@
     const session = state.session;
     return `
       <header class="lesson-header">
-        <button class="round-button" type="button" data-action="ask-exit" aria-label="戻る">‹</button>
+        <button class="lesson-exit-button" type="button" data-action="ask-exit" aria-label="途中でやめる">
+          <span>×</span> やめる
+        </button>
         <div class="lesson-heading">
           <span>${title}</span>
           <div class="lesson-progress"><i style="width:${(session.completed / session.total) * 100}%"></i></div>
@@ -874,7 +923,9 @@
         </div>
         <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
-          ? '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
+          ? state.readingChoice === problem.answer
+            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
+            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
           : '<p class="choice-note">読み方をひとつ選んでね</p>'
         }
       </div>
@@ -901,10 +952,12 @@
         </section>
         <div class="hint-box"><span>ヒント</span><p>${problem.hint}</p></div>
         ${numberPad("math")}
-        ${state.mathResult === "correct"
-          ? '<button type="button" class="primary-button wide" data-action="next-math">つぎの問題へ →</button>'
-          : `<button type="button" class="primary-button wide" data-action="submit-math" ${state.mathAnswer ? "" : "disabled"}>こたえる</button>`
-        }
+        <div class="math-answer-dock">
+          ${state.mathResult === "correct"
+            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
+            : `<button type="button" class="primary-button wide" data-action="submit-math" ${state.mathAnswer ? "" : "disabled"}>こたえる</button>`
+          }
+        </div>
       </div>
     `;
   }
@@ -954,7 +1007,7 @@
         </div>
         ${numberPad("flash")}
         ${state.flashResult === "correct"
-          ? '<button type="button" class="primary-button wide" data-action="next-flash">つぎの問題へ →</button>'
+          ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
           : `<button type="button" class="primary-button wide" data-action="submit-flash" ${state.flashAnswer ? "" : "disabled"}>こたえる</button>`
         }
         ${state.flashResult === "idle" ? '<button type="button" class="replay-button" data-action="replay-flash">もう一度見る</button>' : ""}
@@ -970,14 +1023,18 @@
   }
 
   function numberPad(target) {
+    const locked =
+      (target === "math" && state.mathResult === "correct") ||
+      (target === "flash" && state.flashResult === "correct");
+    const disabled = locked ? "disabled" : "";
     return `
       <div class="number-pad" aria-label="数字キーパッド">
         ${["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-          .map((key) => `<button type="button" data-number="${key}" data-number-target="${target}">${key}</button>`)
+          .map((key) => `<button type="button" data-number="${key}" data-number-target="${target}" ${disabled}>${key}</button>`)
           .join("")}
         <button type="button" class="pad-blank" tabindex="-1" aria-hidden="true"></button>
-        <button type="button" data-number="0" data-number-target="${target}">0</button>
-        <button type="button" class="delete-key" data-action="delete-number" data-number-target="${target}" aria-label="一文字消す">⌫</button>
+        <button type="button" data-number="0" data-number-target="${target}" ${disabled}>0</button>
+        <button type="button" class="delete-key" data-action="delete-number" data-number-target="${target}" aria-label="一文字消す" ${disabled}>⌫</button>
       </div>
     `;
   }
@@ -1512,10 +1569,86 @@
 
   function finishSession(endedEarly) {
     stopFlash();
+    stopAutoAdvance();
     if (state.session) state.session.endedEarly = endedEarly;
     state.checkpointOpen = false;
+    state.exitConfirmOpen = false;
     state.view = "result";
     render();
+  }
+
+  function stopAutoAdvance() {
+    window.clearTimeout(state.answerAdvanceTimer);
+    state.answerAdvanceTimer = 0;
+  }
+
+  function currentAnswerIsCorrect(mode) {
+    if (!state.session || state.session.mode !== mode) return false;
+    if (mode === "read") {
+      return (
+        state.readingChecked &&
+        state.readingChoice === currentSessionProblem().answer
+      );
+    }
+    if (mode === "math") return state.mathResult === "correct";
+    if (mode === "flash") return state.flashResult === "correct";
+    return false;
+  }
+
+  function scheduleCorrectAdvance(mode) {
+    stopAutoAdvance();
+    const session = state.session;
+    if (!session || !currentAnswerIsCorrect(mode)) return;
+    state.answerAdvanceTimer = window.setTimeout(() => {
+      state.answerAdvanceTimer = 0;
+      if (
+        state.session !== session ||
+        state.exitConfirmOpen ||
+        !currentAnswerIsCorrect(mode)
+      ) {
+        return;
+      }
+      state.session.completed += 1;
+      advanceAfterCompletedQuestion();
+    }, 700);
+  }
+
+  function resumeCorrectAdvance() {
+    const mode = state.session?.mode;
+    if (["read", "math", "flash"].includes(mode) && currentAnswerIsCorrect(mode)) {
+      scheduleCorrectAdvance(mode);
+    }
+  }
+
+  function discardCurrentSession() {
+    const session = state.session;
+    if (!session || !SKILL_MODES.includes(session.mode)) {
+      state.exitConfirmOpen = false;
+      state.view = "home";
+      render();
+      return;
+    }
+
+    stopFlash();
+    stopAutoAdvance();
+    const profile = ensureProfile(state.learnerName);
+    const restoredAt = Date.now();
+    profile.skills[session.mode] = {
+      level: session.skillAtStart?.level ?? session.levelAtStart,
+      xp: session.skillAtStart?.xp ?? 0,
+      updatedAt: restoredAt,
+    };
+    profile.updatedAt = Math.max(profile.updatedAt, restoredAt);
+    applyActiveProfile();
+    state.session = null;
+    state.checkpointOpen = false;
+    state.exitConfirmOpen = false;
+    state.view = "home";
+    resetQuestionState();
+    saveProgress(session.mode);
+    showToast("今回の学習は記録せずに終了しました");
+    render();
+    window.scrollTo({ top: 0, left: 0 });
   }
 
   function checkpointTemplate() {
@@ -1534,6 +1667,25 @@
           </div>
           <button type="button" class="primary-button wide" data-action="continue-session">つぎの問題へ</button>
           <button type="button" class="secondary-button wide" data-action="end-session">ここで終了する</button>
+        </section>
+      </div>
+    `;
+  }
+
+  function exitConfirmTemplate() {
+    const mode = state.session?.mode;
+    return `
+      <div class="sheet-backdrop">
+        <section class="exit-confirm-sheet" role="dialog" aria-modal="true" aria-labelledby="exit-confirm-title">
+          <span class="exit-confirm-mark">×</span>
+          <p class="eyebrow">QUIT SESSION</p>
+          <h2 id="exit-confirm-title">途中でやめますか？</h2>
+          <p>
+            今回の「${mode ? MODE_INFO[mode].label : "学習"}」で増えたXPやレベルは、
+            すべて開始前の状態に戻ります。
+          </p>
+          <button type="button" class="primary-button wide" data-action="continue-learning">学習を続ける</button>
+          <button type="button" class="secondary-button wide" data-action="discard-session">ノーカウントでやめる</button>
         </section>
       </div>
     `;
@@ -1836,6 +1988,8 @@
     const viewButton = event.target.closest("[data-view]");
     if (viewButton) {
       stopFlash();
+      stopAutoAdvance();
+      state.exitConfirmOpen = false;
       if (SKILL_MODES.includes(viewButton.dataset.levelMode)) {
         state.levelViewMode = viewButton.dataset.levelMode;
       }
@@ -1903,11 +2057,13 @@
       state.readingChoice = readingButton.dataset.reading;
       state.readingChecked = true;
       state.session.attempts += 1;
-      if (state.readingChoice === problem.answer) {
+      const correct = state.readingChoice === problem.answer;
+      if (correct) {
         state.session.correct += 1;
         earnXp(MODE_INFO.read.xp);
       }
       render();
+      if (correct) scheduleCorrectAdvance("read");
       return;
     }
 
@@ -1939,14 +2095,35 @@
     const actions = {
       "back-home"() {
         stopFlash();
+        stopAutoAdvance();
         state.view = "home";
         state.session = null;
         state.checkpointOpen = false;
+        state.exitConfirmOpen = false;
         resetQuestionState();
         render();
       },
       "ask-exit"() {
-        finishSession(true);
+        stopFlash();
+        stopAutoAdvance();
+        if (
+          state.session?.mode === "flash" &&
+          ["countdown", "showing"].includes(state.flashPhase)
+        ) {
+          state.flashPhase = "ready";
+          state.flashAnswer = "";
+          state.flashResult = "idle";
+        }
+        state.exitConfirmOpen = true;
+        render();
+      },
+      "continue-learning"() {
+        state.exitConfirmOpen = false;
+        render();
+        resumeCorrectAdvance();
+      },
+      "discard-session"() {
+        discardCurrentSession();
       },
       "open-placement"() {
         state.placementMode = SKILL_MODES.includes(actionButton.dataset.mode)
@@ -2017,6 +2194,7 @@
           earnXp(MODE_INFO.math.xp);
         }
         render();
+        if (state.mathResult === "correct") scheduleCorrectAdvance("math");
       },
       "next-math"() {
         state.session.completed += 1;
@@ -2040,6 +2218,7 @@
           earnXp(MODE_INFO.flash.xp);
         }
         render();
+        if (state.flashResult === "correct") scheduleCorrectAdvance("flash");
       },
       "next-flash"() {
         state.session.completed += 1;
@@ -2102,11 +2281,13 @@
   }
 
   function advanceAfterCompletedQuestion() {
+    stopAutoAdvance();
     if (state.session.completed >= state.session.total) {
       finishSession(false);
       return;
     }
     resetQuestionState();
+    state.exitConfirmOpen = false;
     if (state.session.mode === "flash") prepareFlashQuestion();
     if (state.session.completed % state.checkpointEvery === 0) {
       state.checkpointOpen = true;
