@@ -915,6 +915,11 @@ canvas:focus-visible {
   letter-spacing: -0.07em;
 }
 
+.math-question h1.compact {
+  font-size: clamp(28px, 8.5vw, 42px);
+  letter-spacing: -0.045em;
+}
+
 .answer-box {
   width: 128px;
   height: 67px;

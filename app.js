@@ -13,48 +13,129 @@
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
 
   const kanjiProblems = [
-    { kanji: "泳", reading: "およぐ", word: "水泳", strokes: 8 },
-    { kanji: "深", reading: "ふかい", word: "深海", strokes: 11 },
-    { kanji: "緑", reading: "みどり", word: "緑茶", strokes: 14 },
-    { kanji: "橋", reading: "はし", word: "歩道橋", strokes: 16 },
-    { kanji: "農", reading: "のう", word: "農業", strokes: 13 },
-    { kanji: "港", reading: "みなと", word: "空港", strokes: 12 },
-    { kanji: "温", reading: "あたたかい", word: "温度", strokes: 12 },
-    { kanji: "章", reading: "しょう", word: "文章", strokes: 11 },
-    { kanji: "登", reading: "のぼる", word: "登山", strokes: 12 },
-    { kanji: "植", reading: "うえる", word: "植物", strokes: 12 },
-    { kanji: "薬", reading: "くすり", word: "薬局", strokes: 16 },
-    { kanji: "整", reading: "ととのえる", word: "整理", strokes: 16 },
+    { band: 1, kanji: "山", reading: "やま", word: "山道", strokes: 3 },
+    { band: 1, kanji: "川", reading: "かわ", word: "川上", strokes: 3 },
+    { band: 1, kanji: "人", reading: "ひと", word: "人びと", strokes: 2 },
+    { band: 1, kanji: "大", reading: "おおきい", word: "大空", strokes: 3 },
+    { band: 1, kanji: "日", reading: "ひ", word: "日の出", strokes: 4 },
+    { band: 1, kanji: "月", reading: "つき", word: "月日", strokes: 4 },
+    { band: 2, kanji: "海", reading: "うみ", word: "海辺", strokes: 9 },
+    { band: 2, kanji: "春", reading: "はる", word: "春風", strokes: 9 },
+    { band: 2, kanji: "夏", reading: "なつ", word: "夏休み", strokes: 10 },
+    { band: 2, kanji: "秋", reading: "あき", word: "秋空", strokes: 9 },
+    { band: 2, kanji: "冬", reading: "ふゆ", word: "冬休み", strokes: 5 },
+    { band: 2, kanji: "星", reading: "ほし", word: "星空", strokes: 9 },
+    { band: 3, kanji: "泳", reading: "およぐ", word: "泳ぐ", strokes: 8 },
+    { band: 3, kanji: "深", reading: "ふかい", word: "深い", strokes: 11 },
+    { band: 3, kanji: "緑", reading: "みどり", word: "緑色", strokes: 14 },
+    { band: 3, kanji: "橋", reading: "はし", word: "橋を渡る", strokes: 16 },
+    { band: 3, kanji: "農", reading: "のう", word: "農業", strokes: 13 },
+    { band: 3, kanji: "港", reading: "みなと", word: "港町", strokes: 12 },
+    { band: 4, kanji: "愛", reading: "あい", word: "愛情", strokes: 13 },
+    { band: 4, kanji: "案", reading: "あん", word: "案内", strokes: 10 },
+    { band: 4, kanji: "以", reading: "い", word: "以上", strokes: 5 },
+    { band: 4, kanji: "衣", reading: "ころも", word: "衣", strokes: 6 },
+    { band: 4, kanji: "位", reading: "くらい", word: "一の位", strokes: 7 },
+    { band: 4, kanji: "印", reading: "しるし", word: "目印", strokes: 6 },
+    { band: 5, kanji: "圧", reading: "あつ", word: "圧力", strokes: 5 },
+    { band: 5, kanji: "移", reading: "うつる", word: "場所を移る", strokes: 11 },
+    { band: 5, kanji: "因", reading: "いん", word: "原因", strokes: 6 },
+    { band: 5, kanji: "永", reading: "ながい", word: "永い年月", strokes: 5 },
+    { band: 5, kanji: "営", reading: "いとなむ", word: "店を営む", strokes: 12 },
+    { band: 5, kanji: "衛", reading: "えい", word: "衛生", strokes: 16 },
+    { band: 6, kanji: "異", reading: "ことなる", word: "意見が異なる", strokes: 11 },
+    { band: 6, kanji: "遺", reading: "い", word: "遺産", strokes: 15 },
+    { band: 6, kanji: "域", reading: "いき", word: "地域", strokes: 11 },
+    { band: 6, kanji: "宇", reading: "う", word: "宇宙", strokes: 6 },
+    { band: 6, kanji: "映", reading: "うつる", word: "鏡に映る", strokes: 9 },
+    { band: 6, kanji: "延", reading: "のびる", word: "期限が延びる", strokes: 8 },
+    { band: 7, kanji: "概", reading: "がい", word: "概要", strokes: 14 },
+    { band: 7, kanji: "括", reading: "かつ", word: "包括", strokes: 9 },
+    { band: 7, kanji: "据", reading: "すえる", word: "据える", strokes: 11 },
+    { band: 7, kanji: "薦", reading: "すすめる", word: "本を薦める", strokes: 16 },
+    { band: 7, kanji: "遂", reading: "とげる", word: "役目を遂げる", strokes: 12 },
+    { band: 7, kanji: "乏", reading: "とぼしい", word: "資源が乏しい", strokes: 4 },
+    { band: 8, kanji: "曖", reading: "あい", word: "曖昧", strokes: 17 },
+    { band: 8, kanji: "昧", reading: "まい", word: "曖昧", strokes: 9 },
+    { band: 8, kanji: "憂", reading: "うれえる", word: "将来を憂える", strokes: 15 },
+    { band: 8, kanji: "慮", reading: "りょ", word: "考慮", strokes: 15 },
+    { band: 8, kanji: "顕", reading: "けん", word: "顕著", strokes: 18 },
+    { band: 8, kanji: "著", reading: "あらわす", word: "本を著す", strokes: 11 },
+    { band: 9, kanji: "把", reading: "は", word: "把握", strokes: 7 },
+    { band: 9, kanji: "握", reading: "にぎる", word: "手を握る", strokes: 12 },
+    { band: 9, kanji: "矛", reading: "ほこ", word: "矛", strokes: 5 },
+    { band: 9, kanji: "盾", reading: "たて", word: "盾", strokes: 9 },
+    { band: 9, kanji: "凝", reading: "こる", word: "肩が凝る", strokes: 16 },
+    { band: 9, kanji: "縮", reading: "ちぢむ", word: "布が縮む", strokes: 17 },
+    { band: 10, kanji: "脈", reading: "みゃく", word: "脈絡", strokes: 10 },
+    { band: 10, kanji: "絡", reading: "からむ", word: "糸が絡む", strokes: 9 },
+    { band: 10, kanji: "培", reading: "つちかう", word: "能力を培う", strokes: 11 },
+    { band: 10, kanji: "養", reading: "やしなう", word: "家族を養う", strokes: 15 },
+    { band: 10, kanji: "媒", reading: "ばい", word: "媒体", strokes: 12 },
+    { band: 10, kanji: "謙", reading: "けん", word: "謙虚", strokes: 17 },
   ];
 
   const readingProblems = [
-    { kanji: "希望", answer: "きぼう", choices: ["きぼう", "きもう", "きほう", "のぞみ"] },
-    { kanji: "緑茶", answer: "りょくちゃ", choices: ["りょくちゃ", "みどりちゃ", "りくちゃ", "ろくちゃ"] },
-    { kanji: "深海", answer: "しんかい", choices: ["しんかい", "ふかうみ", "じんかい", "しんがい"] },
-    { kanji: "農業", answer: "のうぎょう", choices: ["のうぎょう", "のぎょう", "のうごう", "のうきょう"] },
-    { kanji: "登山", answer: "とざん", choices: ["とざん", "とうざん", "のぼりやま", "とさん"] },
-    { kanji: "温度", answer: "おんど", choices: ["おんど", "あつど", "おんたく", "うんど"] },
-    { kanji: "整理", answer: "せいり", choices: ["せいり", "せいじ", "しょうり", "せり"] },
-    { kanji: "植物", answer: "しょくぶつ", choices: ["しょくぶつ", "うえもの", "しょくもの", "しょくもつ"] },
-    { kanji: "薬局", answer: "やっきょく", choices: ["やっきょく", "くすりきょく", "やくきょく", "やっきょう"] },
-    { kanji: "文章", answer: "ぶんしょう", choices: ["ぶんしょう", "もんしょう", "ぶんそう", "ふみあき"] },
-    { kanji: "空港", answer: "くうこう", choices: ["くうこう", "そらみなと", "くこう", "くうごう"] },
-    { kanji: "歩道橋", answer: "ほどうきょう", choices: ["ほどうきょう", "ほどうばし", "ふどうきょう", "ほどうはし"] },
-  ];
-
-  const mathProblems = [
-    { question: "36 + 27", answer: "63", hint: "30と20、6と7に分けよう" },
-    { question: "84 − 39", answer: "45", hint: "39を40にして考えてみよう" },
-    { question: "7 × 8", answer: "56", hint: "7のだんを思い出そう" },
-    { question: "96 ÷ 8", answer: "12", hint: "8を何回たすと96？" },
-    { question: "48 + 35", answer: "83", hint: "48に30、そのあと5をたそう" },
-    { question: "120 − 47", answer: "73", hint: "47を40と7に分けよう" },
-    { question: "9 × 6", answer: "54", hint: "10×6から6をひこう" },
-    { question: "144 ÷ 12", answer: "12", hint: "12×12を思い出そう" },
-    { question: "75 + 68", answer: "143", hint: "75に25をたして100を作ろう" },
-    { question: "203 − 89", answer: "114", hint: "89を90にして考えよう" },
-    { question: "25 × 4", answer: "100", hint: "25が4つで100" },
-    { question: "180 ÷ 15", answer: "12", hint: "15×10に、15をあと2つ" },
+    { band: 1, kanji: "山", answer: "やま", choices: ["やま", "かわ", "そら", "もり"] },
+    { band: 1, kanji: "川", answer: "かわ", choices: ["かわ", "やま", "うみ", "みち"] },
+    { band: 1, kanji: "人", answer: "ひと", choices: ["ひと", "いぬ", "こども", "おとな"] },
+    { band: 1, kanji: "大きい", answer: "おおきい", choices: ["おおきい", "ちいさい", "たかい", "ひろい"] },
+    { band: 1, kanji: "日", answer: "ひ", choices: ["ひ", "つき", "ほし", "そら"] },
+    { band: 1, kanji: "月", answer: "つき", choices: ["つき", "ひ", "よる", "ほし"] },
+    { band: 2, kanji: "海", answer: "うみ", choices: ["うみ", "かわ", "いけ", "そら"] },
+    { band: 2, kanji: "春", answer: "はる", choices: ["はる", "なつ", "あき", "ふゆ"] },
+    { band: 2, kanji: "夏", answer: "なつ", choices: ["なつ", "はる", "あき", "ふゆ"] },
+    { band: 2, kanji: "秋", answer: "あき", choices: ["あき", "はる", "なつ", "ふゆ"] },
+    { band: 2, kanji: "冬", answer: "ふゆ", choices: ["ふゆ", "はる", "なつ", "あき"] },
+    { band: 2, kanji: "星", answer: "ほし", choices: ["ほし", "つき", "そら", "くも"] },
+    { band: 3, kanji: "緑茶", answer: "りょくちゃ", choices: ["りょくちゃ", "みどりちゃ", "りくちゃ", "ろくちゃ"] },
+    { band: 3, kanji: "深海", answer: "しんかい", choices: ["しんかい", "ふかうみ", "じんかい", "しんがい"] },
+    { band: 3, kanji: "農業", answer: "のうぎょう", choices: ["のうぎょう", "のぎょう", "のうごう", "のうきょう"] },
+    { band: 3, kanji: "登山", answer: "とざん", choices: ["とざん", "とうざん", "のぼりやま", "とさん"] },
+    { band: 3, kanji: "空港", answer: "くうこう", choices: ["くうこう", "そらみなと", "くこう", "くうごう"] },
+    { band: 3, kanji: "歩道橋", answer: "ほどうきょう", choices: ["ほどうきょう", "ほどうばし", "ふどうきょう", "ほどうはし"] },
+    { band: 4, kanji: "愛情", answer: "あいじょう", choices: ["あいじょう", "あいしょう", "えじょう", "あいせい"] },
+    { band: 4, kanji: "案内", answer: "あんない", choices: ["あんない", "あない", "あんだい", "あんうち"] },
+    { band: 4, kanji: "位置", answer: "いち", choices: ["いち", "いじ", "くらい", "いところ"] },
+    { band: 4, kanji: "印刷", answer: "いんさつ", choices: ["いんさつ", "いんしつ", "しるしずり", "いんざつ"] },
+    { band: 4, kanji: "衣服", answer: "いふく", choices: ["いふく", "ころもふく", "いぶく", "えふく"] },
+    { band: 4, kanji: "英語", answer: "えいご", choices: ["えいご", "えご", "ひでご", "えいかた"] },
+    { band: 5, kanji: "圧力", answer: "あつりょく", choices: ["あつりょく", "あつりき", "おうりょく", "あっりょく"] },
+    { band: 5, kanji: "移動", answer: "いどう", choices: ["いどう", "うつどう", "いとう", "えどう"] },
+    { band: 5, kanji: "原因", answer: "げんいん", choices: ["げんいん", "げんにん", "はらいん", "げいいん"] },
+    { band: 5, kanji: "永遠", answer: "えいえん", choices: ["えいえん", "ながとお", "えいおん", "えんえい"] },
+    { band: 5, kanji: "営業", answer: "えいぎょう", choices: ["えいぎょう", "えいごう", "いぎょう", "えいきょう"] },
+    { band: 5, kanji: "衛生", answer: "えいせい", choices: ["えいせい", "えせい", "えいしょう", "えいなま"] },
+    { band: 6, kanji: "異常", answer: "いじょう", choices: ["いじょう", "ことじょう", "いしょう", "いじょ"] },
+    { band: 6, kanji: "遺産", answer: "いさん", choices: ["いさん", "ゆいさん", "いざん", "のこりもの"] },
+    { band: 6, kanji: "地域", answer: "ちいき", choices: ["ちいき", "じいき", "ちえき", "ちいぎ"] },
+    { band: 6, kanji: "宇宙", answer: "うちゅう", choices: ["うちゅう", "うそら", "ゆちゅう", "うじゅう"] },
+    { band: 6, kanji: "映画", answer: "えいが", choices: ["えいが", "うつしえ", "えが", "えいかく"] },
+    { band: 6, kanji: "延長", answer: "えんちょう", choices: ["えんちょう", "のびなが", "えんしょう", "えんじょう"] },
+    { band: 7, kanji: "概要", answer: "がいよう", choices: ["がいよう", "かいよう", "がいりゃく", "がいしょう"] },
+    { band: 7, kanji: "包括", answer: "ほうかつ", choices: ["ほうかつ", "ほうがつ", "つつみかつ", "ほうけつ"] },
+    { band: 7, kanji: "据える", answer: "すえる", choices: ["すえる", "そえる", "こえる", "たえる"] },
+    { band: 7, kanji: "推薦", answer: "すいせん", choices: ["すいせん", "すいぜん", "ついせん", "すいしょう"] },
+    { band: 7, kanji: "遂行", answer: "すいこう", choices: ["すいこう", "ついこう", "すいぎょう", "すいごう"] },
+    { band: 7, kanji: "乏しい", answer: "とぼしい", choices: ["とぼしい", "まずしい", "さびしい", "ほしい"] },
+    { band: 8, kanji: "曖昧", answer: "あいまい", choices: ["あいまい", "あいみ", "えいまい", "あんまい"] },
+    { band: 8, kanji: "憂慮", answer: "ゆうりょ", choices: ["ゆうりょ", "うりょ", "ゆうろ", "ゆりょ"] },
+    { band: 8, kanji: "顕著", answer: "けんちょ", choices: ["けんちょ", "けんしょ", "げんちょ", "けんじゃく"] },
+    { band: 8, kanji: "把握", answer: "はあく", choices: ["はあく", "ばあく", "はにぎり", "はかく"] },
+    { band: 8, kanji: "矛盾", answer: "むじゅん", choices: ["むじゅん", "ほこたて", "むしゅん", "ぼうじゅん"] },
+    { band: 8, kanji: "著しい", answer: "いちじるしい", choices: ["いちじるしい", "あらわしい", "ちょしい", "めずらしい"] },
+    { band: 9, kanji: "凝縮", answer: "ぎょうしゅく", choices: ["ぎょうしゅく", "ぎょうしゅう", "こりちぢみ", "ぎょしゅく"] },
+    { band: 9, kanji: "脈絡", answer: "みゃくらく", choices: ["みゃくらく", "みゃくかく", "みらく", "みゃくろ"] },
+    { band: 9, kanji: "培養", answer: "ばいよう", choices: ["ばいよう", "つちよう", "はいよう", "ばいしょう"] },
+    { band: 9, kanji: "媒体", answer: "ばいたい", choices: ["ばいたい", "まいたい", "ばいからだ", "ばいだい"] },
+    { band: 9, kanji: "謙虚", answer: "けんきょ", choices: ["けんきょ", "けんこ", "きょうきょ", "けんきょう"] },
+    { band: 9, kanji: "養う", answer: "やしなう", choices: ["やしなう", "つちかう", "になう", "うしなう"] },
+    { band: 10, kanji: "抽象", answer: "ちゅうしょう", choices: ["ちゅうしょう", "ちゅうぞう", "ちゅしょう", "ぬきぞう"] },
+    { band: 10, kanji: "論理", answer: "ろんり", choices: ["ろんり", "りんり", "ろんじ", "ろんことわり"] },
+    { band: 10, kanji: "俯瞰", answer: "ふかん", choices: ["ふかん", "ふがん", "はいかん", "ふけん"] },
+    { band: 10, kanji: "踏襲", answer: "とうしゅう", choices: ["とうしゅう", "ふしゅう", "とうじゅう", "ふみおそい"] },
+    { band: 10, kanji: "漸進", answer: "ぜんしん", choices: ["ぜんしん", "ざんしん", "せんしん", "ぜんじん"] },
+    { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
   const levelGroups = [
@@ -79,6 +160,7 @@
     learnerNames: [...DEFAULT_NAMES],
     namesSource: "初期名簿",
     profiles: {},
+    lastFirstByMode: { write: "", read: "", math: "", flash: "" },
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
     placementOpen: false,
@@ -136,6 +218,13 @@
           const cleanName = String(name).trim().slice(0, 20);
           if (!cleanName || !profile || typeof profile !== "object") return;
           state.profiles[cleanName] = normalizeProfile(profile);
+        });
+      }
+      if (saved.lastFirstByMode && typeof saved.lastFirstByMode === "object") {
+        Object.keys(state.lastFirstByMode).forEach((mode) => {
+          if (typeof saved.lastFirstByMode[mode] === "string") {
+            state.lastFirstByMode[mode] = saved.lastFirstByMode[mode];
+          }
         });
       }
       if (saved.counts && typeof saved.counts === "object") {
@@ -273,6 +362,7 @@
           learnerName: state.learnerName,
           learnerNames: state.learnerNames,
           profiles: state.profiles,
+          lastFirstByMode: state.lastFirstByMode,
           counts: state.counts,
           checkpointEvery: state.checkpointEvery,
         }),
@@ -289,6 +379,13 @@
   function gradeForLevel(level) {
     const group = levelGroups.find((item) => level >= item.start && level <= item.end);
     return group ? group.label : "高校入試チャレンジ";
+  }
+
+  function bandForLevel(level) {
+    const index = levelGroups.findIndex(
+      (group) => level >= group.start && level <= group.end,
+    );
+    return index >= 0 ? index + 1 : levelGroups.length;
   }
 
   function displayName() {
@@ -425,9 +522,12 @@
 
   function startSession(mode) {
     stopFlash();
+    const problems = createSessionProblems(mode, state.counts[mode], state.level);
     state.session = {
       mode,
       total: state.counts[mode],
+      levelAtStart: state.level,
+      problems,
       completed: 0,
       correct: 0,
       attempts: 0,
@@ -436,6 +536,7 @@
     state.view = mode;
     resetQuestionState();
     if (mode === "flash") prepareFlashQuestion();
+    saveProgress();
     render();
     window.scrollTo({ top: 0, left: 0 });
   }
@@ -455,15 +556,16 @@
   }
 
   function lessonLevelRow(extra = "") {
+    const lessonLevel = state.session?.levelAtStart ?? state.level;
     return `
       <div class="lesson-level-row">
-        <span>Lv.${state.level}</span><span>${gradeForLevel(state.level)}</span>${extra}
+        <span>Lv.${lessonLevel}</span><span>${gradeForLevel(lessonLevel)}</span>${extra}
       </div>
     `;
   }
 
   function writeTemplate() {
-    const problem = kanjiProblems[state.session.completed % kanjiProblems.length];
+    const problem = currentSessionProblem();
     return `
       <div class="screen lesson-screen kanji-lesson">
         ${lessonHeader("漢字を書く")}
@@ -549,7 +651,7 @@
   }
 
   function readTemplate() {
-    const problem = readingProblems[state.session.completed % readingProblems.length];
+    const problem = currentSessionProblem();
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
@@ -586,7 +688,7 @@
   }
 
   function mathTemplate() {
-    const problem = mathProblems[state.session.completed % mathProblems.length];
+    const problem = currentSessionProblem();
     const message =
       state.mathResult === "wrong"
         ? '<p class="result-message">おしい！ もう一度考えよう</p>'
@@ -599,7 +701,7 @@
         ${lessonLevelRow('<span class="timer">◷ テンポよく</span>')}
         <section class="math-question">
           <p class="eyebrow">こたえはいくつ？</p>
-          <h1>${problem.question}</h1>
+          <h1 class="${problem.question.length > 12 ? "compact" : ""}">${problem.question}</h1>
           <div class="answer-box ${state.mathResult}">${state.mathAnswer || "<span>?</span>"}</div>
           ${message}
         </section>
@@ -687,9 +789,25 @@
   }
 
   function prepareFlashQuestion() {
-    const length = state.level >= 69 ? 5 : state.level >= 33 ? 4 : 3;
-    const max = state.level >= 69 ? 30 : state.level >= 33 ? 20 : 9;
-    state.flashSequence = Array.from({ length }, () => randomInt(1, max));
+    const band = bandForLevel(state.session?.levelAtStart ?? state.level);
+    const lengths = [3, 3, 3, 4, 4, 5, 5, 6, 6, 7];
+    const maximums = [5, 10, 20, 30, 50, 75, 99, 99, 150, 200];
+    const length = lengths[band - 1];
+    const max = maximums[band - 1];
+    let sequence = [];
+    let signature = "";
+    let attempts = 0;
+    do {
+      sequence = Array.from({ length }, () => randomInt(1, max));
+      signature = sequence.join("+");
+      attempts += 1;
+    } while (
+      state.session?.completed === 0 &&
+      signature === state.lastFirstByMode.flash &&
+      attempts < 20
+    );
+    state.flashSequence = sequence;
+    if (state.session?.completed === 0) state.lastFirstByMode.flash = signature;
     state.flashPhase = "ready";
     state.flashCue = "3";
     state.flashAnswer = "";
@@ -775,12 +893,395 @@
     return result;
   }
 
+  function problemSignature(mode, problem) {
+    if (!problem) return "";
+    if (mode === "write") return problem.kanji;
+    if (mode === "read") return `${problem.kanji}:${problem.answer}`;
+    return `${problem.question}:${problem.answer}`;
+  }
+
+  function createSessionProblems(mode, total, level) {
+    if (mode === "flash") return [];
+    if (mode === "math") {
+      const result = [];
+      const used = new Set();
+      while (result.length < total) {
+        let problem = generateMathProblem(level);
+        let signature = problemSignature(mode, problem);
+        let attempts = 0;
+        while (
+          (used.has(signature) ||
+            (result.length === 0 && signature === state.lastFirstByMode.math)) &&
+          attempts < 40
+        ) {
+          problem = generateMathProblem(level);
+          signature = problemSignature(mode, problem);
+          attempts += 1;
+        }
+        used.add(signature);
+        result.push(problem);
+      }
+      state.lastFirstByMode.math = problemSignature(mode, result[0]);
+      return result;
+    }
+
+    const band = bandForLevel(level);
+    const bank = mode === "write" ? kanjiProblems : readingProblems;
+    const pool = bank.filter((problem) => problem.band === band);
+    const result = [];
+    while (result.length < total) {
+      const cycle = shuffled(pool);
+      if (
+        result.length &&
+        problemSignature(mode, result[result.length - 1]) ===
+          problemSignature(mode, cycle[0])
+      ) {
+        cycle.push(cycle.shift());
+      }
+      result.push(...cycle.slice(0, total - result.length));
+    }
+    if (
+      result.length > 1 &&
+      problemSignature(mode, result[0]) === state.lastFirstByMode[mode]
+    ) {
+      const swapIndex = result.findIndex(
+        (problem, index) =>
+          index > 0 &&
+          problemSignature(mode, problem) !== state.lastFirstByMode[mode],
+      );
+      if (swapIndex > 0) [result[0], result[swapIndex]] = [result[swapIndex], result[0]];
+    }
+    state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
+    return result;
+  }
+
+  function currentSessionProblem() {
+    const session = state.session;
+    const queued = session?.problems?.[session.completed];
+    if (queued) return queued;
+    if (session?.mode === "write") {
+      return kanjiProblems.find((problem) => problem.band === bandForLevel(state.level));
+    }
+    if (session?.mode === "read") {
+      return readingProblems.find((problem) => problem.band === bandForLevel(state.level));
+    }
+    return generateMathProblem(state.level);
+  }
+
+  function generateMathProblem(level) {
+    const band = bandForLevel(level);
+    const choice = randomInt(0, 3);
+
+    if (band === 1) {
+      const max = level <= 3 ? 5 : level <= 6 ? 10 : 20;
+      if (choice % 2 === 0) {
+        const left = randomInt(1, max - 1);
+        const right = randomInt(1, max - left);
+        return {
+          question: `${left} + ${right}`,
+          answer: String(left + right),
+          hint: `${left}から順番に数えてみよう`,
+        };
+      }
+      const left = randomInt(2, max);
+      const right = randomInt(1, left - 1);
+      return {
+        question: `${left} − ${right}`,
+        answer: String(left - right),
+        hint: `${right}こ分だけ戻ってみよう`,
+      };
+    }
+
+    if (band === 2) {
+      if (level >= 16 && choice === 3) {
+        const left = randomInt(2, 9);
+        const right = randomInt(2, 9);
+        return {
+          question: `${left} × ${right}`,
+          answer: String(left * right),
+          hint: `${left}のだんを思い出そう`,
+        };
+      }
+      const max = level < 16 ? 50 : 100;
+      if (choice % 2 === 0) {
+        const left = randomInt(10, max - 10);
+        const right = randomInt(5, max - left);
+        return {
+          question: `${left} + ${right}`,
+          answer: String(left + right),
+          hint: "10のまとまりと、1のまとまりに分けよう",
+        };
+      }
+      const left = randomInt(20, max);
+      const right = randomInt(5, left - 1);
+      return {
+        question: `${left} − ${right}`,
+        answer: String(left - right),
+        hint: "10のまとまりから考えてみよう",
+      };
+    }
+
+    if (band === 3) {
+      if (choice === 0) {
+        const left = randomInt(25, 199);
+        const right = randomInt(12, 99);
+        return {
+          question: `${left} + ${right}`,
+          answer: String(left + right),
+          hint: "百・十・一の位に分けよう",
+        };
+      }
+      if (choice === 1) {
+        const left = randomInt(80, 250);
+        const right = randomInt(12, left - 1);
+        return {
+          question: `${left} − ${right}`,
+          answer: String(left - right),
+          hint: "近いきりのよい数を使おう",
+        };
+      }
+      const divisor = randomInt(2, 9);
+      const quotient = randomInt(2, 9);
+      return choice === 2
+        ? {
+            question: `${divisor} × ${quotient}`,
+            answer: String(divisor * quotient),
+            hint: `${divisor}のだんを思い出そう`,
+          }
+        : {
+            question: `${divisor * quotient} ÷ ${divisor}`,
+            answer: String(quotient),
+            hint: `${divisor}を何回かけると${divisor * quotient}？`,
+          };
+    }
+
+    if (band === 4) {
+      if (choice === 0) {
+        const left = randomInt(120, 650);
+        const right = randomInt(80, 300);
+        return {
+          question: `${left} + ${right}`,
+          answer: String(left + right),
+          hint: "百の位から順にまとめよう",
+        };
+      }
+      if (choice === 1) {
+        const left = randomInt(300, 900);
+        const right = randomInt(80, left - 1);
+        return {
+          question: `${left} − ${right}`,
+          answer: String(left - right),
+          hint: "引く数をきりのよい数にしよう",
+        };
+      }
+      const factor = randomInt(2, 9);
+      const value = randomInt(12, 89);
+      return choice === 2
+        ? {
+            question: `${value} × ${factor}`,
+            answer: String(value * factor),
+            hint: `${value}を十の位と一の位に分けよう`,
+          }
+        : {
+            question: `${value * factor} ÷ ${factor}`,
+            answer: String(value),
+            hint: "かけ算に直して考えよう",
+          };
+    }
+
+    if (band === 5) {
+      if (choice === 0) {
+        const left = randomInt(12, 35);
+        const right = randomInt(11, 24);
+        return {
+          question: `${left} × ${right}`,
+          answer: String(left * right),
+          hint: `${right}を10と残りに分けよう`,
+        };
+      }
+      if (choice === 1) {
+        const divisor = randomInt(4, 20);
+        const quotient = randomInt(5, 40);
+        return {
+          question: `${divisor * quotient} ÷ ${divisor}`,
+          answer: String(quotient),
+          hint: `${divisor}の何倍かを考えよう`,
+        };
+      }
+      const left = randomInt(350, 1800);
+      const right = randomInt(120, 900);
+      return choice === 2
+        ? {
+            question: `${left} + ${right}`,
+            answer: String(left + right),
+            hint: "百のまとまりを先に計算しよう",
+          }
+        : {
+            question: `${left + right} − ${right}`,
+            answer: String(left),
+            hint: "引く数を分けて計算しよう",
+          };
+    }
+
+    if (band === 6) {
+      if (choice === 0) {
+        const percent = [10, 20, 25, 50][randomInt(0, 3)];
+        const base = randomInt(2, 20) * 100;
+        return {
+          question: `${base} の ${percent}%`,
+          answer: String((base * percent) / 100),
+          hint: `${percent}%が何分のいくつか考えよう`,
+        };
+      }
+      if (choice === 1) {
+        const left = randomInt(12, 45);
+        const right = randomInt(5, 25);
+        const factor = randomInt(2, 6);
+        return {
+          question: `(${left} + ${right}) × ${factor}`,
+          answer: String((left + right) * factor),
+          hint: "かっこの中を先に計算しよう",
+        };
+      }
+      if (choice === 2) {
+        const divisor = randomInt(12, 30);
+        const quotient = randomInt(12, 60);
+        return {
+          question: `${divisor * quotient} ÷ ${divisor}`,
+          answer: String(quotient),
+          hint: "わる数の何倍かを見つけよう",
+        };
+      }
+      const average = randomInt(20, 100);
+      const gap = randomInt(2, 15);
+      return {
+        question: `(${average - gap} + ${average} + ${average + gap}) ÷ 3`,
+        answer: String(average),
+        hint: "3つの数の真ん中に注目しよう",
+      };
+    }
+
+    if (band === 7) {
+      if (choice === 0) {
+        const answer = randomInt(8, 60);
+        const add = randomInt(10, 50);
+        return {
+          question: `x + ${add} = ${answer + add}`,
+          answer: String(answer),
+          hint: "右の数から足した数を引こう",
+        };
+      }
+      if (choice === 1) {
+        const factor = randomInt(3, 12);
+        const answer = randomInt(4, 30);
+        return {
+          question: `${factor} × x = ${factor * answer}`,
+          answer: String(answer),
+          hint: "右の数を係数で割ろう",
+        };
+      }
+      const left = randomInt(12, 40);
+      const right = randomInt(3, 12);
+      const subtract = randomInt(5, 30);
+      return {
+        question: `${left} × ${right} − ${subtract}`,
+        answer: String(left * right - subtract),
+        hint: "かけ算を先に計算しよう",
+      };
+    }
+
+    if (band === 8) {
+      if (choice === 0) {
+        const value = randomInt(11, 30);
+        return {
+          question: `${value}²`,
+          answer: String(value * value),
+          hint: `${value} × ${value}を計算しよう`,
+        };
+      }
+      if (choice === 1) {
+        const value = randomInt(8, 30);
+        return {
+          question: `√${value * value}`,
+          answer: String(value),
+          hint: "同じ数を2回かけてできる数を探そう",
+        };
+      }
+      const factor = randomInt(2, 9);
+      const answer = randomInt(5, 35);
+      const add = randomInt(4, 25);
+      return {
+        question: `${factor} × x + ${add} = ${factor * answer + add}`,
+        answer: String(answer),
+        hint: "足した数を引いてから係数で割ろう",
+      };
+    }
+
+    if (band === 9) {
+      if (choice === 0) {
+        const left = randomInt(18, 60);
+        const right = randomInt(4, 15);
+        const factor = randomInt(3, 9);
+        return {
+          question: `(${left} − ${right}) × ${factor}`,
+          answer: String((left - right) * factor),
+          hint: "かっこの中を先に計算しよう",
+        };
+      }
+      if (choice === 1) {
+        const left = randomInt(15, 40);
+        const right = randomInt(3, left - 1);
+        return {
+          question: `(${left} + ${right}) × (${left} − ${right})`,
+          answer: String((left + right) * (left - right)),
+          hint: "2つのかっこを別々に計算しよう",
+        };
+      }
+      const base = randomInt(3, 20) * 200;
+      const percent = [15, 20, 30, 40][randomInt(0, 3)];
+      return {
+        question: `${base} の ${percent}%`,
+        answer: String((base * percent) / 100),
+        hint: "10%を作ってから必要な倍数にしよう",
+      };
+    }
+
+    if (choice === 0) {
+      const left = randomInt(25, 80);
+      const right = randomInt(8, 24);
+      const factor = randomInt(4, 12);
+      return {
+        question: `${left} × ${factor} + ${right}²`,
+        answer: String(left * factor + right * right),
+        hint: "累乗とかけ算を先に計算しよう",
+      };
+    }
+    if (choice === 1) {
+      const answer = randomInt(12, 80);
+      const factor = randomInt(4, 15);
+      const add = randomInt(20, 90);
+      return {
+        question: `(${factor} × x) − ${add} = ${factor * answer - add}`,
+        answer: String(answer),
+        hint: "両辺に同じ数を足してから割ろう",
+      };
+    }
+    const left = randomInt(30, 90);
+    const right = randomInt(10, 29);
+    const divisor = randomInt(2, 9);
+    return {
+      question: `(${left + right} − ${right}) × ${divisor}`,
+      answer: String(left * divisor),
+      hint: "かっこの中を整理してからかけよう",
+    };
+  }
+
   function prepareReadingChoices() {
     if (!state.session || state.session.mode !== "read") {
       state.readingChoices = [];
       return;
     }
-    const problem = readingProblems[state.session.completed % readingProblems.length];
+    const problem = currentSessionProblem();
     const possibleIndexes = problem.choices
       .map((_, index) => index)
       .filter((index) => index !== state.lastReadingAnswerIndex);
@@ -1097,7 +1598,7 @@
 
     const readingButton = event.target.closest("[data-reading]");
     if (readingButton && !state.readingChecked) {
-      const problem = readingProblems[state.session.completed % readingProblems.length];
+      const problem = currentSessionProblem();
       state.readingChoice = readingButton.dataset.reading;
       state.readingChecked = true;
       state.session.attempts += 1;
@@ -1177,7 +1678,7 @@
         finishQuestion(true);
       },
       "next-reading"() {
-        const problem = readingProblems[state.session.completed % readingProblems.length];
+        const problem = currentSessionProblem();
         const wasCorrect = state.readingChoice === problem.answer;
         state.session.completed += 1;
         if (state.session.completed >= state.session.total) {
@@ -1204,7 +1705,7 @@
       },
       "submit-math"() {
         if (!state.mathAnswer) return;
-        const problem = mathProblems[state.session.completed % mathProblems.length];
+        const problem = currentSessionProblem();
         state.session.attempts += 1;
         state.mathResult = state.mathAnswer === problem.answer ? "correct" : "wrong";
         if (state.mathResult === "correct") {
