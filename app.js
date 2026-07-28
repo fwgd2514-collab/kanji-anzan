@@ -9,6 +9,7 @@
     math: { label: "暗算する", short: "暗算", xp: 16 },
     flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14 },
   };
+  const SKILL_MODES = Object.keys(MODE_INFO);
   const DEFAULT_COUNTS = { write: 10, read: 10, math: 10, flash: 10 };
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
 
@@ -163,6 +164,8 @@
     lastFirstByMode: { write: "", read: "", math: "", flash: "" },
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
+    levelViewMode: "write",
+    placementMode: "write",
     placementOpen: false,
     checkpointOpen: false,
     toast: "",
@@ -306,7 +309,6 @@
 
   function applyLearnerNames(names, source) {
     const changed = state.learnerNames.join("\n") !== names.join("\n");
-    syncActiveProfile();
     state.learnerNames = [...names];
     state.namesSource = source;
     state.learnerNames.forEach((name) => ensureProfile(name));
@@ -319,12 +321,42 @@
     return changed;
   }
 
-  function normalizeProfile(profile) {
+  function normalizeSkill(skill, fallbackLevel = 1, fallbackXp = 0, fallbackUpdatedAt = 0) {
     return {
-      level: clamp(profile?.level ?? 1, 1, 100),
-      xp: clamp(profile?.xp ?? 0, 0, 100),
+      level: clamp(skill?.level ?? fallbackLevel, 1, 100),
+      xp: clamp(skill?.xp ?? fallbackXp, 0, 100),
+      updatedAt: Math.max(
+        0,
+        Math.floor(Number(skill?.updatedAt ?? fallbackUpdatedAt) || 0),
+      ),
+    };
+  }
+
+  function normalizeProfile(profile) {
+    const legacyLevel = clamp(profile?.level ?? 1, 1, 100);
+    const legacyXp = clamp(profile?.xp ?? 0, 0, 100);
+    const legacyUpdatedAt = Math.max(
+      0,
+      Math.floor(Number(profile?.updatedAt) || 0),
+    );
+    const rawSkills =
+      profile?.skills && typeof profile.skills === "object" ? profile.skills : {};
+    const skills = {};
+    SKILL_MODES.forEach((mode) => {
+      skills[mode] = normalizeSkill(
+        rawSkills[mode],
+        legacyLevel,
+        legacyXp,
+        legacyUpdatedAt,
+      );
+    });
+    return {
+      skills,
       streak: Math.max(0, Number(profile?.streak) || 0),
-      updatedAt: Math.max(0, Math.floor(Number(profile?.updatedAt) || 0)),
+      updatedAt: Math.max(
+        legacyUpdatedAt,
+        ...SKILL_MODES.map((mode) => skills[mode].updatedAt),
+      ),
     };
   }
 
@@ -335,46 +367,62 @@
     return state.profiles[name];
   }
 
-  function syncActiveProfile() {
-    if (!state.learnerName) return false;
-    const previous = state.profiles[state.learnerName];
-    const changed =
-      !previous ||
-      previous.level !== state.level ||
-      previous.xp !== state.xp ||
-      previous.streak !== state.streak;
-    state.profiles[state.learnerName] = normalizeProfile({
-      level: state.level,
-      xp: state.xp,
-      streak: state.streak,
-      updatedAt: changed ? Date.now() : previous.updatedAt,
-    });
-    return changed;
+  function activeSkill(mode) {
+    const profile = ensureProfile(state.learnerName);
+    const safeMode = SKILL_MODES.includes(mode) ? mode : "write";
+    return profile.skills[safeMode];
+  }
+
+  function overallLevel(profile = ensureProfile(state.learnerName)) {
+    const normalized = normalizeProfile(profile);
+    return clamp(
+      Math.round(
+        SKILL_MODES.reduce(
+          (sum, mode) => sum + normalized.skills[mode].level,
+          0,
+        ) / SKILL_MODES.length,
+      ),
+      1,
+      100,
+    );
+  }
+
+  function overallXp(profile = ensureProfile(state.learnerName)) {
+    const normalized = normalizeProfile(profile);
+    return clamp(
+      Math.round(
+        SKILL_MODES.reduce(
+          (sum, mode) => sum + normalized.skills[mode].xp,
+          0,
+        ) / SKILL_MODES.length,
+      ),
+      0,
+      100,
+    );
   }
 
   function applyActiveProfile() {
     const profile = ensureProfile(state.learnerName);
-    state.level = profile.level;
-    state.xp = profile.xp;
+    state.level = overallLevel(profile);
+    state.xp = overallXp(profile);
     state.streak = profile.streak;
   }
 
   function activateLearner(name, persist = true) {
     const cleanName = String(name || "").trim().slice(0, 20);
     if (!cleanName || !state.learnerNames.includes(cleanName)) return;
-    syncActiveProfile();
     state.learnerName = cleanName;
     applyActiveProfile();
     if (persist) saveProgress();
   }
 
-  function saveProgress() {
-    const profileChanged = syncActiveProfile();
+  function saveProgress(changedMode = "") {
+    applyActiveProfile();
     try {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          version: 2,
+          version: 3,
           level: state.level,
           xp: state.xp,
           streak: state.streak,
@@ -389,7 +437,9 @@
     } catch {
       // 保存できない環境では画面内だけで学習を続ける。
     }
-    if (profileChanged) queueCloudSave(state.learnerName);
+    if (SKILL_MODES.includes(changedMode)) {
+      queueCloudSave(state.learnerName, changedMode);
+    }
   }
 
   function setCloudStatus(message, tone = "local") {
@@ -438,11 +488,39 @@
           return;
         }
         const remote = normalizeProfile(remoteValue);
+        const merged = normalizeProfile(local);
+        let needsUpload =
+          !remoteValue.skills || typeof remoteValue.skills !== "object";
+
+        SKILL_MODES.forEach((mode) => {
+          const remoteSkill = remote.skills[mode];
+          const localSkill = local.skills[mode];
+          const remoteHasSkill = Boolean(remoteValue.skills?.[mode]);
+          const remoteHasLegacyLevel = Number.isFinite(Number(remoteValue.level));
+          if (
+            (remoteHasSkill || remoteHasLegacyLevel) &&
+            remoteSkill.updatedAt >= localSkill.updatedAt
+          ) {
+            merged.skills[mode] = remoteSkill;
+          } else {
+            merged.skills[mode] = localSkill;
+            needsUpload = true;
+          }
+        });
+
         if (remote.updatedAt >= local.updatedAt) {
-          state.profiles[name] = remote;
+          merged.streak = remote.streak;
         } else {
-          uploads.push([name, local]);
+          merged.streak = local.streak;
+          needsUpload = true;
         }
+        merged.updatedAt = Math.max(
+          local.updatedAt,
+          remote.updatedAt,
+          ...SKILL_MODES.map((mode) => merged.skills[mode].updatedAt),
+        );
+        state.profiles[name] = merged;
+        if (needsUpload) uploads.push([name, merged]);
       });
       applyActiveProfile();
       saveProgress();
@@ -459,21 +537,29 @@
     }
   }
 
-  function queueCloudSave(name) {
-    if (!state.cloudReady || state.cloudApplying || !name) return;
-    window.clearTimeout(state.cloudSaveTimers[name]);
-    state.cloudSaveTimers[name] = window.setTimeout(() => {
-      pushCloudProfile(name);
+  function queueCloudSave(name, mode) {
+    if (
+      !state.cloudReady ||
+      state.cloudApplying ||
+      !name ||
+      !SKILL_MODES.includes(mode)
+    ) {
+      return;
+    }
+    const timerKey = `${name}:${mode}`;
+    window.clearTimeout(state.cloudSaveTimers[timerKey]);
+    state.cloudSaveTimers[timerKey] = window.setTimeout(() => {
+      pushCloudProfile(name, mode);
     }, 650);
   }
 
-  async function pushCloudProfile(name) {
+  async function pushCloudProfile(name, mode) {
     const cloud = window.NobiruCloud;
     if (!state.cloudReady || !cloud) return;
     const profile = normalizeProfile(ensureProfile(name));
-    setCloudStatus("レベルをFirebaseへ保存しています…", "busy");
+    setCloudStatus("4分野のレベルをFirebaseへ保存しています…", "busy");
     try {
-      await cloud.saveProfile(name, profile);
+      await cloud.saveProfile(name, profile, mode);
       setCloudStatus("Firebaseと同期済み", "online");
     } catch {
       setCloudStatus("クラウド保存に失敗（端末内には保存済み）", "error");
@@ -527,14 +613,6 @@
   }
 
   function homeTemplate() {
-    const roadLevels = [
-      state.level - 2,
-      state.level - 1,
-      state.level,
-      state.level + 1,
-      state.level + 2,
-    ].map((level) => clamp(level, 1, 100));
-
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -562,17 +640,17 @@
           <i>›</i>
         </button>
 
-        <section class="level-card" aria-label="現在レベル${state.level}">
+        <section class="level-card" aria-label="4分野の総合レベル${state.level}">
           <div class="level-copy">
-            <span class="level-kicker">あなたのレベル</span>
+            <span class="level-kicker">4分野の総合レベル</span>
             <div class="level-number"><small>Lv.</small>${state.level}</div>
             <span class="grade-chip">${gradeForLevel(state.level)}</span>
-            <button type="button" class="text-link" data-action="open-placement">
-              実力チェックで調整 <span aria-hidden="true">›</span>
+            <button type="button" class="text-link" data-action="open-placement" data-mode="write">
+              分野別の開始レベルを調整 <span aria-hidden="true">›</span>
             </button>
           </div>
           <div class="progress-orbit" style="--progress: ${state.xp * 3.6}deg">
-            <div><b>${state.xp}%</b><span>あと${Math.max(1, Math.ceil((100 - state.xp) / 16))}問</span></div>
+            <div><b>${state.xp}%</b><span>4分野の平均XP</span></div>
           </div>
           <span class="level-card-shape shape-one"></span>
           <span class="level-card-shape shape-two"></span>
@@ -593,19 +671,22 @@
 
         <section class="road-section">
           <div class="section-heading compact">
-            <div><p class="eyebrow">LEVEL ROAD</p><h2>つぎの景色まで</h2></div>
+            <div><p class="eyebrow">FOUR SKILLS</p><h2>4つのレベル</h2></div>
             <button type="button" class="text-link" data-view="levels">すべて見る <span>›</span></button>
           </div>
-          <div class="level-road" aria-label="レベルロード">
-            ${roadLevels.map((level) => `
-              <div class="road-step ${level < state.level ? "done" : ""} ${level === state.level ? "current" : ""}">
-                <span>${level < state.level ? "✓" : level}</span>
-                ${level === state.level ? "<small>いま</small>" : ""}
-              </div>
-            `).join("")}
-            <div class="road-line"></div>
+          <div class="skill-overview-grid">
+            ${SKILL_MODES.map((mode) => {
+              const skill = activeSkill(mode);
+              return `
+                <button type="button" data-view="levels" data-level-mode="${mode}">
+                  <span>${MODE_INFO[mode].short}</span>
+                  <b>Lv.${skill.level}</b>
+                  <small>${gradeForLevel(skill.level)} ・ ${skill.xp}%</small>
+                </button>
+              `;
+            }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> Lv.${Math.min(100, state.level + 1)}で新しいテーマがオープン</p>
+          <p class="road-note"><span>◆</span> 選んだ分野のレベルに合う問題が出ます</p>
         </section>
 
         <div class="encouragement">
@@ -617,10 +698,12 @@
   }
 
   function subjectCard(mode, icon, name, detail, cardClass, iconClass) {
+    const skill = activeSkill(mode);
     return `
       <button type="button" class="subject-card ${cardClass}" data-start="${mode}">
         <span class="subject-icon ${iconClass}">${icon}</span>
         <span class="subject-time">約${mode === "flash" ? 2 : 3}分</span>
+        <span class="subject-level-chip">Lv.${skill.level} ・ ${gradeForLevel(skill.level)}</span>
         <span class="subject-name">${name}</span>
         <span class="subject-detail">${state.counts[mode]}問 ・ ${detail}</span>
         <span class="start-arrow" aria-hidden="true">→</span>
@@ -630,11 +713,12 @@
 
   function startSession(mode) {
     stopFlash();
-    const problems = createSessionProblems(mode, state.counts[mode], state.level);
+    const skill = activeSkill(mode);
+    const problems = createSessionProblems(mode, state.counts[mode], skill.level);
     state.session = {
       mode,
       total: state.counts[mode],
-      levelAtStart: state.level,
+      levelAtStart: skill.level,
       problems,
       completed: 0,
       correct: 0,
@@ -664,7 +748,9 @@
   }
 
   function lessonLevelRow(extra = "") {
-    const lessonLevel = state.session?.levelAtStart ?? state.level;
+    const lessonLevel =
+      state.session?.levelAtStart ??
+      activeSkill(state.session?.mode || state.levelViewMode).level;
     return `
       <div class="lesson-level-row">
         <span>Lv.${lessonLevel}</span><span>${gradeForLevel(lessonLevel)}</span>${extra}
@@ -897,7 +983,9 @@
   }
 
   function prepareFlashQuestion() {
-    const band = bandForLevel(state.session?.levelAtStart ?? state.level);
+    const band = bandForLevel(
+      state.session?.levelAtStart ?? activeSkill("flash").level,
+    );
     const lengths = [3, 3, 3, 4, 4, 5, 5, 6, 6, 7];
     const maximums = [5, 10, 20, 30, 50, 75, 99, 99, 150, 200];
     const length = lengths[band - 1];
@@ -1067,13 +1155,15 @@
     const session = state.session;
     const queued = session?.problems?.[session.completed];
     if (queued) return queued;
+    const mode = session?.mode || "write";
+    const level = session?.levelAtStart ?? activeSkill(mode).level;
     if (session?.mode === "write") {
-      return kanjiProblems.find((problem) => problem.band === bandForLevel(state.level));
+      return kanjiProblems.find((problem) => problem.band === bandForLevel(level));
     }
     if (session?.mode === "read") {
-      return readingProblems.find((problem) => problem.band === bandForLevel(state.level));
+      return readingProblems.find((problem) => problem.band === bandForLevel(level));
     }
-    return generateMathProblem(state.level);
+    return generateMathProblem(level);
   }
 
   function generateMathProblem(level) {
@@ -1463,7 +1553,10 @@
           <span class="result-burst">${session.endedEarly ? "休" : "★"}</span>
           <p class="eyebrow">${session.endedEarly ? "GOOD PAUSE" : "SESSION COMPLETE"}</p>
           <h1>${session.endedEarly ? "ここまで、よくできました。" : "さいごまで、できました！"}</h1>
-          <p>${escapeHtml(displayName())}の「${MODE_INFO[session.mode].label}」</p>
+          <p>
+            ${escapeHtml(displayName())}の「${MODE_INFO[session.mode].label}」
+            ・ Lv.${activeSkill(session.mode).level}
+          </p>
         </section>
         <div class="result-score-card">
           <div class="result-main-score"><b>${session.completed}</b><span>問できた</span></div>
@@ -1481,22 +1574,39 @@
   }
 
   function levelsTemplate() {
+    const mode = SKILL_MODES.includes(state.levelViewMode)
+      ? state.levelViewMode
+      : "write";
+    const skill = activeSkill(mode);
     return `
       <div class="screen sub-screen level-map-screen">
         <header class="sub-header">
           <button class="round-button" type="button" data-action="back-home" aria-label="戻る">‹</button>
-          <div><p class="eyebrow">LEVEL 1–100</p><h1>レベルロード</h1></div>
+          <div><p class="eyebrow">4 SKILLS / LEVEL 1–100</p><h1>分野別レベル</h1></div>
         </header>
-        <div class="map-intro"><span>現在地</span><b>Lv.${state.level}</b><p>${gradeForLevel(state.level)}</p></div>
+        <div class="skill-mode-tabs" aria-label="表示する分野">
+          ${SKILL_MODES.map((itemMode) => `
+            <button
+              type="button"
+              class="${itemMode === mode ? "active" : ""}"
+              data-level-mode="${itemMode}"
+            >${MODE_INFO[itemMode].short}</button>
+          `).join("")}
+        </div>
+        <div class="map-intro">
+          <span>${MODE_INFO[mode].label}の現在地</span>
+          <b>Lv.${skill.level}</b>
+          <p>${gradeForLevel(skill.level)} ・ XP ${skill.xp}%</p>
+        </div>
         ${learnerLevelListTemplate()}
         <div class="level-groups">
           ${levelGroups.map((group) => {
-            const complete = state.level > group.end;
-            const active = state.level >= group.start && state.level <= group.end;
+            const complete = skill.level > group.end;
+            const active = skill.level >= group.start && skill.level <= group.end;
             const percent = complete
               ? 100
               : active
-                ? Math.round(((state.level - group.start + 1) / (group.end - group.start + 1)) * 100)
+                ? Math.round(((skill.level - group.start + 1) / (group.end - group.start + 1)) * 100)
                 : 0;
             return `
               <article class="level-group ${active ? "active" : ""}">
@@ -1522,21 +1632,26 @@
     return `
       <section class="learner-levels-card">
         <div class="settings-heading">
-          <div><p class="eyebrow">LEARNERS</p><h2>みんなのレベル</h2></div>
+          <div><p class="eyebrow">LEARNERS</p><h2>みんなの4分野レベル</h2></div>
           <span>${state.learnerNames.length}人</span>
         </div>
         <div class="learner-level-list">
           ${state.learnerNames.map((name) => {
-            const profile =
-              name === state.learnerName
-                ? { level: state.level, xp: state.xp }
-                : ensureProfile(name);
+            const profile = ensureProfile(name);
             const active = name === state.learnerName;
             return `
               <button type="button" class="${active ? "active" : ""}" data-select-learner="${escapeHtml(name)}">
                 <span class="learner-avatar">${escapeHtml(name.slice(0, 1))}</span>
-                <span class="learner-copy"><b>${escapeHtml(name)}</b><small>${gradeForLevel(profile.level)}</small></span>
-                <span class="learner-level-value"><b>Lv.${profile.level}</b><small>${profile.xp}%</small></span>
+                <span class="learner-copy">
+                  <b>${escapeHtml(name)}</b>
+                  <small>総合 Lv.${overallLevel(profile)} ・ ${gradeForLevel(overallLevel(profile))}</small>
+                </span>
+                <span class="learner-skill-levels">
+                  ${SKILL_MODES.map((mode) => {
+                    const skill = profile.skills[mode];
+                    return `<span><small>${MODE_INFO[mode].short}</small><b>Lv.${skill.level}</b></span>`;
+                  }).join("")}
+                </span>
               </button>
             `;
           }).join("")}
@@ -1594,7 +1709,7 @@
             data-action="sync-cloud"
             ${window.NobiruCloud?.isConfigured?.() ? "" : "disabled"}
           >今すぐ同期する</button>
-          <p class="settings-note">同じGitHub Pagesを開く端末では、名前ごとのレベルとXPが共有されます。</p>
+          <p class="settings-note">同じGitHub Pagesを開く端末では、名前ごとに4分野のレベルとXPが共有されます。</p>
         </section>
 
         <section class="settings-card">
@@ -1631,15 +1746,33 @@
 
         <button type="button" class="primary-button wide save-settings-button" data-action="save-settings">設定を保存する</button>
 
-        <div class="profile-summary">
-          <span>現在</span><b>Lv.${state.level}</b><small>${gradeForLevel(state.level)}</small>
-          <button type="button" class="text-link" data-action="open-placement">開始レベルを見なおす ›</button>
-        </div>
+        <section class="profile-summary">
+          <div class="profile-summary-heading">
+            <span>現在の分野別レベル</span>
+            <b>総合 Lv.${state.level}</b>
+          </div>
+          <div class="profile-skill-list">
+            ${SKILL_MODES.map((mode) => {
+              const skill = activeSkill(mode);
+              return `
+                <button type="button" data-action="open-placement" data-mode="${mode}">
+                  <span>${MODE_INFO[mode].short}</span>
+                  <b>Lv.${skill.level}</b>
+                  <small>${gradeForLevel(skill.level)} ・ XP ${skill.xp}%</small>
+                  <i>調整 ›</i>
+                </button>
+              `;
+            }).join("")}
+          </div>
+        </section>
       </div>
     `;
   }
 
   function placementTemplate() {
+    const mode = SKILL_MODES.includes(state.placementMode)
+      ? state.placementMode
+      : "write";
     const choices = [
       { level: 1, title: "まずはゆっくり", detail: "ひらがな・1けたの計算から" },
       { level: 24, title: "学校の勉強は得意", detail: "小学3年生相当から" },
@@ -1651,8 +1784,17 @@
         <section class="placement-sheet" role="dialog" aria-modal="true" aria-labelledby="placement-title">
           <div class="sheet-handle"></div>
           <button type="button" class="sheet-close" data-action="close-placement" aria-label="閉じる">×</button>
-          <p class="eyebrow">STARTING POINT</p><h2 id="placement-title">どこから始める？</h2>
-          <p class="sheet-lead">今の自分に近いものを選んでね。<br />あとからいつでも変えられます。</p>
+          <p class="eyebrow">STARTING POINT</p><h2 id="placement-title">分野ごとに調整</h2>
+          <div class="placement-skill-tabs" aria-label="調整する分野">
+            ${SKILL_MODES.map((itemMode) => `
+              <button
+                type="button"
+                class="${itemMode === mode ? "active" : ""}"
+                data-placement-skill="${itemMode}"
+              >${MODE_INFO[itemMode].short}</button>
+            `).join("")}
+          </div>
+          <p class="sheet-lead"><b>${MODE_INFO[mode].label}</b>はどこから始める？<br />ほかの分野のレベルは変わりません。</p>
           <div class="placement-options">
             ${choices.map((choice) => `
               <button type="button" data-placement="${choice.level}">
@@ -1661,7 +1803,7 @@
               </button>
             `).join("")}
           </div>
-          <p class="sheet-note">高いレベルほど1テーマを細かく分け、テンポよくレベルアップできます。</p>
+          <p class="sheet-note">選んだ分野だけを変更します。高いレベルほどテーマを細かく分けています。</p>
         </section>
       </div>
     `;
@@ -1694,6 +1836,9 @@
     const viewButton = event.target.closest("[data-view]");
     if (viewButton) {
       stopFlash();
+      if (SKILL_MODES.includes(viewButton.dataset.levelMode)) {
+        state.levelViewMode = viewButton.dataset.levelMode;
+      }
       state.view = viewButton.dataset.view;
       state.session = null;
       resetQuestionState();
@@ -1702,13 +1847,44 @@
       return;
     }
 
+    const levelModeButton = event.target.closest("[data-level-mode]");
+    if (levelModeButton) {
+      state.levelViewMode = SKILL_MODES.includes(levelModeButton.dataset.levelMode)
+        ? levelModeButton.dataset.levelMode
+        : "write";
+      render();
+      return;
+    }
+
+    const placementSkillButton = event.target.closest("[data-placement-skill]");
+    if (placementSkillButton) {
+      state.placementMode = SKILL_MODES.includes(
+        placementSkillButton.dataset.placementSkill,
+      )
+        ? placementSkillButton.dataset.placementSkill
+        : "write";
+      render();
+      return;
+    }
+
     const placement = event.target.closest("[data-placement]");
     if (placement) {
-      state.level = clamp(placement.dataset.placement, 1, 100);
-      state.xp = 0;
+      const mode = SKILL_MODES.includes(state.placementMode)
+        ? state.placementMode
+        : "write";
+      const profile = ensureProfile(state.learnerName);
+      profile.skills[mode] = {
+        level: clamp(placement.dataset.placement, 1, 100),
+        xp: 0,
+        updatedAt: Date.now(),
+      };
+      profile.updatedAt = Math.max(profile.updatedAt, profile.skills[mode].updatedAt);
+      applyActiveProfile();
       state.placementOpen = false;
-      saveProgress();
-      showToast(`レベル ${state.level} からスタート！`);
+      saveProgress(mode);
+      showToast(
+        `${MODE_INFO[mode].short}はレベル ${profile.skills[mode].level} から！`,
+      );
       render();
       return;
     }
@@ -1773,6 +1949,9 @@
         finishSession(true);
       },
       "open-placement"() {
+        state.placementMode = SKILL_MODES.includes(actionButton.dataset.mode)
+          ? actionButton.dataset.mode
+          : state.placementMode;
         state.placementOpen = true;
         render();
       },
@@ -1964,15 +2143,22 @@
   }
 
   function earnXp(amount) {
-    const total = state.xp + amount;
-    if (total >= 100 && state.level < 100) {
-      state.level += 1;
-      state.xp = total - 100;
-      showToast(`レベル ${state.level} にアップ！`);
+    const mode = state.session?.mode;
+    if (!SKILL_MODES.includes(mode)) return;
+    const profile = ensureProfile(state.learnerName);
+    const skill = profile.skills[mode];
+    const total = skill.xp + amount;
+    if (total >= 100 && skill.level < 100) {
+      skill.level += 1;
+      skill.xp = total - 100;
+      showToast(`${MODE_INFO[mode].short}がレベル ${skill.level} にアップ！`);
     } else {
-      state.xp = Math.min(100, total);
+      skill.xp = Math.min(100, total);
     }
-    saveProgress();
+    skill.updatedAt = Date.now();
+    profile.updatedAt = Math.max(profile.updatedAt, skill.updatedAt);
+    applyActiveProfile();
+    saveProgress(mode);
   }
 
   function showToast(message) {

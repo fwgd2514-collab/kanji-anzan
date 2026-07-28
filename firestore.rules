@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isValidProfile() {
+    function isLegacyProfile() {
       return request.resource.data.keys().hasOnly([
           'displayName',
           'level',
@@ -26,10 +26,52 @@ service cloud.firestore {
         && request.resource.data.updatedAt >= 0;
     }
 
+    function isLearnerProfile() {
+      return request.resource.data.keys().hasOnly([
+          'displayName',
+          'streak',
+          'updatedAt',
+          'schemaVersion'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 20
+        && request.resource.data.streak is int
+        && request.resource.data.streak >= 0
+        && request.resource.data.streak <= 9999
+        && request.resource.data.updatedAt is int
+        && request.resource.data.updatedAt >= 0
+        && request.resource.data.schemaVersion is int
+        && request.resource.data.schemaVersion == 3;
+    }
+
+    function isValidSkill(mode) {
+      return mode in ['write', 'read', 'math', 'flash']
+        && request.resource.data.keys().hasOnly([
+          'level',
+          'xp',
+          'updatedAt'
+        ])
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 100
+        && request.resource.data.xp is int
+        && request.resource.data.xp >= 0
+        && request.resource.data.xp <= 100
+        && request.resource.data.updatedAt is int
+        && request.resource.data.updatedAt >= 0;
+    }
+
     match /nobiru_groups/{groupId}/learners/{learnerId} {
       allow read: if true;
-      allow create, update: if isValidProfile();
+      allow create, update: if isLearnerProfile() || isLegacyProfile();
       allow delete: if false;
+
+      match /skills/{mode} {
+        allow read: if true;
+        allow create, update: if isValidSkill(mode);
+        allow delete: if false;
+      }
     }
   }
 }

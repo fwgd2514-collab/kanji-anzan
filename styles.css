@@ -2443,6 +2443,224 @@ canvas:focus-visible {
   color: #c8d1df;
 }
 
+/* Four independent skill levels */
+
+.subject-level-chip {
+  display: inline-flex;
+  max-width: 100%;
+  margin-bottom: 7px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #5f6877;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject-icon {
+  margin-bottom: 14px;
+}
+
+.skill-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.skill-overview-grid button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 8px;
+  padding: 12px;
+  border: 1px solid #e4dfd5;
+  border-radius: 15px;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.skill-overview-grid span {
+  overflow: hidden;
+  color: #687184;
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-overview-grid b {
+  color: var(--coral-dark);
+  font-size: 15px;
+}
+
+.skill-overview-grid small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #94989f;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-mode-tabs,
+.placement-skill-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.skill-mode-tabs {
+  margin: 3px 0 12px;
+}
+
+.skill-mode-tabs button,
+.placement-skill-tabs button {
+  min-width: 0;
+  min-height: 39px;
+  padding: 6px 4px;
+  border: 1px solid #ded9cf;
+  border-radius: 11px;
+  background: #f5f3ed;
+  color: #737988;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.skill-mode-tabs button.active,
+.placement-skill-tabs button.active {
+  border-color: var(--coral);
+  background: #fff0ea;
+  color: #b54e37;
+  box-shadow: inset 0 0 0 1px rgba(255, 122, 89, 0.12);
+}
+
+.placement-skill-tabs {
+  margin: 14px 0 11px;
+}
+
+.learner-level-list > button {
+  grid-template-columns: 42px minmax(0, 1fr);
+  min-height: 104px;
+}
+
+.learner-skill-levels {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.learner-skill-levels > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px;
+  border-radius: 9px;
+  background: rgba(35, 53, 83, 0.06);
+  text-align: center;
+}
+
+.learner-skill-levels small {
+  overflow: hidden;
+  color: #838995;
+  font-size: 7px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learner-skill-levels b {
+  margin-top: 2px;
+  color: var(--navy);
+  font-size: 11px;
+}
+
+.learner-level-list > button.active .learner-skill-levels > span {
+  background: rgba(255, 122, 89, 0.1);
+}
+
+.profile-summary {
+  display: block;
+  padding: 17px;
+}
+
+.profile-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.profile-summary-heading span {
+  color: #bbc5d3;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.profile-summary-heading b {
+  color: #ffdf83;
+  font-size: 13px;
+}
+
+.profile-skill-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.profile-skill-list button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-skill-list span {
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.profile-skill-list b {
+  color: #ffdf83;
+  font-size: 13px;
+}
+
+.profile-skill-list small {
+  overflow: hidden;
+  color: #c8d1df;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-skill-list i {
+  color: #c8d1df;
+  font-size: 8px;
+  font-style: normal;
+}
+
+@media (max-width: 370px) {
+  .skill-mode-tabs,
+  .placement-skill-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .wide {
   width: 100%;
 }
