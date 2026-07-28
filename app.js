@@ -707,19 +707,22 @@
           </div>
         </header>
 
-        <section class="welcome">
-          <div>
-            <p class="eyebrow">おかえり、${escapeHtml(displayName())}</p>
-            <h1>きょうも、ひとつ<br /><span>のびよう。</span></h1>
+        <section class="today-section home-training-primary">
+          <div class="section-heading">
+            <div><p class="eyebrow">おかえり、${escapeHtml(displayName())}</p><h1>きょうのトレーニング</h1></div>
+            <button class="daily-count settings-link" type="button" data-view="profile">問題数を変更</button>
           </div>
-          <button class="profile-dot" type="button" data-view="profile" aria-label="プロフィールを開く">
-            ${escapeHtml(displayName().slice(0, 1))}
-          </button>
+          <div class="subject-grid">
+            ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
+            ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
+            ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
+            ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
+          </div>
         </section>
 
-        <button type="button" class="registration-prompt" data-view="profile">
+        <button type="button" class="registration-prompt home-learner-prompt" data-view="profile">
           <span class="registration-icon">人</span>
-          <span><b>学習する人：${escapeHtml(displayName())}</b><small>タップして名前を切り替えられます</small></span>
+          <span><b>学習する人：${escapeHtml(displayName())}</b><small>タップして名前・問題数を変更できます</small></span>
           <i>›</i>
         </button>
 
@@ -737,19 +740,6 @@
           </div>
           <span class="level-card-shape shape-one"></span>
           <span class="level-card-shape shape-two"></span>
-        </section>
-
-        <section class="today-section">
-          <div class="section-heading">
-            <div><p class="eyebrow">TODAY'S TRAINING</p><h2>きょうのトレーニング</h2></div>
-            <button class="daily-count settings-link" type="button" data-view="profile">問題数を変更</button>
-          </div>
-          <div class="subject-grid">
-            ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
-            ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
-            ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
-            ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
-          </div>
         </section>
 
         <section class="road-section">
@@ -2357,16 +2347,20 @@
     const checkpoint = document.querySelector("input[name='checkpoint']:checked");
     state.checkpointEvery = Number(checkpoint?.value) === 3 ? 3 : 5;
     saveProgress();
+    state.view = "home";
     showToast("設定を保存しました");
     render();
+    window.scrollTo({ top: 0, left: 0 });
   }
 
   async function saveLearnerSelection() {
     const nameField = document.querySelector("#learnerName");
     activateLearner(nameField?.value || state.learnerName, false);
     saveProgress();
+    state.view = "home";
     showToast(`${displayName()}に切り替えました`);
     render();
+    window.scrollTo({ top: 0, left: 0 });
     if (state.cloudReady) {
       await flushPendingCloudSaves();
       await syncCloudProfiles();

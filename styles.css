@@ -332,6 +332,20 @@ canvas:focus-visible {
   padding-top: 30px;
 }
 
+.home-training-primary {
+  padding-top: 14px;
+}
+
+.home-training-primary .section-heading {
+  align-items: center;
+}
+
+.home-training-primary .section-heading h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
 .section-heading {
   display: flex;
   align-items: flex-end;
@@ -1799,6 +1813,10 @@ canvas:focus-visible {
   background: #fff8e8;
   text-align: left;
   cursor: pointer;
+}
+
+.home-learner-prompt {
+  margin-top: 22px;
 }
 
 .registration-prompt > span:nth-child(2) {
