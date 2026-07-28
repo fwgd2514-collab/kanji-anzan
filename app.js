@@ -93,6 +93,7 @@
     flashAnswer: "",
     flashResult: "idle",
     flashPhase: "ready",
+    flashCue: "スタートします",
     flashTimer: 0,
     flashRunToken: 0,
   };
@@ -295,7 +296,7 @@
     resetQuestionState();
     if (mode === "flash") prepareFlashQuestion();
     render();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, left: 0 });
   }
 
   function lessonHeader(title) {
@@ -433,7 +434,7 @@
             `;
           }).join("")}
         </div>
-        ${feedback}
+        <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
           ? '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
           : '<p class="choice-note">読み方をひとつ選んでね</p>'
@@ -449,7 +450,7 @@
         ? '<p class="result-message">おしい！ もう一度考えよう</p>'
         : state.mathResult === "correct"
           ? '<p class="result-message success">正解！ いいテンポ！</p>'
-          : "";
+          : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
     return `
       <div class="screen lesson-screen math-lesson">
         ${lessonHeader("暗算する")}
@@ -479,7 +480,15 @@
           <span class="flash-symbol">瞬</span>
           <h1>数字を見て、<br />ぜんぶ足そう</h1>
           <p>${state.flashSequence.length}つの数字が順番に出ます。</p>
-          <button type="button" class="primary-button wide" data-action="start-flash">スタート</button>
+          <button type="button" class="primary-button wide" data-action="start-flash">準備してスタート</button>
+        </div>
+      `;
+    } else if (state.flashPhase === "countdown") {
+      stage = `
+        <div class="flash-countdown" aria-live="assertive">
+          <p>フラッシュ暗算</p>
+          <strong id="flashCue">${state.flashCue}</strong>
+          <small>合図のあとに数字が出ます</small>
         </div>
       `;
     } else if (state.flashPhase === "showing") {
@@ -496,7 +505,7 @@
           ? `<p class="result-message">おしい！ もう一度。合計はまだ秘密です。</p>`
           : state.flashResult === "correct"
             ? `<p class="result-message success">正解！ 合計は ${total} です。</p>`
-            : "";
+            : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
       stage = `
         <div class="flash-answer-stage">
           <p class="eyebrow">ぜんぶでいくつ？</p>
@@ -539,15 +548,41 @@
     const max = state.level >= 69 ? 30 : state.level >= 33 ? 20 : 9;
     state.flashSequence = Array.from({ length }, () => randomInt(1, max));
     state.flashPhase = "ready";
+    state.flashCue = "スタートします";
     state.flashAnswer = "";
     state.flashResult = "idle";
   }
 
   function startFlashSequence() {
     stopFlash();
-    state.flashPhase = "showing";
     const token = ++state.flashRunToken;
+    state.flashPhase = "countdown";
+    state.flashCue = "スタートします";
     render();
+
+    const cues = ["3", "2", "1", "スタート！"];
+    let cueIndex = 0;
+    const showCue = () => {
+      if (token !== state.flashRunToken || state.view !== "flash") return;
+      if (cueIndex < cues.length) {
+        state.flashCue = cues[cueIndex];
+        const cueElement = document.querySelector("#flashCue");
+        if (cueElement) {
+          cueElement.textContent = state.flashCue;
+          cueElement.classList.toggle("is-count", cueIndex < 3);
+        }
+        cueIndex += 1;
+        state.flashTimer = window.setTimeout(showCue, cueIndex === cues.length ? 700 : 620);
+        return;
+      }
+      state.flashPhase = "showing";
+      render();
+      runFlashNumbers(token);
+    };
+    state.flashTimer = window.setTimeout(showCue, 850);
+  }
+
+  function runFlashNumbers(token) {
     let index = 0;
     const step = () => {
       if (token !== state.flashRunToken || state.view !== "flash") return;
@@ -813,7 +848,7 @@
       state.session = null;
       resetQuestionState();
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, left: 0 });
       return;
     }
 
@@ -1027,6 +1062,7 @@
     state.mathResult = "idle";
     state.flashAnswer = "";
     state.flashResult = "idle";
+    state.flashCue = "スタートします";
     if (state.session?.mode !== "flash") state.flashPhase = "ready";
   }
 

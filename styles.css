@@ -18,10 +18,16 @@
 
 html {
   background: #ece8de;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 12% 15%, rgba(255, 255, 255, 0.8) 0 8%, transparent 9%),
     radial-gradient(circle at 88% 78%, rgba(255, 255, 255, 0.55) 0 12%, transparent 13%),
@@ -35,6 +41,15 @@ body {
 button {
   color: inherit;
   font: inherit;
+  touch-action: manipulation;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  font-size: 16px;
+  touch-action: manipulation;
 }
 
 button:focus-visible,
@@ -45,6 +60,7 @@ canvas:focus-visible {
 
 .app-shell {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   justify-content: center;
 }
@@ -62,6 +78,7 @@ canvas:focus-visible {
   position: relative;
   width: min(100%, 520px);
   min-height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
   background: var(--paper);
   box-shadow: 0 0 50px rgba(33, 48, 71, 0.13);
@@ -69,6 +86,9 @@ canvas:focus-visible {
 
 .screen {
   min-height: 100vh;
+  min-height: 100svh;
+  width: 100%;
+  overflow-x: hidden;
   padding: 0 22px 118px;
 }
 
@@ -353,13 +373,11 @@ canvas:focus-visible {
   border-radius: 23px;
   text-align: left;
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
+  transition: background-color 120ms ease;
 }
 
 .subject-card:active {
-  transform: translateY(2px) scale(0.99);
+  transform: none;
 }
 
 .kanji-card {
@@ -796,8 +814,8 @@ canvas:focus-visible {
 }
 
 .primary-button:active {
-  transform: translateY(3px);
-  box-shadow: 0 3px 0 #d9583b;
+  transform: none;
+  box-shadow: 0 6px 0 #d9583b;
 }
 
 .primary-button:disabled {
@@ -927,6 +945,7 @@ canvas:focus-visible {
 }
 
 .result-message {
+  min-height: 14px;
   margin: 9px 0 -6px;
   color: var(--coral);
   font-size: 11px;
@@ -935,6 +954,10 @@ canvas:focus-visible {
 
 .result-message.success {
   color: var(--teal);
+}
+
+.result-message.placeholder {
+  visibility: hidden;
 }
 
 .hint-box {
@@ -983,8 +1006,8 @@ canvas:focus-visible {
 }
 
 .number-pad button:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #e4e0d7;
+  transform: none;
+  box-shadow: 0 3px 0 #e4e0d7;
 }
 
 .number-pad .pad-blank {
@@ -1750,6 +1773,10 @@ canvas:focus-visible {
   text-align: center;
 }
 
+.reading-feedback-slot {
+  min-height: 50px;
+}
+
 .reading-feedback.correct {
   background: #e5f6f1;
   color: #277a6b;
@@ -1779,7 +1806,8 @@ canvas:focus-visible {
 }
 
 .flash-stage {
-  min-height: 515px;
+  height: 548px;
+  min-height: 548px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1787,9 +1815,53 @@ canvas:focus-visible {
 }
 
 .flash-ready,
+.flash-countdown,
 .flash-showing,
 .flash-answer-stage {
   text-align: center;
+}
+
+.flash-countdown {
+  min-height: 410px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.flash-countdown p {
+  margin: 0 0 18px;
+  color: #7a86a1;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.flash-countdown strong {
+  width: min(100%, 280px);
+  height: 136px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #dce5fa;
+  border-radius: 28px;
+  background: white;
+  color: #35579f;
+  font-size: 34px;
+  font-weight: 950;
+  line-height: 1.2;
+  box-shadow:
+    0 0 0 10px rgba(80, 115, 200, 0.06),
+    0 17px 38px rgba(42, 65, 116, 0.13);
+}
+
+.flash-countdown strong.is-count {
+  font-size: 74px;
+}
+
+.flash-countdown small {
+  margin-top: 24px;
+  color: #858da0;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .flash-symbol {
@@ -1844,7 +1916,7 @@ canvas:focus-visible {
   box-shadow:
     0 0 0 11px rgba(80, 115, 200, 0.06),
     0 19px 42px rgba(42, 65, 116, 0.14);
-  animation: flash-pop 850ms ease infinite;
+  animation: none;
 }
 
 .flash-dots {
@@ -1862,7 +1934,8 @@ canvas:focus-visible {
 
 .flash-dots i.active {
   background: #5073c8;
-  transform: scale(1.35);
+  transform: none;
+  box-shadow: 0 0 0 3px rgba(80, 115, 200, 0.14);
 }
 
 .flash-answer-stage {
@@ -1883,18 +1956,6 @@ canvas:focus-visible {
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
-}
-
-@keyframes flash-pop {
-  0% {
-    transform: scale(0.92);
-    opacity: 0.6;
-  }
-  28%,
-  75% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 .checkpoint-sheet {
@@ -2033,7 +2094,7 @@ canvas:focus-visible {
   border-radius: 14px;
   background: #faf9f5;
   color: var(--ink);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -2319,7 +2380,8 @@ canvas:focus-visible {
   }
 
   .flash-stage {
-    min-height: 480px;
+    height: 548px;
+    min-height: 548px;
   }
 
   .result-score-card {
