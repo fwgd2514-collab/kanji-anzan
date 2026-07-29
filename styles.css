@@ -3537,9 +3537,18 @@ canvas:focus-visible {
 }
 
 .digits-answer-stage .answer-box {
+  width: min(100%, 330px);
+  min-width: 0;
+  height: 72px;
+  box-sizing: border-box;
   margin: 18px auto 12px;
-  font-size: 30px;
-  letter-spacing: 0.08em;
+  padding: 0 12px;
+  overflow: hidden;
+  font-size: clamp(21px, 7.5vw, 31px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: clamp(0.01em, 0.5vw, 0.06em);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .digits-answer-stage .number-pad {
