@@ -4,10 +4,10 @@
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
   const MODE_INFO = {
-    write: { label: "漢字を書く", short: "漢字・書き", xp: 18 },
-    read: { label: "漢字を読む", short: "漢字・読み", xp: 12 },
-    math: { label: "暗算する", short: "暗算", xp: 16 },
-    flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14 },
+    write: { label: "漢字を書く", short: "漢字・書き", xp: 18, penalty: 6 },
+    read: { label: "漢字を読む", short: "漢字・読み", xp: 12, penalty: 4 },
+    math: { label: "暗算する", short: "暗算", xp: 16, penalty: 5 },
+    flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14, penalty: 4 },
   };
   const MIKKUN_MODE_LABELS = {
     write: "かいてみよう",
@@ -197,12 +197,14 @@
     checkpointEvery: 5,
     levelViewMode: "write",
     placementMode: "write",
+    placementDraftLevel: 1,
     placementOpen: false,
     checkpointOpen: false,
     exitConfirmOpen: false,
     toast: "",
     toastTimer: 0,
     answerAdvanceTimer: 0,
+    questionPenaltyApplied: false,
     session: null,
     kanjiMarks: 0,
     kanjiChecking: false,
@@ -243,6 +245,7 @@
   initializeLearnerProfiles();
   render();
   loadLearnerNames().finally(initializeCloudSync);
+  app.addEventListener("pointerdown", unlockTapAudio, { passive: true });
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
   document.addEventListener("visibilitychange", () => {
@@ -704,24 +707,49 @@
     return String(name || "").trim() === MIKKUN_NAME;
   }
 
-  function playTapSound() {
+  function unlockTapAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
     try {
       if (!tapAudioContext) tapAudioContext = new AudioContextClass();
-      if (tapAudioContext.state === "suspended") tapAudioContext.resume();
-      const oscillator = tapAudioContext.createOscillator();
-      const gain = tapAudioContext.createGain();
-      const now = tapAudioContext.currentTime;
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(920, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.035, now + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
-      oscillator.connect(gain);
-      gain.connect(tapAudioContext.destination);
-      oscillator.start(now);
-      oscillator.stop(now + 0.06);
+      if (tapAudioContext.state !== "running") {
+        tapAudioContext.resume()?.catch?.(() => {});
+      }
+    } catch {
+      // 音声を開始できない端末では、画面操作を優先します。
+    }
+  }
+
+  function playTapSound() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      unlockTapAudio();
+      if (!tapAudioContext) return;
+      const emitTone = () => {
+        const oscillator = tapAudioContext.createOscillator();
+        const gain = tapAudioContext.createGain();
+        const now = tapAudioContext.currentTime + 0.005;
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1040, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.075, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+        oscillator.connect(gain);
+        gain.connect(tapAudioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + 0.085);
+      };
+      if (tapAudioContext.state === "running") {
+        emitTone();
+        return;
+      }
+      const resumed = tapAudioContext.resume();
+      if (resumed?.then) {
+        resumed.then(emitTone).catch(() => {});
+      } else {
+        emitTone();
+      }
     } catch {
       // 音が使えないブラウザでも、操作そのものは止めません。
     }
@@ -970,7 +998,8 @@
               <p><b>形と書き順を見くらべよう</b><br />うまく書けたかな？</p>
             </div>
             <div class="self-check-actions">
-              <button type="button" data-action="kanji-retry">もう一度</button>
+              <button type="button" data-action="kanji-retry">書き直す</button>
+              <button type="button" class="kanji-difficult" data-action="kanji-difficult">むずかしかった</button>
               <button type="button" data-action="kanji-success">できた！</button>
             </div>
           </div>
@@ -1797,6 +1826,8 @@
     if (correct) {
       session.correct += 1;
       earnXp(MODE_INFO[session.mode].xp);
+    } else {
+      applyWrongAnswerPenalty(session.mode);
     }
     if (session.completed >= session.total) {
       finishSession(false);
@@ -2121,6 +2152,15 @@
           </p>
         </section>
 
+        <section class="settings-card sound-check-card">
+          <div class="settings-heading">
+            <div><p class="eyebrow">SOUND</p><h2>操作音</h2></div>
+            <span>ピ</span>
+          </div>
+          <button type="button" class="secondary-button wide" data-action="test-sound">「ピ」音を確認する</button>
+          <p class="settings-note">音が聞こえない場合は、iPhoneの消音モードを解除して音量を上げてください。</p>
+        </section>
+
         <section class="settings-card">
           <div class="settings-heading">
             <div><p class="eyebrow">QUESTION COUNT</p><h2>1回の問題数</h2></div>
@@ -2182,12 +2222,16 @@
     const mode = SKILL_MODES.includes(state.placementMode)
       ? state.placementMode
       : "write";
-    const choices = [
-      { level: 1, title: "まずはゆっくり", detail: "ひらがな・1けたの計算から" },
-      { level: 24, title: "学校の勉強は得意", detail: "小学3年生相当から" },
-      { level: 72, title: "かなり自信あり", detail: "中学1年生相当から" },
-      { level: 90, title: "入試問題に挑戦", detail: "中学3年生相当から" },
-    ];
+    const draftLevel = clamp(
+      state.placementDraftLevel || activeSkill(mode).level,
+      1,
+      100,
+    );
+    const choices = levelGroups.map((group) => ({
+      level: group.start,
+      title: group.label,
+      detail: `Lv.${group.start}〜${group.end}`,
+    }));
     return `
       <div class="sheet-backdrop" data-action="close-placement">
         <section class="placement-sheet" role="dialog" aria-modal="true" aria-labelledby="placement-title">
@@ -2204,6 +2248,34 @@
             `).join("")}
           </div>
           <p class="sheet-lead"><b>${MODE_INFO[mode].label}</b>はどこから始める？<br />ほかの分野のレベルは変わりません。</p>
+          <div class="placement-fine-tune">
+            <div class="placement-fine-heading">
+              <span>1レベルずつ微調整</span>
+              <small>現在は Lv.${activeSkill(mode).level}</small>
+            </div>
+            <div class="placement-stepper">
+              <button type="button" data-action="placement-step" data-delta="-1" aria-label="開始レベルを1下げる">−</button>
+              <div>
+                <small>開始レベル</small>
+                <b>Lv.${draftLevel}</b>
+                <span>${gradeForLevel(draftLevel)}</span>
+              </div>
+              <button type="button" data-action="placement-step" data-delta="1" aria-label="開始レベルを1上げる">＋</button>
+            </div>
+            <input
+              id="placementLevelRange"
+              type="range"
+              min="1"
+              max="100"
+              step="1"
+              value="${draftLevel}"
+              aria-label="開始レベルを1から100で選ぶ"
+            />
+            <button type="button" class="primary-button wide placement-apply-button" data-action="apply-placement-level">
+              Lv.${draftLevel} から始める
+            </button>
+          </div>
+          <p class="placement-option-title">学年の目安から選ぶ</p>
           <div class="placement-options">
             ${choices.map((choice) => `
               <button type="button" data-placement="${choice.level}">
@@ -2212,7 +2284,7 @@
               </button>
             `).join("")}
           </div>
-          <p class="sheet-note">選んだ分野だけを変更します。高いレベルほどテーマを細かく分けています。</p>
+          <p class="sheet-note">−・＋ボタンや横バーでは1レベル単位で選べます。選んだ分野だけを変更します。</p>
         </section>
       </div>
     `;
@@ -2233,6 +2305,28 @@
         `).join("")}
       </nav>
     `;
+  }
+
+  function applyPlacementLevel(mode, level) {
+    const safeMode = SKILL_MODES.includes(mode) ? mode : "write";
+    const profile = ensureProfile(state.learnerName);
+    profile.skills[safeMode] = {
+      level: clamp(level, 1, 100),
+      xp: 0,
+      updatedAt: Date.now(),
+    };
+    profile.updatedAt = Math.max(
+      profile.updatedAt,
+      profile.skills[safeMode].updatedAt,
+    );
+    applyActiveProfile();
+    state.placementDraftLevel = profile.skills[safeMode].level;
+    state.placementOpen = false;
+    saveProgress(safeMode);
+    showToast(
+      `${MODE_INFO[safeMode].short}はレベル ${profile.skills[safeMode].level} から！`,
+    );
+    render();
   }
 
   function handleClick(event) {
@@ -2282,6 +2376,7 @@
       )
         ? placementSkillButton.dataset.placementSkill
         : "write";
+      state.placementDraftLevel = activeSkill(state.placementMode).level;
       render();
       return;
     }
@@ -2291,20 +2386,7 @@
       const mode = SKILL_MODES.includes(state.placementMode)
         ? state.placementMode
         : "write";
-      const profile = ensureProfile(state.learnerName);
-      profile.skills[mode] = {
-        level: clamp(placement.dataset.placement, 1, 100),
-        xp: 0,
-        updatedAt: Date.now(),
-      };
-      profile.updatedAt = Math.max(profile.updatedAt, profile.skills[mode].updatedAt);
-      applyActiveProfile();
-      state.placementOpen = false;
-      saveProgress(mode);
-      showToast(
-        `${MODE_INFO[mode].short}はレベル ${profile.skills[mode].level} から！`,
-      );
-      render();
+      applyPlacementLevel(mode, placement.dataset.placement);
       return;
     }
 
@@ -2327,6 +2409,8 @@
       if (correct) {
         state.session.correct += 1;
         earnXp(MODE_INFO.read.xp);
+      } else {
+        applyWrongAnswerPenalty("read");
       }
       render();
       if (correct) scheduleAnswerAdvance("read");
@@ -2397,8 +2481,20 @@
         state.placementMode = SKILL_MODES.includes(actionButton.dataset.mode)
           ? actionButton.dataset.mode
           : state.placementMode;
+        state.placementDraftLevel = activeSkill(state.placementMode).level;
         state.placementOpen = true;
         render();
+      },
+      "placement-step"() {
+        state.placementDraftLevel = clamp(
+          state.placementDraftLevel + Number(actionButton.dataset.delta || 0),
+          1,
+          100,
+        );
+        render();
+      },
+      "apply-placement-level"() {
+        applyPlacementLevel(state.placementMode, state.placementDraftLevel);
       },
       "close-placement"() {
         state.placementOpen = false;
@@ -2425,6 +2521,9 @@
       },
       "kanji-success"() {
         finishQuestion(true);
+      },
+      "kanji-difficult"() {
+        finishQuestion(false);
       },
       "next-reading"() {
         const problem = currentSessionProblem();
@@ -2460,6 +2559,8 @@
         if (state.mathResult === "correct") {
           state.session.correct += 1;
           earnXp(MODE_INFO.math.xp);
+        } else {
+          applyWrongAnswerPenalty("math");
         }
         render();
         scheduleAnswerAdvance("math");
@@ -2484,6 +2585,7 @@
         }
         state.session.attempts += 1;
         state.flashResult = "given-up";
+        applyWrongAnswerPenalty("flash");
         render();
         scheduleAnswerAdvance("flash");
       },
@@ -2499,7 +2601,9 @@
         state.flashResult = Number(state.flashAnswer) === total ? "correct" : "wrong";
         if (state.flashResult === "correct") {
           state.session.correct += 1;
-          earnXp(MODE_INFO.flash.xp);
+          if (!state.questionPenaltyApplied) earnXp(MODE_INFO.flash.xp);
+        } else {
+          applyWrongAnswerPenalty("flash");
         }
         render();
         if (state.flashResult === "correct") scheduleAnswerAdvance("flash");
@@ -2537,11 +2641,20 @@
           initializeCloudSync();
         }
       },
+      "test-sound"() {
+        showToast("操作音を再生しました");
+        render();
+      },
     };
     actions[action]?.();
   }
 
   async function handleChange(event) {
+    if (event.target.id === "placementLevelRange") {
+      state.placementDraftLevel = clamp(event.target.value, 1, 100);
+      render();
+      return;
+    }
     if (event.target.id !== "namesFileInput") return;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -2619,6 +2732,7 @@
 
   function resetQuestionState() {
     state.kanjiMarks = 0;
+    state.questionPenaltyApplied = false;
     state.kanjiChecking = false;
     state.kanjiImage = "";
     state.readingChoice = "";
@@ -2650,6 +2764,35 @@
     profile.updatedAt = Math.max(profile.updatedAt, skill.updatedAt);
     applyActiveProfile();
     saveProgress(mode);
+  }
+
+  function applyWrongAnswerPenalty(mode) {
+    if (
+      state.questionPenaltyApplied ||
+      !SKILL_MODES.includes(mode) ||
+      !MODE_INFO[mode]?.penalty
+    ) {
+      return;
+    }
+    state.questionPenaltyApplied = true;
+    const profile = ensureProfile(state.learnerName);
+    const skill = profile.skills[mode];
+    const previousLevel = skill.level;
+    const previousScore = (skill.level - 1) * 100 + skill.xp;
+    const nextScore = Math.max(0, previousScore - MODE_INFO[mode].penalty);
+    skill.level = Math.floor(nextScore / 100) + 1;
+    skill.xp = nextScore % 100;
+    skill.updatedAt = Date.now();
+    profile.updatedAt = Math.max(profile.updatedAt, skill.updatedAt);
+    applyActiveProfile();
+    saveProgress(mode);
+    showToast(
+      nextScore === previousScore
+        ? `${MODE_INFO[mode].short}は最低レベルのままです`
+        : skill.level < previousLevel
+        ? `${MODE_INFO[mode].short}は Lv.${skill.level}・XP ${skill.xp}% に調整`
+        : `${MODE_INFO[mode].short}のXPを ${MODE_INFO[mode].penalty}% だけ調整`,
+    );
   }
 
   function showToast(message) {

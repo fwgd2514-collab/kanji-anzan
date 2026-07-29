@@ -896,7 +896,7 @@ canvas:focus-visible {
 
 .self-check-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 0.9fr 1.25fr 0.9fr;
   gap: 8px;
   margin-top: 12px;
 }
@@ -910,6 +910,12 @@ canvas:focus-visible {
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.self-check-actions .kanji-difficult {
+  background: #ffe2d8;
+  color: #a9523e;
+  font-size: 10px;
 }
 
 .self-check-actions button:last-child {
@@ -1456,6 +1462,97 @@ canvas:focus-visible {
   color: #7e8490;
   font-size: 11px;
   line-height: 1.7;
+}
+
+.placement-fine-tune {
+  margin-bottom: 18px;
+  padding: 15px;
+  border: 1px solid #d7e2f3;
+  border-radius: 20px;
+  background: #f3f7fd;
+}
+
+.placement-fine-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: #3f5578;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.placement-fine-heading small {
+  color: #8491a6;
+  font-size: 9px;
+}
+
+.placement-stepper {
+  display: grid;
+  grid-template-columns: 52px 1fr 52px;
+  align-items: stretch;
+  gap: 9px;
+}
+
+.placement-stepper > button {
+  min-height: 68px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--navy);
+  color: white;
+  font-size: 30px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.placement-stepper > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border-radius: 16px;
+  background: white;
+  box-shadow: inset 0 0 0 1px #dce4f0;
+}
+
+.placement-stepper small {
+  color: #8b95a5;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.placement-stepper b {
+  color: var(--navy);
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.placement-stepper span {
+  max-width: 100%;
+  overflow: hidden;
+  color: #64738a;
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#placementLevelRange {
+  width: 100%;
+  margin: 14px 0 3px;
+  accent-color: var(--coral);
+}
+
+.placement-apply-button {
+  margin-top: 10px;
+}
+
+.placement-option-title {
+  margin: 0 0 9px;
+  color: #7f8794;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .placement-options {
