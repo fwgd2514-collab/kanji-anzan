@@ -762,6 +762,10 @@ canvas:focus-visible {
     white;
   box-shadow: 0 12px 25px rgba(49, 46, 38, 0.08);
   touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .writing-pad canvas {
@@ -770,8 +774,13 @@ canvas:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
+  display: block;
   cursor: crosshair;
   touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .guide-kanji {
@@ -1663,6 +1672,11 @@ canvas:focus-visible {
   text-align: center;
 }
 
+.auto-next-note.wrong {
+  background: #fff0e9;
+  color: #a9523e;
+}
+
 .exit-confirm-sheet {
   width: min(100% - 30px, 430px);
   margin: 0 auto calc(18px + env(safe-area-inset-bottom));
@@ -2164,6 +2178,38 @@ canvas:focus-visible {
   font-weight: 800;
 }
 
+.flash-countdown-bar {
+  width: min(82%, 300px);
+  height: 22px;
+  overflow: hidden;
+  border: 4px solid #dce5fa;
+  border-radius: 99px;
+  background: white;
+  box-shadow:
+    0 0 0 10px rgba(80, 115, 200, 0.06),
+    0 17px 38px rgba(42, 65, 116, 0.13);
+}
+
+.flash-countdown-bar i {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7b9ae1, #35579f);
+  transform-origin: left center;
+  animation: flash-bar-countdown var(--countdown-duration, 2400ms) linear forwards;
+}
+
+@keyframes flash-bar-countdown {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
 .flash-symbol {
   width: 104px;
   height: 104px;
@@ -2273,6 +2319,10 @@ canvas:focus-visible {
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.give-up-button {
+  color: #a9523e;
 }
 
 .checkpoint-sheet {

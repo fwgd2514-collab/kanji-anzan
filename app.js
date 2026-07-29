@@ -218,6 +218,7 @@
     flashResult: "idle",
     flashPhase: "ready",
     flashCue: "3",
+    flashReplayUsed: false,
     flashTimer: 0,
     flashRunToken: 0,
     cloudReady: false,
@@ -1003,33 +1004,47 @@
         y: ((event.clientY - rect.top) / rect.height) * canvas.height,
       };
     };
-    canvas.addEventListener("pointerdown", (event) => {
-      drawing = true;
-      previous = pointFor(event);
-      canvas.setPointerCapture(event.pointerId);
-    });
-    canvas.addEventListener("pointermove", (event) => {
-      if (!drawing || !previous) return;
-      const point = pointFor(event);
-      context.beginPath();
-      context.moveTo(previous.x, previous.y);
-      context.lineTo(point.x, point.y);
-      context.strokeStyle = "#20304b";
-      context.lineWidth = 12;
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      context.stroke();
-      previous = point;
-      state.kanjiMarks += 1;
-      const checkButton = document.querySelector("[data-action='check-kanji']");
-      if (checkButton && state.kanjiMarks >= 5) checkButton.disabled = false;
-    });
-    const stop = () => {
+    canvas.addEventListener(
+      "pointerdown",
+      (event) => {
+        event.preventDefault();
+        drawing = true;
+        previous = pointFor(event);
+        canvas.setPointerCapture(event.pointerId);
+      },
+      { passive: false },
+    );
+    canvas.addEventListener(
+      "pointermove",
+      (event) => {
+        if (!drawing || !previous) return;
+        event.preventDefault();
+        const point = pointFor(event);
+        context.beginPath();
+        context.moveTo(previous.x, previous.y);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = "#20304b";
+        context.lineWidth = 12;
+        context.lineCap = "round";
+        context.lineJoin = "round";
+        context.stroke();
+        previous = point;
+        state.kanjiMarks += 1;
+        const checkButton = document.querySelector("[data-action='check-kanji']");
+        if (checkButton && state.kanjiMarks >= 5) checkButton.disabled = false;
+      },
+      { passive: false },
+    );
+    const stop = (event) => {
+      event?.preventDefault();
       drawing = false;
       previous = null;
     };
     canvas.addEventListener("pointerup", stop);
     canvas.addEventListener("pointercancel", stop);
+    const preventCanvasScroll = (event) => event.preventDefault();
+    canvas.addEventListener("touchstart", preventCanvasScroll, { passive: false });
+    canvas.addEventListener("touchmove", preventCanvasScroll, { passive: false });
   }
 
   function readTemplate() {
@@ -1075,9 +1090,10 @@
   function mathTemplate() {
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
+    const answered = state.mathResult !== "idle";
     const message =
       state.mathResult === "wrong"
-        ? '<p class="result-message">おしい！ もう一度考えよう</p>'
+        ? `<p class="result-message">おしい！ 正解は ${problem.answer}。つぎへ進みます。</p>`
         : state.mathResult === "correct"
           ? '<p class="result-message success">正解！ いいテンポ！</p>'
           : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
@@ -1094,13 +1110,17 @@
         <div class="hint-box"><span>ヒント</span><p>${problem.hint}</p></div>
         ${numberPad("math")}
         <div class="math-answer-dock">
-          ${state.mathResult === "correct"
-            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
+          ${answered
+            ? `<p class="auto-next-note ${state.mathResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.mathResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
             : `<button type="button" class="primary-button wide" data-action="submit-math" ${state.mathAnswer ? "" : "disabled"}>こたえる</button>`
           }
         </div>
       </div>
     `;
+  }
+
+  function flashCountdownDuration() {
+    return state.session?.preschool ? 2800 : 2400;
   }
 
   function flashTemplate() {
@@ -1118,10 +1138,12 @@
       `;
     } else if (state.flashPhase === "countdown") {
       stage = `
-        <div class="flash-countdown" aria-live="assertive">
-          <p>フラッシュ暗算</p>
-          <strong id="flashCue">${state.flashCue}</strong>
-          <small>合図のあとに数字が出ます</small>
+        <div class="flash-countdown" aria-live="polite">
+          <p>もうすぐ はじまります</p>
+          <div class="flash-countdown-bar" style="--countdown-duration:${flashCountdownDuration()}ms">
+            <i></i>
+          </div>
+          <small>バーがなくなったら数字が出ます</small>
         </div>
       `;
     } else if (state.flashPhase === "showing") {
@@ -1136,9 +1158,11 @@
     } else {
       const message =
         state.flashResult === "wrong"
-          ? `<p class="result-message">おしい！ もう一度。合計はまだ秘密です。</p>`
+          ? `<p class="result-message">おしい！ ${state.flashReplayUsed ? "もう一度こたえるか、降参できます。" : "1回だけ、もう一度見られます。"}</p>`
           : state.flashResult === "correct"
             ? `<p class="result-message success">正解！ 合計は ${total} です。</p>`
+            : state.flashResult === "given-up"
+              ? `<p class="result-message">答えは ${total} でした。次の問題へ進みます。</p>`
             : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
       stage = `
         <div class="flash-answer-stage">
@@ -1148,11 +1172,16 @@
           ${message}
         </div>
         ${numberPad("flash")}
-        ${state.flashResult === "correct"
-          ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
+        ${["correct", "given-up"].includes(state.flashResult)
+          ? `<p class="auto-next-note ${state.flashResult === "given-up" ? "wrong" : ""}" aria-live="polite">${state.flashResult === "correct" ? "正解！" : "答えを確認しました。"} 次の問題へ進みます…</p>`
           : `<button type="button" class="primary-button wide" data-action="submit-flash" ${state.flashAnswer ? "" : "disabled"}>こたえる</button>`
         }
-        ${state.flashResult === "idle" ? '<button type="button" class="replay-button" data-action="replay-flash">もう一度見る</button>' : ""}
+        ${["correct", "given-up"].includes(state.flashResult)
+          ? ""
+          : state.flashReplayUsed
+            ? '<button type="button" class="replay-button give-up-button" data-action="give-up-flash">降参する</button>'
+            : '<button type="button" class="replay-button" data-action="replay-flash">もう一度見る（1回だけ）</button>'
+        }
       `;
     }
     return `
@@ -1166,8 +1195,8 @@
 
   function numberPad(target) {
     const locked =
-      (target === "math" && state.mathResult === "correct") ||
-      (target === "flash" && state.flashResult === "correct");
+      (target === "math" && state.mathResult !== "idle") ||
+      (target === "flash" && ["correct", "given-up"].includes(state.flashResult));
     const disabled = locked ? "disabled" : "";
     return `
       <div class="number-pad" aria-label="数字キーパッド">
@@ -1201,6 +1230,7 @@
       state.flashCue = "3";
       state.flashAnswer = "";
       state.flashResult = "idle";
+      state.flashReplayUsed = false;
       return;
     }
     const band = bandForLevel(
@@ -1228,35 +1258,20 @@
     state.flashCue = "3";
     state.flashAnswer = "";
     state.flashResult = "idle";
+    state.flashReplayUsed = false;
   }
 
   function startFlashSequence() {
     stopFlash();
     const token = ++state.flashRunToken;
     state.flashPhase = "countdown";
-    state.flashCue = "3";
     render();
-
-    const cues = ["3", "2", "1", "スタート！"];
-    let cueIndex = 0;
-    const showCue = () => {
+    state.flashTimer = window.setTimeout(() => {
       if (token !== state.flashRunToken || state.view !== "flash") return;
-      if (cueIndex < cues.length) {
-        state.flashCue = cues[cueIndex];
-        const cueElement = document.querySelector("#flashCue");
-        if (cueElement) {
-          cueElement.textContent = state.flashCue;
-          cueElement.classList.toggle("is-count", cueIndex < 3);
-        }
-        cueIndex += 1;
-        state.flashTimer = window.setTimeout(showCue, cueIndex === cues.length ? 700 : 620);
-        return;
-      }
       state.flashPhase = "showing";
       render();
       runFlashNumbers(token);
-    };
-    showCue();
+    }, flashCountdownDuration());
   }
 
   function runFlashNumbers(token) {
@@ -1810,7 +1825,7 @@
     state.answerAdvanceTimer = 0;
   }
 
-  function currentAnswerIsCorrect(mode) {
+  function currentAnswerCanAdvance(mode) {
     if (!state.session || state.session.mode !== mode) return false;
     if (mode === "read") {
       return (
@@ -1818,33 +1833,41 @@
         state.readingChoice === currentSessionProblem().answer
       );
     }
-    if (mode === "math") return state.mathResult === "correct";
-    if (mode === "flash") return state.flashResult === "correct";
+    if (mode === "math") return ["correct", "wrong"].includes(state.mathResult);
+    if (mode === "flash") {
+      return ["correct", "given-up"].includes(state.flashResult);
+    }
     return false;
   }
 
-  function scheduleCorrectAdvance(mode) {
+  function scheduleAnswerAdvance(mode) {
     stopAutoAdvance();
     const session = state.session;
-    if (!session || !currentAnswerIsCorrect(mode)) return;
+    if (!session || !currentAnswerCanAdvance(mode)) return;
+    const delay =
+      mode === "math" && state.mathResult === "wrong"
+        ? 1400
+        : mode === "flash" && state.flashResult === "given-up"
+          ? 1500
+          : 700;
     state.answerAdvanceTimer = window.setTimeout(() => {
       state.answerAdvanceTimer = 0;
       if (
         state.session !== session ||
         state.exitConfirmOpen ||
-        !currentAnswerIsCorrect(mode)
+        !currentAnswerCanAdvance(mode)
       ) {
         return;
       }
       state.session.completed += 1;
       advanceAfterCompletedQuestion();
-    }, 700);
+    }, delay);
   }
 
-  function resumeCorrectAdvance() {
+  function resumeAnswerAdvance() {
     const mode = state.session?.mode;
-    if (["read", "math", "flash"].includes(mode) && currentAnswerIsCorrect(mode)) {
-      scheduleCorrectAdvance(mode);
+    if (["read", "math", "flash"].includes(mode) && currentAnswerCanAdvance(mode)) {
+      scheduleAnswerAdvance(mode);
     }
   }
 
@@ -2306,7 +2329,7 @@
         earnXp(MODE_INFO.read.xp);
       }
       render();
-      if (correct) scheduleCorrectAdvance("read");
+      if (correct) scheduleAnswerAdvance("read");
       return;
     }
 
@@ -2314,9 +2337,11 @@
     if (numberButton) {
       const target = numberButton.dataset.numberTarget;
       if (target === "flash") {
+        if (["correct", "given-up"].includes(state.flashResult)) return;
         if (state.flashAnswer.length < 4) state.flashAnswer += numberButton.dataset.number;
         state.flashResult = "idle";
       } else {
+        if (state.mathResult !== "idle") return;
         if (state.mathAnswer.length < 4) state.mathAnswer += numberButton.dataset.number;
         state.mathResult = "idle";
       }
@@ -2363,7 +2388,7 @@
       "continue-learning"() {
         state.exitConfirmOpen = false;
         render();
-        resumeCorrectAdvance();
+        resumeAnswerAdvance();
       },
       "discard-session"() {
         discardCurrentSession();
@@ -2428,7 +2453,7 @@
         render();
       },
       "submit-math"() {
-        if (!state.mathAnswer) return;
+        if (!state.mathAnswer || state.mathResult !== "idle") return;
         const problem = currentSessionProblem();
         state.session.attempts += 1;
         state.mathResult = state.mathAnswer === problem.answer ? "correct" : "wrong";
@@ -2437,7 +2462,7 @@
           earnXp(MODE_INFO.math.xp);
         }
         render();
-        if (state.mathResult === "correct") scheduleCorrectAdvance("math");
+        scheduleAnswerAdvance("math");
       },
       "next-math"() {
         state.session.completed += 1;
@@ -2447,12 +2472,28 @@
         startFlashSequence();
       },
       "replay-flash"() {
+        if (state.flashReplayUsed) return;
+        state.flashReplayUsed = true;
         state.flashAnswer = "";
         state.flashResult = "idle";
         startFlashSequence();
       },
+      "give-up-flash"() {
+        if (!state.flashReplayUsed || ["correct", "given-up"].includes(state.flashResult)) {
+          return;
+        }
+        state.session.attempts += 1;
+        state.flashResult = "given-up";
+        render();
+        scheduleAnswerAdvance("flash");
+      },
       "submit-flash"() {
-        if (!state.flashAnswer) return;
+        if (
+          !state.flashAnswer ||
+          ["correct", "given-up"].includes(state.flashResult)
+        ) {
+          return;
+        }
         const total = state.flashSequence.reduce((sum, number) => sum + number, 0);
         state.session.attempts += 1;
         state.flashResult = Number(state.flashAnswer) === total ? "correct" : "wrong";
@@ -2461,7 +2502,7 @@
           earnXp(MODE_INFO.flash.xp);
         }
         render();
-        if (state.flashResult === "correct") scheduleCorrectAdvance("flash");
+        if (state.flashResult === "correct") scheduleAnswerAdvance("flash");
       },
       "next-flash"() {
         state.session.completed += 1;
@@ -2470,6 +2511,7 @@
       "continue-session"() {
         state.checkpointOpen = false;
         render();
+        if (state.session?.mode === "flash") startFlashSequence();
       },
       "end-session"() {
         finishSession(true);
@@ -2533,13 +2575,15 @@
       finishSession(false);
       return;
     }
+    const autoStartFlash = state.session.mode === "flash";
     resetQuestionState();
     state.exitConfirmOpen = false;
-    if (state.session.mode === "flash") prepareFlashQuestion();
+    if (autoStartFlash) prepareFlashQuestion();
     if (state.session.completed % state.checkpointEvery === 0) {
       state.checkpointOpen = true;
     }
     render();
+    if (autoStartFlash && !state.checkpointOpen) startFlashSequence();
   }
 
   function saveSettingsFromForm() {
@@ -2585,6 +2629,7 @@
     state.flashAnswer = "";
     state.flashResult = "idle";
     state.flashCue = "3";
+    state.flashReplayUsed = false;
     if (state.session?.mode !== "flash") state.flashPhase = "ready";
   }
 
