@@ -46,7 +46,7 @@ service cloud.firestore {
     }
 
     function isValidSkill(mode) {
-      return mode in ['write', 'read', 'math', 'flash']
+      return mode in ['write', 'read', 'math', 'flash', 'memory', 'digits']
         && request.resource.data.keys().hasOnly([
           'level',
           'xp',

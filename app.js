@@ -8,15 +8,24 @@
     read: { label: "漢字を読む", short: "漢字・読み", xp: 12, penalty: 4 },
     math: { label: "暗算する", short: "暗算", xp: 16, penalty: 5 },
     flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14, penalty: 4 },
+    memory: { label: "フラッシュカード", short: "カード", xp: 13, penalty: 4 },
+    digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
   };
   const MIKKUN_MODE_LABELS = {
-    write: "かいてみよう",
-    read: "よんでみよう",
-    math: "かずあそび",
-    flash: "ピカッとあんざん",
+    write: "あいうえお",
+    read: "どうぶつの なまえ",
+    math: "いろあて",
+    memory: "ABC",
   };
   const SKILL_MODES = Object.keys(MODE_INFO);
-  const DEFAULT_COUNTS = { write: 10, read: 10, math: 10, flash: 10 };
+  const DEFAULT_COUNTS = {
+    write: 10,
+    read: 10,
+    math: 10,
+    flash: 10,
+    memory: 10,
+    digits: 10,
+  };
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
   const MIKKUN_NAME = "みっくん";
   const PRESCHOOL_QUESTION_COUNT = 5;
@@ -148,26 +157,75 @@
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
-  const mikkunKanjiProblems = [
-    { kanji: "一", reading: "いち", word: "ひとつ", strokes: 1 },
-    { kanji: "二", reading: "に", word: "ふたつ", strokes: 2 },
-    { kanji: "三", reading: "さん", word: "みっつ", strokes: 3 },
-    { kanji: "山", reading: "やま", word: "やま", strokes: 3 },
-    { kanji: "川", reading: "かわ", word: "かわ", strokes: 3 },
-    { kanji: "口", reading: "くち", word: "くち", strokes: 3 },
-    { kanji: "日", reading: "ひ", word: "おひさま", strokes: 4 },
-    { kanji: "月", reading: "つき", word: "おつきさま", strokes: 4 },
+  const mikkunHiraganaProblems = [
+    { kanji: "あ", reading: "あ", word: "あひる", strokes: 3 },
+    { kanji: "い", reading: "い", word: "いぬ", strokes: 2 },
+    { kanji: "う", reading: "う", word: "うさぎ", strokes: 2 },
+    { kanji: "え", reading: "え", word: "えんぴつ", strokes: 2 },
+    { kanji: "お", reading: "お", word: "おにぎり", strokes: 3 },
+    { kanji: "か", reading: "か", word: "かめ", strokes: 3 },
+    { kanji: "き", reading: "き", word: "きりん", strokes: 4 },
+    { kanji: "く", reading: "く", word: "くるま", strokes: 1 },
+    { kanji: "け", reading: "け", word: "けーき", strokes: 3 },
+    { kanji: "こ", reading: "こ", word: "こあら", strokes: 2 },
   ];
 
-  const mikkunReadingProblems = [
-    { kanji: "一", answer: "いち", choices: ["いち", "に", "さん"] },
-    { kanji: "二", answer: "に", choices: ["に", "いち", "さん"] },
-    { kanji: "三", answer: "さん", choices: ["さん", "に", "よん"] },
-    { kanji: "山", answer: "やま", choices: ["やま", "かわ", "そら"] },
-    { kanji: "川", answer: "かわ", choices: ["かわ", "やま", "うみ"] },
-    { kanji: "人", answer: "ひと", choices: ["ひと", "いぬ", "ねこ"] },
-    { kanji: "日", answer: "ひ", choices: ["ひ", "つき", "ほし"] },
-    { kanji: "月", answer: "つき", choices: ["つき", "ひ", "そら"] },
+  const mikkunAnimalProblems = [
+    { kanji: "🐶", answer: "いぬ", choices: ["いぬ", "ねこ", "うさぎ"] },
+    { kanji: "🐱", answer: "ねこ", choices: ["ねこ", "いぬ", "ぱんだ"] },
+    { kanji: "🐰", answer: "うさぎ", choices: ["うさぎ", "さる", "ねこ"] },
+    { kanji: "🐘", answer: "ぞう", choices: ["ぞう", "きりん", "らいおん"] },
+    { kanji: "🦒", answer: "きりん", choices: ["きりん", "ぞう", "ぱんだ"] },
+    { kanji: "🦁", answer: "らいおん", choices: ["らいおん", "さる", "ぞう"] },
+    { kanji: "🐼", answer: "ぱんだ", choices: ["ぱんだ", "こあら", "ねこ"] },
+    { kanji: "🐵", answer: "さる", choices: ["さる", "うさぎ", "らいおん"] },
+    { kanji: "🐨", answer: "こあら", choices: ["こあら", "ぱんだ", "きりん"] },
+    { kanji: "🐧", answer: "ぺんぎん", choices: ["ぺんぎん", "あひる", "うさぎ"] },
+  ];
+
+  const mikkunColorProblems = [
+    { display: "●", color: "#EF5350", answer: "あか", choices: ["あか", "あお", "きいろ"] },
+    { display: "●", color: "#42A5F5", answer: "あお", choices: ["あお", "みどり", "むらさき"] },
+    { display: "●", color: "#FDD835", answer: "きいろ", choices: ["きいろ", "おれんじ", "ぴんく"] },
+    { display: "●", color: "#43A047", answer: "みどり", choices: ["みどり", "あお", "くろ"] },
+    { display: "●", color: "#FB8C00", answer: "おれんじ", choices: ["おれんじ", "きいろ", "あか"] },
+    { display: "●", color: "#8E5CC7", answer: "むらさき", choices: ["むらさき", "ぴんく", "あお"] },
+    { display: "●", color: "#EC6FA9", answer: "ぴんく", choices: ["ぴんく", "あか", "むらさき"] },
+    { display: "●", color: "#263238", answer: "くろ", choices: ["くろ", "みどり", "あお"] },
+  ];
+
+  const mikkunAbcProblems = [
+    { display: "A", answer: "えー", choices: ["えー", "びー", "しー"] },
+    { display: "B", answer: "びー", choices: ["びー", "でぃー", "ぴー"] },
+    { display: "C", answer: "しー", choices: ["しー", "じー", "ぜっと"] },
+    { display: "D", answer: "でぃー", choices: ["でぃー", "びー", "てぃー"] },
+    { display: "E", answer: "いー", choices: ["いー", "えー", "わい"] },
+    { display: "F", answer: "えふ", choices: ["えふ", "えむ", "えぬ"] },
+    { display: "G", answer: "じー", choices: ["じー", "しー", "けー"] },
+    { display: "H", answer: "えいち", choices: ["えいち", "えー", "えふ"] },
+    { display: "I", answer: "あい", choices: ["あい", "いー", "わい"] },
+    { display: "J", answer: "じぇー", choices: ["じぇー", "けー", "じー"] },
+  ];
+
+  const memoryCards = [
+    { id: "dog", symbol: "🐶", label: "いぬ" },
+    { id: "cat", symbol: "🐱", label: "ねこ" },
+    { id: "rabbit", symbol: "🐰", label: "うさぎ" },
+    { id: "apple", symbol: "🍎", label: "りんご" },
+    { id: "banana", symbol: "🍌", label: "ばなな" },
+    { id: "grape", symbol: "🍇", label: "ぶどう" },
+    { id: "car", symbol: "🚗", label: "くるま" },
+    { id: "train", symbol: "🚃", label: "でんしゃ" },
+    { id: "plane", symbol: "✈️", label: "ひこうき" },
+    { id: "sun", symbol: "☀️", label: "たいよう" },
+    { id: "moon", symbol: "🌙", label: "つき" },
+    { id: "star", symbol: "⭐", label: "ほし" },
+    { id: "flower", symbol: "🌷", label: "はな" },
+    { id: "tree", symbol: "🌳", label: "き" },
+    { id: "umbrella", symbol: "☂️", label: "かさ" },
+    { id: "clock", symbol: "⏰", label: "とけい" },
+    { id: "book", symbol: "📕", label: "ほん" },
+    { id: "ball", symbol: "⚽", label: "ぼーる" },
   ];
 
   const levelGroups = [
@@ -192,7 +250,14 @@
     learnerNames: [...DEFAULT_NAMES],
     namesSource: "初期名簿",
     profiles: {},
-    lastFirstByMode: { write: "", read: "", math: "", flash: "" },
+    lastFirstByMode: {
+      write: "",
+      read: "",
+      math: "",
+      flash: "",
+      memory: "",
+      digits: "",
+    },
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
     levelViewMode: "write",
@@ -223,6 +288,19 @@
     flashReplayUsed: false,
     flashTimer: 0,
     flashRunToken: 0,
+    memoryPhase: "ready",
+    memoryVisible: null,
+    memoryChoice: "",
+    memoryChecked: false,
+    memoryChoices: [],
+    memoryTimer: 0,
+    memoryRunToken: 0,
+    digitsPhase: "ready",
+    digitsVisible: "",
+    digitsAnswer: "",
+    digitsResult: "idle",
+    digitsTimer: 0,
+    digitsRunToken: 0,
     cloudReady: false,
     cloudApplying: false,
     cloudSyncing: false,
@@ -771,6 +849,8 @@
       read: readTemplate,
       math: mathTemplate,
       flash: flashTemplate,
+      memory: memoryTemplate,
+      digits: digitsTemplate,
       levels: levelsTemplate,
       profile: profileTemplate,
       result: resultTemplate,
@@ -789,6 +869,24 @@
 
   function homeTemplate() {
     const mikkun = isMikkunLearner();
+    const homeModes = mikkun ? ["write", "read", "math", "memory"] : SKILL_MODES;
+    const homeProfile = ensureProfile(state.learnerName);
+    const homeLevel = mikkun
+      ? Math.round(
+          homeModes.reduce(
+            (sum, mode) => sum + homeProfile.skills[mode].level,
+            0,
+          ) / homeModes.length,
+        )
+      : state.level;
+    const homeXp = mikkun
+      ? Math.round(
+          homeModes.reduce(
+            (sum, mode) => sum + homeProfile.skills[mode].xp,
+            0,
+          ) / homeModes.length,
+        )
+      : state.xp;
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -811,22 +909,24 @@
           ${mikkun ? `
             <div class="mikkun-intro">
               <span>★</span>
-              <p><b>できるところから、ゆっくりやろう！</b><small>やさしい もじと かずのれんしゅう</small></p>
+              <p><b>みて、きいて、たのしくおぼえよう！</b><small>もじ・どうぶつ・いろの やさしいれんしゅう</small></p>
             </div>
           ` : ""}
           <div class="subject-grid">
             ${mikkun
               ? `
-                ${mikkunSubjectCard("write", "一", "かいてみよう", "やさしい かんじ", "kanji-card", "kanji-icon")}
-                ${mikkunSubjectCard("read", "あ", "よんでみよう", "3つから えらぶ", "reading-subject-card", "reading-icon")}
-                ${mikkunSubjectCard("math", "5", "かずあそび", "5までの たしひき", "math-card", "math-icon")}
-                ${mikkunSubjectCard("flash", "★", "ピカッとあんざん", "ゆっくり 2つのかず", "flash-subject-card", "flash-icon")}
+                ${mikkunSubjectCard("write", "あ", "あいうえお", "ゆびで なぞる", "kanji-card", "kanji-icon", "hiragana")}
+                ${mikkunSubjectCard("read", "🐶", "どうぶつの なまえ", "3つから えらぶ", "reading-subject-card", "reading-icon", "animals")}
+                ${mikkunSubjectCard("math", "●", "いろあて", "いろの なまえ", "math-card", "math-icon color-card-icon", "colors")}
+                ${mikkunSubjectCard("memory", "A", "ABC", "えいごの もじ", "memory-subject-card", "memory-icon", "abc")}
               `
               : `
                 ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
                 ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
                 ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
                 ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
+                ${subjectCard("memory", "絵", "フラッシュカード", "絵カードを記憶", "memory-subject-card", "memory-icon")}
+                ${subjectCard("digits", "123", "数字記憶", "流れる数字を記憶", "digits-subject-card", "digits-icon")}
               `}
           </div>
         </section>
@@ -837,17 +937,17 @@
           <i>›</i>
         </button>
 
-        <section class="level-card" aria-label="4分野の総合レベル${state.level}">
+        <section class="level-card" aria-label="${mikkun ? "みっくんのがんばり" : "6分野の総合"}レベル${homeLevel}">
           <div class="level-copy">
-            <span class="level-kicker">${mikkun ? "みっくんの がんばりレベル" : "4分野の総合レベル"}</span>
-            <div class="level-number"><small>Lv.</small>${state.level}</div>
-            <span class="grade-chip">${mikkun ? "年中さんコース" : gradeForLevel(state.level)}</span>
+            <span class="level-kicker">${mikkun ? "みっくんの がんばりレベル" : "6分野の総合レベル"}</span>
+            <div class="level-number"><small>Lv.</small>${homeLevel}</div>
+            <span class="grade-chip">${mikkun ? "年中さんコース" : gradeForLevel(homeLevel)}</span>
             <button type="button" class="text-link" data-action="open-placement" data-mode="write">
               分野別の開始レベルを調整 <span aria-hidden="true">›</span>
             </button>
           </div>
-          <div class="progress-orbit" style="--progress: ${state.xp * 3.6}deg">
-            <div><b>${state.xp}%</b><span>4分野の平均XP</span></div>
+          <div class="progress-orbit" style="--progress: ${homeXp * 3.6}deg">
+            <div><b>${homeXp}%</b><span>${mikkun ? "4コース" : "6分野"}の平均XP</span></div>
           </div>
           <span class="level-card-shape shape-one"></span>
           <span class="level-card-shape shape-two"></span>
@@ -855,17 +955,17 @@
 
         <section class="road-section">
           <div class="section-heading compact">
-            <div><p class="eyebrow">FOUR SKILLS</p><h2>4つのレベル</h2></div>
+            <div><p class="eyebrow">${mikkun ? "MIKKUN COURSES" : "SIX SKILLS"}</p><h2>${mikkun ? "4つの れんしゅうレベル" : "6つのレベル"}</h2></div>
             <button type="button" class="text-link" data-view="levels">すべて見る <span>›</span></button>
           </div>
           <div class="skill-overview-grid">
-            ${SKILL_MODES.map((mode) => {
+            ${homeModes.map((mode) => {
               const skill = activeSkill(mode);
               return `
                 <button type="button" data-view="levels" data-level-mode="${mode}">
-                  <span>${MODE_INFO[mode].short}</span>
+                  <span>${mikkun ? MIKKUN_MODE_LABELS[mode] : MODE_INFO[mode].short}</span>
                   <b>Lv.${skill.level}</b>
-                  <small>${gradeForLevel(skill.level)} ・ ${skill.xp}%</small>
+                  <small>${mikkun ? "年中さん" : gradeForLevel(skill.level)} ・ ${skill.xp}%</small>
                 </button>
               `;
             }).join("")}
@@ -895,9 +995,17 @@
     `;
   }
 
-  function mikkunSubjectCard(mode, icon, name, detail, cardClass, iconClass) {
+  function mikkunSubjectCard(
+    mode,
+    icon,
+    name,
+    detail,
+    cardClass,
+    iconClass,
+    preschoolType,
+  ) {
     return `
-      <button type="button" class="subject-card mikkun-subject-card ${cardClass}" data-start="${mode}" data-preschool="true">
+      <button type="button" class="subject-card mikkun-subject-card ${cardClass}" data-start="${mode}" data-preschool="true" data-preschool-type="${preschoolType}">
         <span class="subject-icon ${iconClass}">${icon}</span>
         <span class="subject-time">ゆっくり</span>
         <span class="subject-level-chip">ねんちゅう</span>
@@ -908,17 +1016,27 @@
     `;
   }
 
-  function startSession(mode, preschool = false) {
+  function startSession(mode, preschool = false, preschoolType = "") {
     stopFlash();
+    stopMemory();
+    stopDigits();
     stopAutoAdvance();
     const skill = activeSkill(mode);
     const usePreschoolMenu = Boolean(preschool && isMikkunLearner());
     const total = usePreschoolMenu ? PRESCHOOL_QUESTION_COUNT : state.counts[mode];
-    const problems = createSessionProblems(mode, total, skill.level, usePreschoolMenu);
+    const safePreschoolType = usePreschoolMenu ? preschoolType : "";
+    const problems = createSessionProblems(
+      mode,
+      total,
+      skill.level,
+      usePreschoolMenu,
+      safePreschoolType,
+    );
     state.session = {
       mode,
       total,
       preschool: usePreschoolMenu,
+      preschoolType: safePreschoolType,
       levelAtStart: skill.level,
       skillAtStart: {
         level: skill.level,
@@ -935,6 +1053,8 @@
     state.view = mode;
     resetQuestionState();
     if (mode === "flash") prepareFlashQuestion();
+    if (mode === "memory" && !usePreschoolMenu) prepareMemoryQuestion();
+    if (mode === "digits") prepareDigitsQuestion();
     saveProgress();
     render();
     window.scrollTo({ top: 0, left: 0 });
@@ -979,10 +1099,10 @@
     const preschool = state.session?.preschool;
     return `
       <div class="screen lesson-screen kanji-lesson">
-        ${lessonHeader(preschool ? "かいてみよう" : "漢字を書く")}
+        ${lessonHeader(preschool ? "あいうえお" : "漢字を書く")}
         ${lessonLevelRow()}
         <section class="prompt-area">
-          <p class="eyebrow">${preschool ? "ゆびで なぞってみよう" : "お題"}</p>
+          <p class="eyebrow">${preschool ? "ひらがなを ゆびで なぞろう" : "お題"}</p>
           <h1>「${problem.reading}」を<br />${preschool ? "かいてみよう" : "漢字で書こう"}</h1>
           <p class="word-example">${preschool ? "ことば" : "ことば"}：<b>${problem.word}</b> ・ ${problem.strokes}かく</p>
         </section>
@@ -1087,10 +1207,10 @@
       : "";
     return `
       <div class="screen lesson-screen reading-lesson">
-        ${lessonHeader(preschool ? "よんでみよう" : "漢字を読む")}
+        ${lessonHeader(preschool ? "どうぶつの なまえ" : "漢字を読む")}
         ${lessonLevelRow()}
         <section class="reading-prompt">
-          <p class="eyebrow">${preschool ? "どれかな？" : "この漢字、なんて読む？"}</p>
+          <p class="eyebrow">${preschool ? "この どうぶつは なあに？" : "この漢字、なんて読む？"}</p>
           <div class="reading-card"><span>${problem.kanji}</span></div>
         </section>
         <div class="reading-options">
@@ -1116,7 +1236,54 @@
     `;
   }
 
+  function mikkunChoiceTemplate(title, prompt, displayClass = "") {
+    const problem = currentSessionProblem();
+    const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
+    const correct = state.readingChecked && state.readingChoice === problem.answer;
+    const feedback = state.readingChecked
+      ? correct
+        ? '<div class="reading-feedback correct"><b>はなまる！</b> よくできました。</div>'
+        : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answer}」です。</div>`
+      : "";
+    const colorStyle = problem.color ? `style="--quiz-color:${problem.color}"` : "";
+    return `
+      <div class="screen lesson-screen mikkun-choice-lesson">
+        ${lessonHeader(title)}
+        ${lessonLevelRow()}
+        <section class="reading-prompt mikkun-choice-prompt">
+          <p class="eyebrow">${prompt}</p>
+          <div class="reading-card mikkun-choice-display ${displayClass}" ${colorStyle}>
+            <span>${problem.display || problem.kanji}</span>
+          </div>
+        </section>
+        <div class="reading-options mikkun-options">
+          ${choices.map((choice) => {
+            const selected = state.readingChoice === choice;
+            const rightChoice = state.readingChecked && choice === problem.answer;
+            const wrongChoice =
+              state.readingChecked && selected && choice !== problem.answer;
+            return `
+              <button type="button" data-reading="${choice}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.readingChecked ? "disabled" : ""}>
+                <span>${choice}</span><i>${rightChoice ? "✓" : wrongChoice ? "×" : "›"}</i>
+              </button>
+            `;
+          }).join("")}
+        </div>
+        <div class="reading-feedback-slot">${feedback}</div>
+        ${state.readingChecked
+          ? correct
+            ? '<p class="auto-next-note" aria-live="polite">できた！ つぎへ進みます…</p>'
+            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎのもんだいへ →</button>'
+          : '<p class="choice-note">ひとつ えらんでね</p>'
+        }
+      </div>
+    `;
+  }
+
   function mathTemplate() {
+    if (state.session?.preschoolType === "colors") {
+      return mikkunChoiceTemplate("いろあて", "この いろは なあに？", "color-choice-display");
+    }
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     const answered = state.mathResult !== "idle";
@@ -1222,10 +1389,149 @@
     `;
   }
 
+  function memoryTemplate() {
+    if (state.session?.preschoolType === "abc") {
+      return mikkunChoiceTemplate("ABC", "この もじは なんてよむ？", "abc-choice-display");
+    }
+    const problem = currentSessionProblem();
+    let stage = "";
+    if (state.memoryPhase === "ready") {
+      stage = `
+        <div class="memory-ready">
+          <span class="memory-symbol">絵</span>
+          <h1>出てくるカードを<br />おぼえよう</h1>
+          <p>${problem.sequence.length}枚の絵カードが順番に出ます。</p>
+          <button type="button" class="primary-button wide" data-action="start-memory">カードを始める</button>
+        </div>
+      `;
+    } else if (state.memoryPhase === "countdown") {
+      stage = `
+        <div class="flash-countdown" aria-live="polite">
+          <p>もうすぐ はじまります</p>
+          <div class="flash-countdown-bar memory-countdown-bar" style="--countdown-duration:2200ms">
+            <i></i>
+          </div>
+          <small>バーがなくなったらカードが出ます</small>
+        </div>
+      `;
+    } else if (state.memoryPhase === "showing") {
+      stage = `
+        <div class="memory-showing" aria-live="assertive">
+          <p>よく見て おぼえてね</p>
+          <div class="memory-flash-card">
+            <strong>${state.memoryVisible?.symbol || "★"}</strong>
+            <span>${state.memoryVisible?.label || ""}</span>
+          </div>
+        </div>
+      `;
+    } else {
+      const correct =
+        state.memoryChecked && state.memoryChoice === problem.answer.id;
+      const feedback = state.memoryChecked
+        ? correct
+          ? '<div class="reading-feedback correct"><b>正解！</b> よく覚えられました。</div>'
+          : `<div class="reading-feedback wrong"><b>おしい！</b> 出てきたのは「${problem.answer.symbol} ${problem.answer.label}」です。</div>`
+        : "";
+      stage = `
+        <div class="memory-answer-stage">
+          <p class="eyebrow">出てきたのはどれ？</p>
+          <h1>覚えているカードを選ぼう</h1>
+          <div class="memory-choice-grid">
+            ${state.memoryChoices.map((card) => {
+              const selected = state.memoryChoice === card.id;
+              const rightChoice = state.memoryChecked && card.id === problem.answer.id;
+              const wrongChoice =
+                state.memoryChecked && selected && card.id !== problem.answer.id;
+              return `
+                <button type="button" data-memory-choice="${card.id}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.memoryChecked ? "disabled" : ""}>
+                  <strong>${card.symbol}</strong><span>${card.label}</span>
+                </button>
+              `;
+            }).join("")}
+          </div>
+          <div class="reading-feedback-slot">${feedback}</div>
+          ${state.memoryChecked
+            ? `<p class="auto-next-note ${correct ? "" : "wrong"}" aria-live="polite">${correct ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+            : '<p class="choice-note">カードをひとつ選んでね</p>'
+          }
+        </div>
+      `;
+    }
+    return `
+      <div class="screen lesson-screen memory-lesson">
+        ${lessonHeader("フラッシュカード")}
+        ${lessonLevelRow('<span class="timer">● 記憶モード</span>')}
+        <section class="memory-stage">${stage}</section>
+      </div>
+    `;
+  }
+
+  function digitsTemplate() {
+    const problem = currentSessionProblem();
+    let stage = "";
+    if (state.digitsPhase === "ready") {
+      stage = `
+        <div class="memory-ready digits-ready">
+          <span class="memory-symbol digits-symbol">123</span>
+          <h1>流れる数字を<br />順番におぼえよう</h1>
+          <p>${problem.digits.length}けたの数字が右から左へ流れます。</p>
+          <button type="button" class="primary-button wide" data-action="start-digits">数字を始める</button>
+        </div>
+      `;
+    } else if (state.digitsPhase === "countdown") {
+      stage = `
+        <div class="flash-countdown" aria-live="polite">
+          <p>もうすぐ はじまります</p>
+          <div class="flash-countdown-bar digits-countdown-bar" style="--countdown-duration:2200ms">
+            <i></i>
+          </div>
+          <small>バーがなくなったら数字が流れます</small>
+        </div>
+      `;
+    } else if (state.digitsPhase === "showing") {
+      stage = `
+        <div class="digits-showing" aria-live="assertive" style="--digits-duration:${problem.duration}ms">
+          <p>順番も おぼえてね</p>
+          <div class="digits-lane">
+            <strong>${problem.digits.split("").join("　")}</strong>
+          </div>
+        </div>
+      `;
+    } else {
+      const message =
+        state.digitsResult === "wrong"
+          ? `<p class="result-message">おしい！ 正解は ${problem.digits} です。</p>`
+          : state.digitsResult === "correct"
+            ? '<p class="result-message success">正解！ 順番まで覚えられました。</p>'
+            : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
+      stage = `
+        <div class="digits-answer-stage">
+          <p class="eyebrow">どんな数字だった？</p>
+          <h1>同じ順番で入力しよう</h1>
+          <div class="answer-box ${state.digitsResult}">${state.digitsAnswer || "<span>?</span>"}</div>
+          ${message}
+          ${numberPad("digits")}
+          ${state.digitsResult === "idle"
+            ? `<button type="button" class="primary-button wide" data-action="submit-digits" ${state.digitsAnswer ? "" : "disabled"}>こたえる</button>`
+            : `<p class="auto-next-note ${state.digitsResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.digitsResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+          }
+        </div>
+      `;
+    }
+    return `
+      <div class="screen lesson-screen digits-lesson">
+        ${lessonHeader("数字記憶")}
+        ${lessonLevelRow('<span class="timer">● 記憶モード</span>')}
+        <section class="memory-stage digits-stage">${stage}</section>
+      </div>
+    `;
+  }
+
   function numberPad(target) {
     const locked =
       (target === "math" && state.mathResult !== "idle") ||
-      (target === "flash" && ["correct", "given-up"].includes(state.flashResult));
+      (target === "flash" && ["correct", "given-up"].includes(state.flashResult)) ||
+      (target === "digits" && state.digitsResult !== "idle");
     const disabled = locked ? "disabled" : "";
     return `
       <div class="number-pad" aria-label="数字キーパッド">
@@ -1342,6 +1648,87 @@
     state.flashRunToken += 1;
   }
 
+  function prepareMemoryQuestion() {
+    const problem = currentSessionProblem();
+    state.memoryPhase = "ready";
+    state.memoryVisible = null;
+    state.memoryChoice = "";
+    state.memoryChecked = false;
+    state.memoryChoices = shuffled(problem.choices || []);
+  }
+
+  function startMemorySequence() {
+    stopMemory();
+    const token = ++state.memoryRunToken;
+    state.memoryPhase = "countdown";
+    render();
+    state.memoryTimer = window.setTimeout(() => {
+      if (token !== state.memoryRunToken || state.view !== "memory") return;
+      state.memoryPhase = "showing";
+      state.memoryVisible = null;
+      render();
+      runMemoryCards(token);
+    }, 2200);
+  }
+
+  function runMemoryCards(token) {
+    const problem = currentSessionProblem();
+    let index = 0;
+    const step = () => {
+      if (token !== state.memoryRunToken || state.view !== "memory") return;
+      if (index < problem.sequence.length) {
+        state.memoryVisible = problem.sequence[index];
+        index += 1;
+        render();
+        state.memoryTimer = window.setTimeout(step, problem.delay);
+        return;
+      }
+      state.memoryVisible = null;
+      state.memoryPhase = "answer";
+      render();
+    };
+    step();
+  }
+
+  function stopMemory() {
+    window.clearTimeout(state.memoryTimer);
+    state.memoryTimer = 0;
+    state.memoryRunToken += 1;
+  }
+
+  function prepareDigitsQuestion() {
+    state.digitsPhase = "ready";
+    state.digitsVisible = "";
+    state.digitsAnswer = "";
+    state.digitsResult = "idle";
+  }
+
+  function startDigitsSequence() {
+    stopDigits();
+    const token = ++state.digitsRunToken;
+    state.digitsPhase = "countdown";
+    render();
+    state.digitsTimer = window.setTimeout(() => {
+      if (token !== state.digitsRunToken || state.view !== "digits") return;
+      const problem = currentSessionProblem();
+      state.digitsPhase = "showing";
+      state.digitsVisible = problem.digits;
+      render();
+      state.digitsTimer = window.setTimeout(() => {
+        if (token !== state.digitsRunToken || state.view !== "digits") return;
+        state.digitsVisible = "";
+        state.digitsPhase = "answer";
+        render();
+      }, problem.duration);
+    }, 2200);
+  }
+
+  function stopDigits() {
+    window.clearTimeout(state.digitsTimer);
+    state.digitsTimer = 0;
+    state.digitsRunToken += 1;
+  }
+
   function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
@@ -1359,32 +1746,33 @@
     if (!problem) return "";
     if (mode === "write") return problem.kanji;
     if (mode === "read") return `${problem.kanji}:${problem.answer}`;
+    if (mode === "memory") {
+      return problem.sequence
+        ? `${problem.sequence.map((card) => card.id).join("-")}:${problem.answer.id}`
+        : `${problem.display}:${problem.answer}`;
+    }
+    if (mode === "digits") return problem.digits;
+    if (problem.choices) return `${problem.display}:${problem.answer}`;
     return `${problem.question}:${problem.answer}`;
   }
 
-  function createSessionProblems(mode, total, level, preschool = false) {
+  function createSessionProblems(
+    mode,
+    total,
+    level,
+    preschool = false,
+    preschoolType = "",
+  ) {
     if (mode === "flash") return [];
     if (preschool) {
-      if (mode === "math") {
-        const result = [];
-        const used = new Set();
-        while (result.length < total) {
-          let problem = generateMikkunMathProblem();
-          let signature = problemSignature(mode, problem);
-          let attempts = 0;
-          while (used.has(signature) && attempts < 30) {
-            problem = generateMikkunMathProblem();
-            signature = problemSignature(mode, problem);
-            attempts += 1;
-          }
-          used.add(signature);
-          result.push(problem);
-        }
-        state.lastFirstByMode.math = problemSignature(mode, result[0]);
-        return result;
-      }
-
-      const bank = mode === "write" ? mikkunKanjiProblems : mikkunReadingProblems;
+      const bank =
+        preschoolType === "hiragana"
+          ? mikkunHiraganaProblems
+          : preschoolType === "animals"
+            ? mikkunAnimalProblems
+            : preschoolType === "colors"
+              ? mikkunColorProblems
+              : mikkunAbcProblems;
       const result = [];
       while (result.length < total) {
         const cycle = shuffled(bank);
@@ -1395,6 +1783,30 @@
         problemSignature(mode, result[0]) === state.lastFirstByMode[mode]
       ) {
         [result[0], result[1]] = [result[1], result[0]];
+      }
+      state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
+      return result;
+    }
+    if (mode === "memory" || mode === "digits") {
+      const generator =
+        mode === "memory" ? generateMemoryProblem : generateDigitsProblem;
+      const result = [];
+      const used = new Set();
+      while (result.length < total) {
+        let problem = generator(level);
+        let signature = problemSignature(mode, problem);
+        let attempts = 0;
+        while (
+          (used.has(signature) ||
+            (result.length === 0 && signature === state.lastFirstByMode[mode])) &&
+          attempts < 40
+        ) {
+          problem = generator(level);
+          signature = problemSignature(mode, problem);
+          attempts += 1;
+        }
+        used.add(signature);
+        result.push(problem);
       }
       state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
       return result;
@@ -1452,34 +1864,6 @@
     return result;
   }
 
-  function generateMikkunMathProblem() {
-    const kind = randomInt(0, 2);
-    if (kind === 0) {
-      const count = randomInt(1, 5);
-      return {
-        question: Array.from({ length: count }, () => "●").join("　"),
-        answer: String(count),
-        hint: "まるを ゆっくり かぞえてみよう",
-      };
-    }
-    if (kind === 1) {
-      const left = randomInt(1, 4);
-      const right = randomInt(1, 5 - left);
-      return {
-        question: `${left} + ${right}`,
-        answer: String(left + right),
-        hint: `${left}から、あと${right}こ かぞえてみよう`,
-      };
-    }
-    const left = randomInt(2, 5);
-    const right = randomInt(1, left - 1);
-    return {
-      question: `${left} − ${right}`,
-      answer: String(left - right),
-      hint: `${left}こから ${right}こ へらしてみよう`,
-    };
-  }
-
   function currentSessionProblem() {
     const session = state.session;
     const queued = session?.problems?.[session.completed];
@@ -1492,7 +1876,36 @@
     if (session?.mode === "read") {
       return readingProblems.find((problem) => problem.band === bandForLevel(level));
     }
+    if (session?.mode === "memory") return generateMemoryProblem(level);
+    if (session?.mode === "digits") return generateDigitsProblem(level);
     return generateMathProblem(level);
+  }
+
+  function generateMemoryProblem(level) {
+    const band = bandForLevel(level);
+    const lengths = [2, 2, 3, 3, 4, 4, 5, 5, 6, 7];
+    const delays = [1250, 1150, 1050, 950, 880, 820, 760, 700, 640, 580];
+    const sequence = shuffled(memoryCards).slice(0, lengths[band - 1]);
+    const answer = sequence[randomInt(0, sequence.length - 1)];
+    const decoys = shuffled(
+      memoryCards.filter((card) => !sequence.some((shown) => shown.id === card.id)),
+    ).slice(0, 3);
+    return {
+      sequence,
+      answer,
+      choices: shuffled([answer, ...decoys]),
+      delay: delays[band - 1],
+    };
+  }
+
+  function generateDigitsProblem(level) {
+    const band = bandForLevel(level);
+    const lengths = [3, 4, 4, 5, 6, 7, 8, 9, 10, 12];
+    const durations = [5200, 5000, 4700, 4500, 4300, 4100, 3900, 3700, 3500, 3300];
+    const length = lengths[band - 1];
+    let digits = String(randomInt(1, 9));
+    while (digits.length < length) digits += String(randomInt(0, 9));
+    return { digits, duration: durations[band - 1] };
   }
 
   function generateMathProblem(level) {
@@ -1804,11 +2217,15 @@
   }
 
   function prepareReadingChoices() {
-    if (!state.session || state.session.mode !== "read") {
+    const problem = state.session ? currentSessionProblem() : null;
+    const usesChoiceButtons =
+      state.session?.mode === "read" ||
+      (state.session?.preschool &&
+        ["math", "memory"].includes(state.session.mode));
+    if (!usesChoiceButtons || !problem?.choices) {
       state.readingChoices = [];
       return;
     }
-    const problem = currentSessionProblem();
     const possibleIndexes = problem.choices
       .map((_, index) => index)
       .filter((index) => index !== state.lastReadingAnswerIndex);
@@ -1835,6 +2252,8 @@
     }
     resetQuestionState();
     if (session.mode === "flash") prepareFlashQuestion();
+    if (session.mode === "memory" && !session.preschool) prepareMemoryQuestion();
+    if (session.mode === "digits") prepareDigitsQuestion();
     if (session.completed % state.checkpointEvery === 0) {
       state.checkpointOpen = true;
     }
@@ -1843,6 +2262,8 @@
 
   function finishSession(endedEarly) {
     stopFlash();
+    stopMemory();
+    stopDigits();
     stopAutoAdvance();
     if (state.session) state.session.endedEarly = endedEarly;
     state.checkpointOpen = false;
@@ -1858,15 +2279,22 @@
 
   function currentAnswerCanAdvance(mode) {
     if (!state.session || state.session.mode !== mode) return false;
-    if (mode === "read") {
+    if (
+      mode === "read" ||
+      (state.session.preschool && ["math", "memory"].includes(mode))
+    ) {
       return (
         state.readingChecked &&
-        state.readingChoice === currentSessionProblem().answer
+        Boolean(state.readingChoice)
       );
     }
     if (mode === "math") return ["correct", "wrong"].includes(state.mathResult);
     if (mode === "flash") {
       return ["correct", "given-up"].includes(state.flashResult);
+    }
+    if (mode === "memory") return state.memoryChecked;
+    if (mode === "digits") {
+      return ["correct", "wrong"].includes(state.digitsResult);
     }
     return false;
   }
@@ -1876,7 +2304,11 @@
     const session = state.session;
     if (!session || !currentAnswerCanAdvance(mode)) return;
     const delay =
-      mode === "math" && state.mathResult === "wrong"
+      (mode === "math" && state.mathResult === "wrong") ||
+      (mode === "digits" && state.digitsResult === "wrong") ||
+      (mode === "memory" &&
+        state.memoryChecked &&
+        state.memoryChoice !== currentSessionProblem().answer.id)
         ? 1400
         : mode === "flash" && state.flashResult === "given-up"
           ? 1500
@@ -1897,7 +2329,10 @@
 
   function resumeAnswerAdvance() {
     const mode = state.session?.mode;
-    if (["read", "math", "flash"].includes(mode) && currentAnswerCanAdvance(mode)) {
+    if (
+      ["read", "math", "flash", "memory", "digits"].includes(mode) &&
+      currentAnswerCanAdvance(mode)
+    ) {
       scheduleAnswerAdvance(mode);
     }
   }
@@ -1912,6 +2347,8 @@
     }
 
     stopFlash();
+    stopMemory();
+    stopDigits();
     stopAutoAdvance();
     const profile = ensureProfile(state.learnerName);
     const restoredAt = Date.now();
@@ -2016,7 +2453,7 @@
       <div class="screen sub-screen level-map-screen">
         <header class="sub-header">
           <button class="round-button" type="button" data-action="back-home" aria-label="戻る">‹</button>
-          <div><p class="eyebrow">4 SKILLS / LEVEL 1–100</p><h1>分野別レベル</h1></div>
+          <div><p class="eyebrow">6 SKILLS / LEVEL 1–100</p><h1>分野別レベル</h1></div>
         </header>
         <div class="skill-mode-tabs" aria-label="表示する分野">
           ${SKILL_MODES.map((itemMode) => `
@@ -2066,7 +2503,7 @@
     return `
       <section class="learner-levels-card">
         <div class="settings-heading">
-          <div><p class="eyebrow">LEARNERS</p><h2>みんなの4分野レベル</h2></div>
+          <div><p class="eyebrow">LEARNERS</p><h2>みんなの6分野レベル</h2></div>
           <span>${state.learnerNames.length}人</span>
         </div>
         <div class="learner-level-list">
@@ -2340,6 +2777,7 @@
       startSession(
         startButton.dataset.start,
         startButton.dataset.preschool === "true",
+        startButton.dataset.preschoolType || "",
       );
       return;
     }
@@ -2347,6 +2785,8 @@
     const viewButton = event.target.closest("[data-view]");
     if (viewButton) {
       stopFlash();
+      stopMemory();
+      stopDigits();
       stopAutoAdvance();
       state.exitConfirmOpen = false;
       if (SKILL_MODES.includes(viewButton.dataset.levelMode)) {
@@ -2402,18 +2842,37 @@
     const readingButton = event.target.closest("[data-reading]");
     if (readingButton && !state.readingChecked) {
       const problem = currentSessionProblem();
+      const mode = state.session.mode;
       state.readingChoice = readingButton.dataset.reading;
       state.readingChecked = true;
       state.session.attempts += 1;
       const correct = state.readingChoice === problem.answer;
       if (correct) {
         state.session.correct += 1;
-        earnXp(MODE_INFO.read.xp);
+        earnXp(MODE_INFO[mode].xp);
       } else {
-        applyWrongAnswerPenalty("read");
+        applyWrongAnswerPenalty(mode);
       }
       render();
-      if (correct) scheduleAnswerAdvance("read");
+      if (correct) scheduleAnswerAdvance(mode);
+      return;
+    }
+
+    const memoryButton = event.target.closest("[data-memory-choice]");
+    if (memoryButton && !state.memoryChecked) {
+      const problem = currentSessionProblem();
+      state.memoryChoice = memoryButton.dataset.memoryChoice;
+      state.memoryChecked = true;
+      state.session.attempts += 1;
+      const correct = state.memoryChoice === problem.answer.id;
+      if (correct) {
+        state.session.correct += 1;
+        earnXp(MODE_INFO.memory.xp);
+      } else {
+        applyWrongAnswerPenalty("memory");
+      }
+      render();
+      scheduleAnswerAdvance("memory");
       return;
     }
 
@@ -2424,6 +2883,12 @@
         if (["correct", "given-up"].includes(state.flashResult)) return;
         if (state.flashAnswer.length < 4) state.flashAnswer += numberButton.dataset.number;
         state.flashResult = "idle";
+      } else if (target === "digits") {
+        if (state.digitsResult !== "idle") return;
+        const maxLength = currentSessionProblem().digits.length;
+        if (state.digitsAnswer.length < maxLength) {
+          state.digitsAnswer += numberButton.dataset.number;
+        }
       } else {
         if (state.mathResult !== "idle") return;
         if (state.mathAnswer.length < 4) state.mathAnswer += numberButton.dataset.number;
@@ -2447,6 +2912,8 @@
     const actions = {
       "back-home"() {
         stopFlash();
+        stopMemory();
+        stopDigits();
         stopAutoAdvance();
         state.view = "home";
         state.session = null;
@@ -2457,6 +2924,8 @@
       },
       "ask-exit"() {
         stopFlash();
+        stopMemory();
+        stopDigits();
         stopAutoAdvance();
         if (
           state.session?.mode === "flash" &&
@@ -2465,6 +2934,22 @@
           state.flashPhase = "ready";
           state.flashAnswer = "";
           state.flashResult = "idle";
+        }
+        if (
+          state.session?.mode === "memory" &&
+          ["countdown", "showing"].includes(state.memoryPhase)
+        ) {
+          state.memoryPhase = "ready";
+          state.memoryVisible = null;
+        }
+        if (
+          state.session?.mode === "digits" &&
+          ["countdown", "showing"].includes(state.digitsPhase)
+        ) {
+          state.digitsPhase = "ready";
+          state.digitsVisible = "";
+          state.digitsAnswer = "";
+          state.digitsResult = "idle";
         }
         state.exitConfirmOpen = true;
         render();
@@ -2545,6 +3030,9 @@
         if (target === "flash") {
           state.flashAnswer = state.flashAnswer.slice(0, -1);
           state.flashResult = "idle";
+        } else if (target === "digits") {
+          state.digitsAnswer = state.digitsAnswer.slice(0, -1);
+          state.digitsResult = "idle";
         } else {
           state.mathAnswer = state.mathAnswer.slice(0, -1);
           state.mathResult = "idle";
@@ -2612,6 +3100,27 @@
         state.session.completed += 1;
         advanceAfterCompletedQuestion();
       },
+      "start-memory"() {
+        startMemorySequence();
+      },
+      "start-digits"() {
+        startDigitsSequence();
+      },
+      "submit-digits"() {
+        if (!state.digitsAnswer || state.digitsResult !== "idle") return;
+        const problem = currentSessionProblem();
+        state.session.attempts += 1;
+        state.digitsResult =
+          state.digitsAnswer === problem.digits ? "correct" : "wrong";
+        if (state.digitsResult === "correct") {
+          state.session.correct += 1;
+          earnXp(MODE_INFO.digits.xp);
+        } else {
+          applyWrongAnswerPenalty("digits");
+        }
+        render();
+        scheduleAnswerAdvance("digits");
+      },
       "continue-session"() {
         state.checkpointOpen = false;
         render();
@@ -2623,7 +3132,8 @@
       "restart-session"() {
         const mode = state.session.mode;
         const preschool = state.session.preschool;
-        startSession(mode, preschool);
+        const preschoolType = state.session.preschoolType || "";
+        startSession(mode, preschool, preschoolType);
       },
       "save-settings"() {
         saveSettingsFromForm();
@@ -2692,6 +3202,10 @@
     resetQuestionState();
     state.exitConfirmOpen = false;
     if (autoStartFlash) prepareFlashQuestion();
+    if (state.session.mode === "memory" && !state.session.preschool) {
+      prepareMemoryQuestion();
+    }
+    if (state.session.mode === "digits") prepareDigitsQuestion();
     if (state.session.completed % state.checkpointEvery === 0) {
       state.checkpointOpen = true;
     }
@@ -2745,6 +3259,15 @@
     state.flashCue = "3";
     state.flashReplayUsed = false;
     if (state.session?.mode !== "flash") state.flashPhase = "ready";
+    state.memoryPhase = "ready";
+    state.memoryVisible = null;
+    state.memoryChoice = "";
+    state.memoryChecked = false;
+    state.memoryChoices = [];
+    state.digitsPhase = "ready";
+    state.digitsVisible = "";
+    state.digitsAnswer = "";
+    state.digitsResult = "idle";
   }
 
   function earnXp(amount) {

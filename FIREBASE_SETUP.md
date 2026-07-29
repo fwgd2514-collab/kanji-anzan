@@ -1,6 +1,6 @@
 # Firebaseでレベルを端末間共有する
 
-この設定を行うと、GitHub Pagesの公開方法はそのままで、名前ごとの4分野のレベル・XP・連続日数をFirestoreへ保存できます。
+この設定を行うと、GitHub Pagesの公開方法はそのままで、名前ごとの6分野のレベル・XP・連続日数をFirestoreへ保存できます。
 Firebaseが未設定、オフライン、または接続エラーの場合も、端末内保存で学習を続けられます。
 
 ## 1. Firebaseプロジェクトを作る
@@ -55,7 +55,7 @@ window.NOBIRU_FIREBASE = {
 このフォルダ内のファイルをすべてGitHubへ再アップロードします。
 公開ページの「設定」画面で「Firebaseと同期済み」または「同期ON」と表示されれば完了です。
 
-別の端末でも同じGitHub PagesのURLを開くと、同じ `groupId` の4分野レベル一覧を取得します。
+別の端末でも同じGitHub PagesのURLを開くと、同じ `groupId` の6分野レベル一覧を取得します。
 
 旧版から更新する場合は、GitHubへファイルをアップロードする前に、更新後の `firestore.rules` をFirebaseで再公開してください。詳しくは `UPDATE_GUIDE.md` を参照してください。
 

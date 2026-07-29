@@ -2896,7 +2896,7 @@ canvas:focus-visible {
   color: #c8d1df;
 }
 
-/* Four independent skill levels */
+/* Six independent skill levels */
 
 .subject-level-chip {
   display: inline-flex;
@@ -2964,7 +2964,7 @@ canvas:focus-visible {
 .skill-mode-tabs,
 .placement-skill-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -3007,7 +3007,7 @@ canvas:focus-visible {
 .learner-skill-levels {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
 }
 
@@ -3274,4 +3274,314 @@ canvas:focus-visible {
   padding-bottom: calc(
     48px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom)
   );
+}
+
+/* Flash cards, number memory, and the refreshed preschool menu */
+
+.memory-subject-card {
+  background: #fff2d9;
+  box-shadow: inset 0 0 0 1px #f5dfb6;
+}
+
+.digits-subject-card {
+  background: #e8f5f7;
+  box-shadow: inset 0 0 0 1px #cfe8ec;
+}
+
+.memory-icon {
+  background: #e4972f;
+}
+
+.digits-icon {
+  background: #29899a;
+  font-size: 15px;
+  letter-spacing: -0.06em;
+}
+
+.memory-subject-card .subject-time {
+  color: #937242;
+}
+
+.digits-subject-card .subject-time {
+  color: #507e86;
+}
+
+.memory-subject-card .start-arrow {
+  color: #d48627;
+}
+
+.digits-subject-card .start-arrow {
+  color: #29899a;
+}
+
+.color-card-icon {
+  color: #fff49b;
+}
+
+.memory-lesson {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(228, 151, 47, 0.13) 0 10%, transparent 10.5%),
+    var(--paper);
+}
+
+.digits-lesson {
+  background:
+    radial-gradient(circle at 10% 23%, rgba(41, 137, 154, 0.12) 0 9%, transparent 9.5%),
+    var(--paper);
+}
+
+.memory-lesson .lesson-progress i {
+  background: #e4972f;
+}
+
+.digits-lesson .lesson-progress i {
+  background: #29899a;
+}
+
+.memory-stage {
+  min-height: 548px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 0 8px;
+}
+
+.memory-ready,
+.memory-showing,
+.memory-answer-stage,
+.digits-showing,
+.digits-answer-stage {
+  text-align: center;
+}
+
+.memory-symbol {
+  width: 106px;
+  height: 106px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 22px;
+  border: 7px solid #f6e3c5;
+  border-radius: 32px;
+  background: #e4972f;
+  color: white;
+  font-size: 36px;
+  font-weight: 950;
+  box-shadow: 0 14px 30px rgba(183, 112, 28, 0.2);
+  transform: rotate(-3deg);
+}
+
+.digits-symbol {
+  border-color: #d7ecef;
+  background: #29899a;
+  font-size: 25px;
+  letter-spacing: 0.03em;
+  box-shadow: 0 14px 30px rgba(31, 111, 126, 0.2);
+}
+
+.memory-ready h1,
+.memory-answer-stage h1,
+.digits-answer-stage h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.4;
+  letter-spacing: -0.05em;
+}
+
+.memory-ready p {
+  margin: 11px 0 27px;
+  color: #7f8795;
+  font-size: 11px;
+}
+
+.memory-countdown-bar {
+  border-color: #f2dfc0;
+  box-shadow:
+    0 0 0 10px rgba(228, 151, 47, 0.07),
+    0 17px 38px rgba(132, 86, 30, 0.12);
+}
+
+.memory-countdown-bar i {
+  background: linear-gradient(90deg, #f5bd63, #d88723);
+}
+
+.digits-countdown-bar {
+  border-color: #d5eaee;
+  box-shadow:
+    0 0 0 10px rgba(41, 137, 154, 0.07),
+    0 17px 38px rgba(25, 91, 104, 0.12);
+}
+
+.digits-countdown-bar i {
+  background: linear-gradient(90deg, #70bdc9, #247f90);
+}
+
+.memory-showing > p,
+.digits-showing > p {
+  margin: 0 0 18px;
+  color: #8a795e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.memory-flash-card {
+  width: 225px;
+  height: 245px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto;
+  border: 5px solid #f3dfbf;
+  border-radius: 31px;
+  background: white;
+  box-shadow:
+    0 0 0 11px rgba(228, 151, 47, 0.06),
+    0 19px 42px rgba(116, 76, 27, 0.14);
+}
+
+.memory-flash-card strong {
+  font-size: 92px;
+  line-height: 1;
+}
+
+.memory-flash-card span {
+  color: #79684e;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.memory-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.memory-choice-grid button {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px solid #e6dfd2;
+  border-radius: 20px;
+  background: white;
+  color: var(--navy);
+  cursor: pointer;
+}
+
+.memory-choice-grid button strong {
+  font-size: 46px;
+  line-height: 1;
+}
+
+.memory-choice-grid button span {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.memory-choice-grid button.correct {
+  border-color: #31b7a0;
+  background: #e5f6f1;
+}
+
+.memory-choice-grid button.wrong {
+  border-color: #e36d52;
+  background: #fff0e9;
+}
+
+.digits-stage {
+  overflow: hidden;
+}
+
+.digits-showing {
+  width: 100%;
+}
+
+.digits-lane {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border: 4px solid #d7eaee;
+  border-radius: 25px;
+  background:
+    linear-gradient(90deg, rgba(41, 137, 154, 0.08), transparent 18% 82%, rgba(41, 137, 154, 0.08)),
+    white;
+  box-shadow: 0 16px 34px rgba(28, 98, 111, 0.12);
+}
+
+.digits-lane strong {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: max-content;
+  color: #236f7c;
+  font-size: 42px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  animation: digits-flow var(--digits-duration, 4500ms) linear forwards;
+}
+
+@keyframes digits-flow {
+  from {
+    transform: translate(0, -50%);
+  }
+
+  to {
+    transform: translate(calc(-100% - 430px), -50%);
+  }
+}
+
+.digits-answer-stage .answer-box {
+  margin: 18px auto 12px;
+  font-size: 30px;
+  letter-spacing: 0.08em;
+}
+
+.digits-answer-stage .number-pad {
+  margin-top: 8px;
+}
+
+.mikkun-choice-display {
+  font-size: 82px;
+}
+
+.color-choice-display {
+  border-color: color-mix(in srgb, var(--quiz-color) 35%, white);
+  background: color-mix(in srgb, var(--quiz-color) 13%, white);
+}
+
+.color-choice-display span {
+  color: var(--quiz-color);
+  font-size: 118px;
+  line-height: 0.8;
+  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.05);
+}
+
+.abc-choice-display span {
+  color: #e4972f;
+  font-size: 108px;
+  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+}
+
+.mikkun-options button {
+  min-height: 58px;
+}
+
+@media (max-width: 370px) {
+  .memory-stage {
+    min-height: 548px;
+  }
+
+  .memory-choice-grid button {
+    min-height: 108px;
+  }
+
+  .digits-lane strong {
+    font-size: 34px;
+  }
 }

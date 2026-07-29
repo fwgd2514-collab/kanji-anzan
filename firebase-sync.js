@@ -2,7 +2,14 @@
   "use strict";
 
   const SDK_VERSION = "12.16.0";
-  const SKILL_MODES = ["write", "read", "math", "flash"];
+  const SKILL_MODES = [
+    "write",
+    "read",
+    "math",
+    "flash",
+    "memory",
+    "digits",
+  ];
   let firestore = null;
   let firestoreApi = null;
   let initializing = null;
