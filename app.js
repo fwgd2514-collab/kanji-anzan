@@ -158,23 +158,47 @@
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
+  const additionalKanjiProblems = Array.isArray(window.NOBIRU_ADDITIONAL_KANJI)
+    ? window.NOBIRU_ADDITIONAL_KANJI
+    : [];
+
+  additionalKanjiProblems.forEach(([band, kanji, reading, word]) => {
+    kanjiProblems.push({ band, kanji, reading, word, strokes: null });
+  });
+
+  additionalKanjiProblems.forEach(([band, kanji, reading]) => {
+    const distractors = [
+      ...new Set(
+        additionalKanjiProblems
+          .filter((item) => item[0] === band && item[2] !== reading)
+          .map((item) => item[2]),
+      ),
+    ].slice(0, 3);
+    readingProblems.push({
+      band,
+      kanji,
+      answer: reading,
+      choices: [reading, ...distractors],
+    });
+  });
+
   const memoryCards = [
-    { id: "dog", symbol: "🐶", label: "いぬ", artX: 2.63, artY: 2.63 },
-    { id: "cat", symbol: "🐱", label: "ねこ", artX: 34.21, artY: 2.63 },
-    { id: "rabbit", symbol: "🐰", label: "うさぎ", artX: 65.79, artY: 2.63 },
-    { id: "elephant", symbol: "🐘", label: "ぞう", artX: 97.37, artY: 2.63 },
-    { id: "giraffe", symbol: "🦒", label: "きりん", artX: 2.63, artY: 34.21 },
-    { id: "lion", symbol: "🦁", label: "らいおん", artX: 34.21, artY: 34.21 },
-    { id: "panda", symbol: "🐼", label: "ぱんだ", artX: 65.79, artY: 34.21 },
-    { id: "monkey", symbol: "🐵", label: "さる", artX: 97.37, artY: 34.21 },
-    { id: "apple", symbol: "🍎", label: "りんご", artX: 2.63, artY: 65.79 },
-    { id: "banana", symbol: "🍌", label: "ばなな", artX: 34.21, artY: 65.79 },
-    { id: "car", symbol: "🚗", label: "くるま", artX: 65.79, artY: 65.79 },
-    { id: "train", symbol: "🚃", label: "でんしゃ", artX: 97.37, artY: 65.79 },
-    { id: "plane", symbol: "✈️", label: "ひこうき", artX: 2.63, artY: 97.37 },
-    { id: "sun", symbol: "☀️", label: "たいよう", artX: 34.21, artY: 97.37 },
-    { id: "flower", symbol: "🌷", label: "はな", artX: 65.79, artY: 97.37 },
-    { id: "umbrella", symbol: "☂️", label: "かさ", artX: 97.37, artY: 97.37 },
+    { id: "dog", symbol: "🐶", label: "いぬ", artX: 0, artY: 0 },
+    { id: "cat", symbol: "🐱", label: "ねこ", artX: 33.333, artY: 0 },
+    { id: "rabbit", symbol: "🐰", label: "うさぎ", artX: 66.667, artY: 0 },
+    { id: "elephant", symbol: "🐘", label: "ぞう", artX: 100, artY: 0 },
+    { id: "giraffe", symbol: "🦒", label: "きりん", artX: 0, artY: 33.333 },
+    { id: "lion", symbol: "🦁", label: "らいおん", artX: 33.333, artY: 33.333 },
+    { id: "panda", symbol: "🐼", label: "ぱんだ", artX: 66.667, artY: 33.333 },
+    { id: "monkey", symbol: "🐵", label: "さる", artX: 100, artY: 33.333 },
+    { id: "apple", symbol: "🍎", label: "りんご", artX: 0, artY: 66.667 },
+    { id: "banana", symbol: "🍌", label: "ばなな", artX: 33.333, artY: 66.667 },
+    { id: "car", symbol: "🚗", label: "くるま", artX: 66.667, artY: 66.667 },
+    { id: "train", symbol: "🚃", label: "でんしゃ", artX: 100, artY: 66.667 },
+    { id: "plane", symbol: "✈️", label: "ひこうき", artX: 0, artY: 100 },
+    { id: "sun", symbol: "☀️", label: "たいよう", artX: 33.333, artY: 100 },
+    { id: "flower", symbol: "🌷", label: "はな", artX: 66.667, artY: 100 },
+    { id: "umbrella", symbol: "☂️", label: "かさ", artX: 100, artY: 100 },
   ];
 
   const mikkunTreasureProblems = [
@@ -251,6 +275,7 @@
       memory: "",
       digits: "",
     },
+    recentProblems: {},
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
     levelViewMode: "write",
@@ -361,6 +386,14 @@
           if (typeof saved.lastFirstByMode[mode] === "string") {
             state.lastFirstByMode[mode] = saved.lastFirstByMode[mode];
           }
+        });
+      }
+      if (saved.recentProblems && typeof saved.recentProblems === "object") {
+        Object.entries(saved.recentProblems).forEach(([key, signatures]) => {
+          if (!Array.isArray(signatures)) return;
+          state.recentProblems[key] = signatures
+            .filter((signature) => typeof signature === "string" && signature)
+            .slice(-20);
         });
       }
       if (saved.counts && typeof saved.counts === "object") {
@@ -551,7 +584,7 @@
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          version: 3,
+          version: 4,
           level: state.level,
           xp: state.xp,
           streak: state.streak,
@@ -559,6 +592,7 @@
           learnerNames: state.learnerNames,
           profiles: state.profiles,
           lastFirstByMode: state.lastFirstByMode,
+          recentProblems: state.recentProblems,
           counts: state.counts,
           checkpointEvery: state.checkpointEvery,
         }),
@@ -1222,7 +1256,7 @@
         <section class="prompt-area">
           <p class="eyebrow">${preschool ? "ひらがなを ゆびで なぞろう" : "お題"}</p>
           <h1>「${problem.reading}」を<br />${preschool ? "かいてみよう" : "漢字で書こう"}</h1>
-          <p class="word-example">${preschool ? "ことば" : "ことば"}：<b>${problem.word}</b> ・ ${problem.strokes}かく</p>
+          <p class="word-example">${preschool ? "ことば" : "ことば"}：<b>${problem.word}</b>${problem.strokes ? ` ・ ${problem.strokes}かく` : " ・ お手本をよく見よう"}</p>
         </section>
         <div class="writing-pad ${state.kanjiChecking ? "checking" : ""}">
           <span class="guide-kanji" aria-hidden="true">${problem.kanji}</span>
@@ -2025,9 +2059,21 @@
     const band = bandForLevel(level);
     const bank = mode === "write" ? kanjiProblems : readingProblems;
     const pool = bank.filter((problem) => problem.band === band);
+    const recentKey = `${state.learnerName}:${mode}:${band}`;
+    const recent = Array.isArray(state.recentProblems[recentKey])
+      ? state.recentProblems[recentKey]
+      : [];
+    const recentSet = new Set(recent);
+    const freshPool = pool.filter(
+      (problem) => !recentSet.has(problemSignature(mode, problem)),
+    );
+    const olderPool = pool.filter((problem) =>
+      recentSet.has(problemSignature(mode, problem)),
+    );
     const result = [];
+    let cycle = [...shuffled(freshPool), ...shuffled(olderPool)];
     while (result.length < total) {
-      const cycle = shuffled(pool);
+      if (!cycle.length) cycle = shuffled(pool);
       if (
         result.length &&
         problemSignature(mode, result[result.length - 1]) ===
@@ -2036,6 +2082,7 @@
         cycle.push(cycle.shift());
       }
       result.push(...cycle.slice(0, total - result.length));
+      cycle = [];
     }
     if (
       result.length > 1 &&
@@ -2049,6 +2096,14 @@
       if (swapIndex > 0) [result[0], result[swapIndex]] = [result[swapIndex], result[0]];
     }
     state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
+    const updatedRecent = [...recent];
+    result.forEach((problem) => {
+      const signature = problemSignature(mode, problem);
+      const previousIndex = updatedRecent.indexOf(signature);
+      if (previousIndex >= 0) updatedRecent.splice(previousIndex, 1);
+      updatedRecent.push(signature);
+    });
+    state.recentProblems[recentKey] = updatedRecent.slice(-20);
     return result;
   }
 

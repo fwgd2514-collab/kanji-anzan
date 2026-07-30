@@ -21,7 +21,7 @@
     </main>
     <script>
       (() => {
-        const fallbackVersion = "20260730-mikkun-adventure-art-19";
+        const fallbackVersion = "20260730-question-bank-art-20";
         let loadedVersion = "";
         let checkingForUpdate = false;
 
@@ -50,6 +50,7 @@
             scriptStarted = true;
             await appendScript(`./firebase-config.js?v=${versionQuery}`);
             await appendScript(`./firebase-sync.js?v=${versionQuery}`);
+            await appendScript(`./question-data.js?v=${versionQuery}`);
             await appendScript(`./app.js?v=${versionQuery}`);
           };
 
