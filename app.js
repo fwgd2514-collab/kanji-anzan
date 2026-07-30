@@ -12,10 +12,10 @@
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
   };
   const MIKKUN_MODE_LABELS = {
-    write: "あいうえお",
-    read: "どうぶつの なまえ",
-    math: "いろあて",
-    memory: "ABC",
+    write: "おたから さがし",
+    read: "なかま さがし",
+    math: "かずの たからばこ",
+    memory: "つぎは どっち？",
   };
   const SKILL_MODES = Object.keys(MODE_INFO);
   const DEFAULT_COUNTS = {
@@ -158,75 +158,67 @@
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
-  const mikkunHiraganaProblems = [
-    { kanji: "あ", reading: "あ", word: "あひる", strokes: 3 },
-    { kanji: "い", reading: "い", word: "いぬ", strokes: 2 },
-    { kanji: "う", reading: "う", word: "うさぎ", strokes: 2 },
-    { kanji: "え", reading: "え", word: "えんぴつ", strokes: 2 },
-    { kanji: "お", reading: "お", word: "おにぎり", strokes: 3 },
-    { kanji: "か", reading: "か", word: "かめ", strokes: 3 },
-    { kanji: "き", reading: "き", word: "きりん", strokes: 4 },
-    { kanji: "く", reading: "く", word: "くるま", strokes: 1 },
-    { kanji: "け", reading: "け", word: "けーき", strokes: 3 },
-    { kanji: "こ", reading: "こ", word: "こあら", strokes: 2 },
-  ];
-
-  const mikkunAnimalProblems = [
-    { kanji: "🐶", answer: "いぬ", choices: ["いぬ", "ねこ", "うさぎ"] },
-    { kanji: "🐱", answer: "ねこ", choices: ["ねこ", "いぬ", "ぱんだ"] },
-    { kanji: "🐰", answer: "うさぎ", choices: ["うさぎ", "さる", "ねこ"] },
-    { kanji: "🐘", answer: "ぞう", choices: ["ぞう", "きりん", "らいおん"] },
-    { kanji: "🦒", answer: "きりん", choices: ["きりん", "ぞう", "ぱんだ"] },
-    { kanji: "🦁", answer: "らいおん", choices: ["らいおん", "さる", "ぞう"] },
-    { kanji: "🐼", answer: "ぱんだ", choices: ["ぱんだ", "こあら", "ねこ"] },
-    { kanji: "🐵", answer: "さる", choices: ["さる", "うさぎ", "らいおん"] },
-    { kanji: "🐨", answer: "こあら", choices: ["こあら", "ぱんだ", "きりん"] },
-    { kanji: "🐧", answer: "ぺんぎん", choices: ["ぺんぎん", "あひる", "うさぎ"] },
-  ];
-
-  const mikkunColorProblems = [
-    { display: "●", color: "#EF5350", answer: "あか", choices: ["あか", "あお", "きいろ"] },
-    { display: "●", color: "#42A5F5", answer: "あお", choices: ["あお", "みどり", "むらさき"] },
-    { display: "●", color: "#FDD835", answer: "きいろ", choices: ["きいろ", "おれんじ", "ぴんく"] },
-    { display: "●", color: "#43A047", answer: "みどり", choices: ["みどり", "あお", "くろ"] },
-    { display: "●", color: "#FB8C00", answer: "おれんじ", choices: ["おれんじ", "きいろ", "あか"] },
-    { display: "●", color: "#8E5CC7", answer: "むらさき", choices: ["むらさき", "ぴんく", "あお"] },
-    { display: "●", color: "#EC6FA9", answer: "ぴんく", choices: ["ぴんく", "あか", "むらさき"] },
-    { display: "●", color: "#263238", answer: "くろ", choices: ["くろ", "みどり", "あお"] },
-  ];
-
-  const mikkunAbcProblems = [
-    { display: "A", answer: "えー", choices: ["えー", "びー", "しー"] },
-    { display: "B", answer: "びー", choices: ["びー", "でぃー", "ぴー"] },
-    { display: "C", answer: "しー", choices: ["しー", "じー", "ぜっと"] },
-    { display: "D", answer: "でぃー", choices: ["でぃー", "びー", "てぃー"] },
-    { display: "E", answer: "いー", choices: ["いー", "えー", "わい"] },
-    { display: "F", answer: "えふ", choices: ["えふ", "えむ", "えぬ"] },
-    { display: "G", answer: "じー", choices: ["じー", "しー", "けー"] },
-    { display: "H", answer: "えいち", choices: ["えいち", "えー", "えふ"] },
-    { display: "I", answer: "あい", choices: ["あい", "いー", "わい"] },
-    { display: "J", answer: "じぇー", choices: ["じぇー", "けー", "じー"] },
-  ];
-
   const memoryCards = [
-    { id: "dog", symbol: "🐶", label: "いぬ" },
-    { id: "cat", symbol: "🐱", label: "ねこ" },
-    { id: "rabbit", symbol: "🐰", label: "うさぎ" },
-    { id: "apple", symbol: "🍎", label: "りんご" },
-    { id: "banana", symbol: "🍌", label: "ばなな" },
-    { id: "grape", symbol: "🍇", label: "ぶどう" },
-    { id: "car", symbol: "🚗", label: "くるま" },
-    { id: "train", symbol: "🚃", label: "でんしゃ" },
-    { id: "plane", symbol: "✈️", label: "ひこうき" },
-    { id: "sun", symbol: "☀️", label: "たいよう" },
-    { id: "moon", symbol: "🌙", label: "つき" },
-    { id: "star", symbol: "⭐", label: "ほし" },
-    { id: "flower", symbol: "🌷", label: "はな" },
-    { id: "tree", symbol: "🌳", label: "き" },
-    { id: "umbrella", symbol: "☂️", label: "かさ" },
-    { id: "clock", symbol: "⏰", label: "とけい" },
-    { id: "book", symbol: "📕", label: "ほん" },
-    { id: "ball", symbol: "⚽", label: "ぼーる" },
+    { id: "dog", symbol: "🐶", label: "いぬ", artX: 2.63, artY: 2.63 },
+    { id: "cat", symbol: "🐱", label: "ねこ", artX: 34.21, artY: 2.63 },
+    { id: "rabbit", symbol: "🐰", label: "うさぎ", artX: 65.79, artY: 2.63 },
+    { id: "elephant", symbol: "🐘", label: "ぞう", artX: 97.37, artY: 2.63 },
+    { id: "giraffe", symbol: "🦒", label: "きりん", artX: 2.63, artY: 34.21 },
+    { id: "lion", symbol: "🦁", label: "らいおん", artX: 34.21, artY: 34.21 },
+    { id: "panda", symbol: "🐼", label: "ぱんだ", artX: 65.79, artY: 34.21 },
+    { id: "monkey", symbol: "🐵", label: "さる", artX: 97.37, artY: 34.21 },
+    { id: "apple", symbol: "🍎", label: "りんご", artX: 2.63, artY: 65.79 },
+    { id: "banana", symbol: "🍌", label: "ばなな", artX: 34.21, artY: 65.79 },
+    { id: "car", symbol: "🚗", label: "くるま", artX: 65.79, artY: 65.79 },
+    { id: "train", symbol: "🚃", label: "でんしゃ", artX: 97.37, artY: 65.79 },
+    { id: "plane", symbol: "✈️", label: "ひこうき", artX: 2.63, artY: 97.37 },
+    { id: "sun", symbol: "☀️", label: "たいよう", artX: 34.21, artY: 97.37 },
+    { id: "flower", symbol: "🌷", label: "はな", artX: 65.79, artY: 97.37 },
+    { id: "umbrella", symbol: "☂️", label: "かさ", artX: 97.37, artY: 97.37 },
+  ];
+
+  const mikkunTreasureProblems = [
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "dog", answer: "dog", answerLabel: "いぬ", choices: ["dog", "cat", "rabbit"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "cat", answer: "cat", answerLabel: "ねこ", choices: ["cat", "lion", "monkey"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "rabbit", answer: "rabbit", answerLabel: "うさぎ", choices: ["rabbit", "dog", "panda"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "elephant", answer: "elephant", answerLabel: "ぞう", choices: ["elephant", "giraffe", "lion"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "apple", answer: "apple", answerLabel: "りんご", choices: ["apple", "sun", "flower"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "car", answer: "car", answerLabel: "くるま", choices: ["car", "train", "plane"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "umbrella", answer: "umbrella", answerLabel: "かさ", choices: ["umbrella", "flower", "banana"] },
+    { prompt: "おだいと おなじ えは どれ？", displayCard: "panda", answer: "panda", answerLabel: "ぱんだ", choices: ["panda", "monkey", "cat"] },
+  ];
+
+  const mikkunGroupProblems = [
+    { prompt: "たべものを みつけよう", display: "🧺", answer: "apple", answerLabel: "りんご", choices: ["dog", "apple", "car"] },
+    { prompt: "たべものを みつけよう", display: "🧺", answer: "banana", answerLabel: "ばなな", choices: ["banana", "rabbit", "train"] },
+    { prompt: "のりものを みつけよう", display: "🛣️", answer: "car", answerLabel: "くるま", choices: ["flower", "car", "lion"] },
+    { prompt: "のりものを みつけよう", display: "🛤️", answer: "train", answerLabel: "でんしゃ", choices: ["train", "elephant", "apple"] },
+    { prompt: "そらを とぶものは どれ？", display: "☁️", answer: "plane", answerLabel: "ひこうき", choices: ["umbrella", "plane", "panda"] },
+    { prompt: "どうぶつを みつけよう", display: "🐾", answer: "giraffe", answerLabel: "きりん", choices: ["banana", "giraffe", "sun"] },
+    { prompt: "あめの ひに つかうのは？", display: "🌧️", answer: "umbrella", answerLabel: "かさ", choices: ["umbrella", "apple", "monkey"] },
+    { prompt: "おはなを みつけよう", display: "🌱", answer: "flower", answerLabel: "はな", choices: ["car", "flower", "rabbit"] },
+  ];
+
+  const mikkunCountingProblems = [
+    { prompt: "ほしは いくつ？", displayItems: ["⭐"], answer: "1", answerLabel: "1こ", choices: ["1", "2", "3"] },
+    { prompt: "りんごは いくつ？", displayItems: ["🍎", "🍎"], answer: "2", answerLabel: "2こ", choices: ["1", "2", "3"] },
+    { prompt: "くるまは いくつ？", displayItems: ["🚗", "🚗", "🚗"], answer: "3", answerLabel: "3こ", choices: ["2", "3", "4"] },
+    { prompt: "おはなは いくつ？", displayItems: ["🌼", "🌼", "🌼", "🌼"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { prompt: "いちごは いくつ？", displayItems: ["🍓", "🍓", "🍓", "🍓", "🍓"], answer: "5", answerLabel: "5こ", choices: ["3", "4", "5"] },
+    { prompt: "でんしゃは いくつ？", displayItems: ["🚃", "🚃"], answer: "2", answerLabel: "2こ", choices: ["1", "2", "4"] },
+    { prompt: "ふうせんは いくつ？", displayItems: ["🎈", "🎈", "🎈", "🎈"], answer: "4", answerLabel: "4こ", choices: ["2", "3", "4"] },
+    { prompt: "おさかなは いくつ？", displayItems: ["🐟", "🐟", "🐟"], answer: "3", answerLabel: "3こ", choices: ["1", "3", "5"] },
+  ];
+
+  const mikkunPatternProblems = [
+    { prompt: "つぎに くるのは どれ？", patternCards: ["dog", "cat", "dog", "cat"], answer: "dog", answerLabel: "いぬ", choices: ["dog", "cat", "rabbit"] },
+    { prompt: "つぎに くるのは どれ？", patternCards: ["apple", "banana", "apple", "banana"], answer: "apple", answerLabel: "りんご", choices: ["apple", "banana", "flower"] },
+    { prompt: "つぎに くるのは どれ？", patternCards: ["car", "train", "car", "train"], answer: "car", answerLabel: "くるま", choices: ["car", "train", "plane"] },
+    { prompt: "つぎに くるのは どれ？", patternItems: ["🔴", "🔵", "🔴", "🔵"], answer: "🔴", answerLabel: "あか", choices: ["🔴", "🔵", "🟡"] },
+    { prompt: "つぎに くるのは どれ？", patternItems: ["⭐", "🌙", "⭐", "🌙"], answer: "⭐", answerLabel: "ほし", choices: ["⭐", "🌙", "☀️"] },
+    { prompt: "つぎに くるのは どれ？", patternItems: ["🍓", "🍓", "🍌", "🍓", "🍓", "🍌"], answer: "🍓", answerLabel: "いちご", choices: ["🍓", "🍌", "🍎"] },
+    { prompt: "つぎに くるのは どれ？", patternCards: ["sun", "umbrella", "sun", "umbrella"], answer: "sun", answerLabel: "たいよう", choices: ["sun", "umbrella", "flower"] },
+    { prompt: "つぎに くるのは どれ？", patternItems: ["🐟", "🐠", "🐟", "🐠"], answer: "🐟", answerLabel: "あおい さかな", choices: ["🐟", "🐠", "🐙"] },
   ];
 
   const levelGroups = [
@@ -827,18 +819,23 @@
       unlockTapAudio();
       if (!tapAudioContext) return;
       const emitTone = () => {
-        const oscillator = tapAudioContext.createOscillator();
-        const gain = tapAudioContext.createGain();
         const now = tapAudioContext.currentTime + 0.005;
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(1040, now);
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.075, now + 0.008);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-        oscillator.connect(gain);
-        gain.connect(tapAudioContext.destination);
-        oscillator.start(now);
-        oscillator.stop(now + 0.085);
+        [
+          { frequency: 1480, type: "sine", gain: 0.042, duration: 0.075 },
+          { frequency: 2220, type: "triangle", gain: 0.012, duration: 0.045 },
+        ].forEach((tone) => {
+          const oscillator = tapAudioContext.createOscillator();
+          const gain = tapAudioContext.createGain();
+          oscillator.type = tone.type;
+          oscillator.frequency.setValueAtTime(tone.frequency, now);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(tone.gain, now + 0.006);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.duration);
+          oscillator.connect(gain);
+          gain.connect(tapAudioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + tone.duration + 0.015);
+        });
       };
       if (tapAudioContext.state === "running") {
         emitTone();
@@ -864,13 +861,16 @@
       const emitChime = () => {
         const now = tapAudioContext.currentTime + 0.015;
         [
-          { frequency: 880, start: 0, duration: 0.16, gain: 0.09 },
-          { frequency: 660, start: 0.17, duration: 0.42, gain: 0.075 },
+          { frequency: 1318.51, type: "sine", start: 0, duration: 0.32, gain: 0.07 },
+          { frequency: 2637.02, type: "triangle", start: 0, duration: 0.2, gain: 0.014 },
+          { frequency: 1046.5, type: "sine", start: 0.16, duration: 0.62, gain: 0.075 },
+          { frequency: 2093, type: "triangle", start: 0.16, duration: 0.4, gain: 0.013 },
+          { frequency: 523.25, type: "sine", start: 0.16, duration: 0.5, gain: 0.018 },
         ].forEach((tone) => {
           const oscillator = tapAudioContext.createOscillator();
           const gain = tapAudioContext.createGain();
           const beginsAt = now + tone.start;
-          oscillator.type = "sine";
+          oscillator.type = tone.type;
           oscillator.frequency.setValueAtTime(tone.frequency, beginsAt);
           gain.gain.setValueAtTime(0.0001, beginsAt);
           gain.gain.exponentialRampToValueAtTime(
@@ -995,17 +995,17 @@
           </div>
           ${mikkun ? `
             <div class="mikkun-intro">
-              <span>★</span>
-              <p><b>みて、きいて、たのしくおぼえよう！</b><small>もじ・どうぶつ・いろの やさしいれんしゅう</small></p>
+              <span>🚀</span>
+              <p><b>4つの ぼうけんで ほしを あつめよう！</b><small>みつける・わける・かぞえる・かんがえる ミニゲーム</small></p>
             </div>
           ` : ""}
           <div class="subject-grid">
             ${mikkun
               ? `
-                ${mikkunSubjectCard("write", "あ", "あいうえお", "ゆびで なぞる", "kanji-card", "kanji-icon", "hiragana")}
-                ${mikkunSubjectCard("read", "🐶", "どうぶつの なまえ", "3つから えらぶ", "reading-subject-card", "reading-icon", "animals")}
-                ${mikkunSubjectCard("math", "●", "いろあて", "いろの なまえ", "math-card", "math-icon color-card-icon", "colors")}
-                ${mikkunSubjectCard("memory", "A", "ABC", "えいごの もじ", "memory-subject-card", "memory-icon", "abc")}
+                ${mikkunSubjectCard("write", "🔎", "おたから さがし", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
+                ${mikkunSubjectCard("read", "🧺", "なかま さがし", "なかまを みわける", "reading-subject-card", "reading-icon", "groups")}
+                ${mikkunSubjectCard("math", "⭐", "かずの たからばこ", "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
+                ${mikkunSubjectCard("memory", "🚀", "つぎは どっち？", "ならびの つづきを えらぶ", "memory-subject-card", "memory-icon", "patterns")}
               `
               : `
                 ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
@@ -1042,7 +1042,7 @@
 
         <section class="road-section">
           <div class="section-heading compact">
-            <div><p class="eyebrow">${mikkun ? "MIKKUN COURSES" : "SIX SKILLS"}</p><h2>${mikkun ? "4つの れんしゅうレベル" : "6つのレベル"}</h2></div>
+            <div><p class="eyebrow">${mikkun ? "MIKKUN ADVENTURE" : "SIX SKILLS"}</p><h2>${mikkun ? "4つの ぼうけんレベル" : "6つのレベル"}</h2></div>
             <button type="button" class="text-link" data-view="levels">すべて見る <span>›</span></button>
           </div>
           <div class="skill-overview-grid">
@@ -1057,7 +1057,7 @@
               `;
             }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> ${mikkun ? "みっくんメニューは年中さん向けのやさしい問題です" : "表示レベルより少しやさしい復習問題から出ます"}</p>
+          <p class="road-note"><span>◆</span> ${mikkun ? "文字がまだ読めなくても、絵を見ながら遊べます" : "表示レベルより少しやさしい復習問題から出ます"}</p>
         </section>
 
         <div class="encouragement">
@@ -1100,6 +1100,24 @@
         <span class="subject-detail">${PRESCHOOL_QUESTION_COUNT}もん ・ ${detail}</span>
         <span class="start-arrow" aria-hidden="true">→</span>
       </button>
+    `;
+  }
+
+  function learningCardById(id) {
+    return memoryCards.find((card) => card.id === id) || null;
+  }
+
+  function learningCardArt(id, className = "") {
+    const card = learningCardById(id);
+    if (!card) return `<span class="learning-card-fallback ${className}">${escapeHtml(id)}</span>`;
+    return `
+      <span
+        class="learning-card-art ${className}"
+        data-card-id="${card.id}"
+        role="img"
+        aria-label="${card.label}"
+        style="--card-x:${card.artX}%;--card-y:${card.artY}%"
+      ></span>
     `;
   }
 
@@ -1167,9 +1185,19 @@
 
   function lessonLevelRow(extra = "") {
     if (state.session?.preschool) {
+      const completed = state.session.completed;
       return `
         <div class="lesson-level-row mikkun-lesson-level">
-          <span>みっくんメニュー</span><span>年中さん</span>${extra}
+          <span>みっくんの ぼうけん</span><span>年中さん</span>${extra}
+        </div>
+        <div class="mikkun-quest-progress" aria-label="ほし ${completed}こ、ぜんぶで${state.session.total}こ">
+          <span class="mikkun-quest-mascot">🚀</span>
+          <div class="mikkun-quest-stars">
+            ${Array.from({ length: state.session.total }, (_, index) => `
+              <i class="${index < completed ? "complete" : index === completed ? "current" : ""}">★</i>
+            `).join("")}
+          </div>
+          <b>${completed}/${state.session.total}</b>
         </div>
       `;
     }
@@ -1186,6 +1214,7 @@
   function writeTemplate() {
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
+    if (preschool) return mikkunAdventureTemplate();
     return `
       <div class="screen lesson-screen kanji-lesson">
         ${lessonHeader(preschool ? "あいうえお" : "漢字を書く")}
@@ -1288,6 +1317,7 @@
   function readTemplate() {
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
+    if (preschool) return mikkunAdventureTemplate();
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
@@ -1325,27 +1355,66 @@
     `;
   }
 
-  function mikkunChoiceTemplate(title, prompt, displayClass = "") {
+  function mikkunAdventureDisplay(problem) {
+    if (problem.displayCard) {
+      return learningCardArt(problem.displayCard, "mikkun-target-card");
+    }
+    if (problem.patternCards) {
+      return `
+        <div class="mikkun-pattern-row">
+          ${problem.patternCards.map((id) => learningCardArt(id, "mikkun-pattern-card")).join("")}
+          <span class="mikkun-pattern-question">？</span>
+        </div>
+      `;
+    }
+    if (problem.patternItems) {
+      return `
+        <div class="mikkun-pattern-row mikkun-emoji-pattern">
+          ${problem.patternItems.map((item) => `<span>${item}</span>`).join("")}
+          <span class="mikkun-pattern-question">？</span>
+        </div>
+      `;
+    }
+    if (problem.displayItems) {
+      return `
+        <div class="mikkun-counting-scene">
+          ${problem.displayItems.map((item) => `<span>${item}</span>`).join("")}
+        </div>
+      `;
+    }
+    return `<span class="mikkun-theme-symbol">${problem.display || "★"}</span>`;
+  }
+
+  function mikkunAdventureChoice(choice) {
+    const card = learningCardById(choice);
+    if (card) {
+      return `${learningCardArt(choice, "mikkun-choice-card")}<small>${card.label}</small>`;
+    }
+    return `<span>${escapeHtml(choice)}</span>`;
+  }
+
+  function mikkunAdventureTemplate() {
     const problem = currentSessionProblem();
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const correct = state.readingChecked && state.readingChoice === problem.answer;
+    const hasPictureChoices = choices.some((choice) => learningCardById(choice));
+    const theme = MIKKUN_MODE_LABELS[state.session.mode] || "みっくんの ぼうけん";
     const feedback = state.readingChecked
       ? correct
-        ? '<div class="reading-feedback correct"><b>はなまる！</b> よくできました。</div>'
-        : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answer}」です。</div>`
+        ? '<div class="reading-feedback correct mikkun-win"><b>ほし ゲット！</b> やったね！</div>'
+        : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answerLabel || problem.answer}」です。</div>`
       : "";
-    const colorStyle = problem.color ? `style="--quiz-color:${problem.color}"` : "";
     return `
-      <div class="screen lesson-screen mikkun-choice-lesson">
-        ${lessonHeader(title)}
+      <div class="screen lesson-screen mikkun-choice-lesson mikkun-adventure-lesson">
+        ${lessonHeader(theme)}
         ${lessonLevelRow()}
         <section class="reading-prompt mikkun-choice-prompt">
-          <p class="eyebrow">${prompt}</p>
-          <div class="reading-card mikkun-choice-display ${displayClass}" ${colorStyle}>
-            <span>${problem.display || problem.kanji}</span>
+          <p class="eyebrow">${problem.prompt || "どれかな？"}</p>
+          <div class="reading-card mikkun-choice-display">
+            ${mikkunAdventureDisplay(problem)}
           </div>
         </section>
-        <div class="reading-options mikkun-options">
+        <div class="reading-options mikkun-options ${hasPictureChoices ? "mikkun-picture-options" : "mikkun-number-options"}">
           ${choices.map((choice) => {
             const selected = state.readingChoice === choice;
             const rightChoice = state.readingChecked && choice === problem.answer;
@@ -1353,7 +1422,7 @@
               state.readingChecked && selected && choice !== problem.answer;
             return `
               <button type="button" data-reading="${choice}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.readingChecked ? "disabled" : ""}>
-                <span>${choice}</span><i>${rightChoice ? "✓" : wrongChoice ? "×" : "›"}</i>
+                ${mikkunAdventureChoice(choice)}<i>${rightChoice ? "✓" : wrongChoice ? "×" : ""}</i>
               </button>
             `;
           }).join("")}
@@ -1361,18 +1430,16 @@
         <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
           ? correct
-            ? '<p class="auto-next-note" aria-live="polite">できた！ つぎへ進みます…</p>'
+            ? '<p class="auto-next-note mikkun-auto-next" aria-live="polite">★を 1こ ゲット！ つぎへ しゅっぱつ…</p>'
             : '<button type="button" class="primary-button wide" data-action="next-reading">つぎのもんだいへ →</button>'
-          : '<p class="choice-note">ひとつ えらんでね</p>'
+          : '<p class="choice-note">こたえを ひとつ タップしてね</p>'
         }
       </div>
     `;
   }
 
   function mathTemplate() {
-    if (state.session?.preschoolType === "colors") {
-      return mikkunChoiceTemplate("いろあて", "この いろは なあに？", "color-choice-display");
-    }
+    if (state.session?.preschool) return mikkunAdventureTemplate();
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     const answered = state.mathResult !== "idle";
@@ -1479,9 +1546,7 @@
   }
 
   function memoryTemplate() {
-    if (state.session?.preschoolType === "abc") {
-      return mikkunChoiceTemplate("ABC", "この もじは なんてよむ？", "abc-choice-display");
-    }
+    if (state.session?.preschool) return mikkunAdventureTemplate();
     const problem = currentSessionProblem();
     let stage = "";
     if (state.memoryPhase === "ready") {
@@ -1508,7 +1573,10 @@
         <div class="memory-showing" aria-live="assertive">
           <p>よく見て おぼえてね</p>
           <div class="memory-flash-card">
-            <strong>${state.memoryVisible?.symbol || "★"}</strong>
+            ${state.memoryVisible
+              ? learningCardArt(state.memoryVisible.id, "memory-main-card-art")
+              : '<strong class="memory-card-placeholder">★</strong>'
+            }
             <span>${state.memoryVisible?.label || ""}</span>
           </div>
         </div>
@@ -1532,9 +1600,9 @@
               const selectedId = state.memorySelected[index];
               const card = memoryCards.find((item) => item.id === selectedId);
               return `
-                <span class="${card ? "filled" : ""}">
-                  <small>${index + 1}</small>${card ? card.symbol : "？"}
-                </span>
+                 <span class="${card ? "filled" : ""}">
+                   <small>${index + 1}</small>${card ? learningCardArt(card.id, "memory-order-card-art") : "？"}
+                 </span>
               `;
             }).join("")}
           </div>
@@ -1543,7 +1611,7 @@
               const selected = state.memorySelected.includes(card.id);
               return `
                 <button type="button" data-memory-order="${card.id}" class="${selected ? "selected" : ""}" ${state.memoryChecked || selected ? "disabled" : ""}>
-                  <strong>${card.symbol}</strong><span>${card.label}</span>
+                  ${learningCardArt(card.id, "memory-choice-card-art")}<span>${card.label}</span>
                 </button>
               `;
             }).join("")}
@@ -1614,10 +1682,12 @@
           <div class="answer-box ${state.digitsResult}">${state.digitsAnswer || "<span>?</span>"}</div>
           ${message}
           ${numberPad("digits")}
-          ${state.digitsResult === "idle"
-            ? `<button type="button" class="primary-button wide" data-action="submit-digits" ${state.digitsAnswer ? "" : "disabled"}>こたえる</button>`
-            : `<p class="auto-next-note ${state.digitsResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.digitsResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
-          }
+          <div class="digits-submit-dock">
+            ${state.digitsResult === "idle"
+              ? `<button type="button" class="primary-button wide" data-action="submit-digits" ${state.digitsAnswer ? "" : "disabled"}>こたえる</button>`
+              : `<p class="auto-next-note ${state.digitsResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.digitsResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+            }
+          </div>
         </div>
       `;
     }
@@ -1625,7 +1695,7 @@
       <div class="screen lesson-screen digits-lesson">
         ${lessonHeader("数字記憶")}
         ${lessonLevelRow('<span class="timer">● 記憶モード</span>')}
-        <section class="memory-stage digits-stage">${stage}</section>
+        <section class="memory-stage digits-stage ${state.digitsPhase === "answer" ? "is-answering" : ""}">${stage}</section>
       </div>
     `;
   }
@@ -1849,6 +1919,19 @@
 
   function problemSignature(mode, problem) {
     if (!problem) return "";
+    if (problem.displayCard) return `${problem.displayCard}:${problem.answer}`;
+    if (problem.patternCards) {
+      return `${problem.patternCards.join("-")}:${problem.answer}`;
+    }
+    if (problem.patternItems) {
+      return `${problem.patternItems.join("-")}:${problem.answer}`;
+    }
+    if (problem.displayItems) {
+      return `${problem.prompt}:${problem.displayItems.join("-")}:${problem.answer}`;
+    }
+    if (problem.display && problem.answer) {
+      return `${problem.prompt}:${problem.display}:${problem.answer}`;
+    }
     if (mode === "write") return problem.kanji;
     if (mode === "read") return `${problem.kanji}:${problem.answer}`;
     if (mode === "memory") {
@@ -1871,13 +1954,13 @@
     if (mode === "flash") return [];
     if (preschool) {
       const bank =
-        preschoolType === "hiragana"
-          ? mikkunHiraganaProblems
-          : preschoolType === "animals"
-            ? mikkunAnimalProblems
-            : preschoolType === "colors"
-              ? mikkunColorProblems
-              : mikkunAbcProblems;
+        preschoolType === "treasure"
+          ? mikkunTreasureProblems
+          : preschoolType === "groups"
+            ? mikkunGroupProblems
+            : preschoolType === "counting"
+              ? mikkunCountingProblems
+              : mikkunPatternProblems;
       const result = [];
       while (result.length < total) {
         const cycle = shuffled(bank);
@@ -2325,9 +2408,7 @@
   function prepareReadingChoices() {
     const problem = state.session ? currentSessionProblem() : null;
     const usesChoiceButtons =
-      state.session?.mode === "read" ||
-      (state.session?.preschool &&
-        ["math", "memory"].includes(state.session.mode));
+      state.session?.mode === "read" || Boolean(state.session?.preschool);
     if (!usesChoiceButtons || !problem?.choices) {
       state.readingChoices = [];
       return;
@@ -2388,7 +2469,7 @@
     if (!state.session || state.session.mode !== mode) return false;
     if (
       mode === "read" ||
-      (state.session.preschool && ["math", "memory"].includes(mode))
+      state.session.preschool
     ) {
       return (
         state.readingChecked &&
@@ -2525,13 +2606,14 @@
       return homeTemplate();
     }
     const ratio = session.completed ? Math.round((session.correct / session.completed) * 100) : 0;
+    const preschoolComplete = session.preschool && !session.endedEarly;
     return `
-      <div class="screen result-screen">
+      <div class="screen result-screen ${session.preschool ? "mikkun-result-screen" : ""}">
         <header class="result-topbar"><span class="brand-mark">の</span><b>学習結果</b></header>
         <section class="result-hero">
-          <span class="result-burst">${session.endedEarly ? "休" : "★"}</span>
-          <p class="eyebrow">${session.endedEarly ? "GOOD PAUSE" : "SESSION COMPLETE"}</p>
-          <h1>${session.endedEarly ? "ここまで、よくできました。" : "さいごまで、できました！"}</h1>
+          <span class="result-burst">${session.endedEarly ? "休" : preschoolComplete ? "🚀" : "★"}</span>
+          <p class="eyebrow">${session.endedEarly ? "GOOD PAUSE" : preschoolComplete ? "ADVENTURE COMPLETE" : "SESSION COMPLETE"}</p>
+          <h1>${session.endedEarly ? "ここまで、よくできました。" : preschoolComplete ? `ほしを ${session.correct}こ ゲット！` : "さいごまで、できました！"}</h1>
           <p>
             ${escapeHtml(displayName())}の「${currentLessonLabel(session.mode)}」
             ・ ${session.preschool ? "年中さんコース" : `Lv.${activeSkill(session.mode).level}`}
@@ -2539,12 +2621,12 @@
         </section>
         <div class="result-score-card">
           <div class="result-main-score"><b>${session.completed}</b><span>問できた</span></div>
-          <div><b>${session.correct}</b><span>できた問題</span></div>
+          <div><b>${session.correct}</b><span>${session.preschool ? "ゲットした ほし" : "できた問題"}</span></div>
           <div><b>${ratio}%</b><span>達成率</span></div>
         </div>
         <div class="result-message-card">
           <span>☺</span>
-          <p><b>${session.completed >= state.checkpointEvery ? "小さな積み重ねが、力になります。" : "まず始められたことが大切です。"}</b><br />次も自分のペースで進めよう。</p>
+          <p><b>${session.preschool ? "ぼうけん だいせいこう！" : session.completed >= state.checkpointEvery ? "小さな積み重ねが、力になります。" : "まず始められたことが大切です。"}</b><br />${session.preschool ? "つぎは どの ぼうけんに いく？" : "次も自分のペースで進めよう。"}</p>
         </div>
         <button type="button" class="primary-button wide" data-action="restart-session">もう一度する</button>
         <button type="button" class="secondary-button wide result-home-button" data-action="back-home">ホームへ戻る</button>
@@ -2879,7 +2961,14 @@
     const tappedControl = event.target.closest(
       "button, select, input, label, [role='button']",
     );
-    if (tappedControl && !tappedControl.disabled) playTapSound();
+    const tapAction = tappedControl?.dataset?.action || "";
+    const answerCommit =
+      tappedControl?.dataset?.reading !== undefined ||
+      tappedControl?.dataset?.memoryOrder !== undefined ||
+      ["kanji-success", "submit-math", "submit-flash", "submit-digits"].includes(
+        tapAction,
+      );
+    if (tappedControl && !tappedControl.disabled && !answerCommit) playTapSound();
 
     const startButton = event.target.closest("[data-start]");
     if (startButton) {
@@ -2961,6 +3050,7 @@
         playCorrectSound();
         earnXp(MODE_INFO[mode].xp);
       } else {
+        playTapSound();
         applyWrongAnswerPenalty(mode);
       }
       render();
@@ -2988,8 +3078,11 @@
           playCorrectSound();
           earnXp(MODE_INFO.memory.xp);
         } else {
+          playTapSound();
           applyWrongAnswerPenalty("memory");
         }
+      } else {
+        playTapSound();
       }
       render();
       if (state.memoryChecked) scheduleAnswerAdvance("memory");
@@ -3170,6 +3263,7 @@
           playCorrectSound();
           earnXp(MODE_INFO.math.xp);
         } else {
+          playTapSound();
           applyWrongAnswerPenalty("math");
         }
         render();
@@ -3214,6 +3308,7 @@
           playCorrectSound();
           if (!state.questionPenaltyApplied) earnXp(MODE_INFO.flash.xp);
         } else {
+          playTapSound();
           applyWrongAnswerPenalty("flash");
         }
         render();
@@ -3245,6 +3340,7 @@
           playCorrectSound();
           earnXp(MODE_INFO.digits.xp);
         } else {
+          playTapSound();
           applyWrongAnswerPenalty("digits");
         }
         render();

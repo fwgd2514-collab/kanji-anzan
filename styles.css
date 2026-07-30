@@ -3686,3 +3686,412 @@ canvas:focus-visible {
     font-size: 23px;
   }
 }
+
+/* v19: picture-book cards and Mikkun adventure */
+
+.learning-card-art {
+  width: 72px;
+  aspect-ratio: 1;
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 18px;
+  background-image: url("./assets/learning-card-atlas.png");
+  background-repeat: no-repeat;
+  background-position: var(--card-x, 0%) var(--card-y, 0%);
+  background-size: 480% 480%;
+  box-shadow: inset 0 0 0 1px rgba(93, 71, 31, 0.06);
+}
+
+.learning-card-fallback {
+  display: grid;
+  place-items: center;
+}
+
+.mikkun-training {
+  background:
+    radial-gradient(circle at 90% 5%, rgba(255, 211, 91, 0.4), transparent 25%),
+    radial-gradient(circle at 7% 44%, rgba(116, 202, 223, 0.18), transparent 28%),
+    linear-gradient(150deg, #fffdf4, #fff4cf);
+}
+
+.mikkun-intro {
+  border: 1px solid rgba(240, 178, 50, 0.2);
+}
+
+.mikkun-intro > span {
+  background: linear-gradient(145deg, #7cc7df, #4d9fc1);
+  color: white;
+  box-shadow: 0 5px 10px rgba(50, 135, 169, 0.2);
+}
+
+.mikkun-subject-card {
+  min-height: 190px;
+  overflow: hidden;
+}
+
+.mikkun-subject-card::before {
+  content: "";
+  position: absolute;
+  right: -19px;
+  bottom: -23px;
+  width: 76px;
+  height: 76px;
+  border: 15px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.mikkun-subject-card .subject-icon {
+  font-size: 28px;
+  transform: rotate(-4deg);
+}
+
+.mikkun-subject-card .subject-name {
+  position: relative;
+  z-index: 1;
+  font-size: 16px;
+}
+
+.mikkun-subject-card .subject-detail {
+  position: relative;
+  z-index: 1;
+  line-height: 1.45;
+}
+
+.mikkun-quest-progress {
+  display: grid;
+  grid-template-columns: 34px 1fr 32px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 7px 10px;
+  border: 1px solid #f4d687;
+  border-radius: 15px;
+  background: #fff9df;
+  box-shadow: 0 5px 13px rgba(129, 96, 28, 0.07);
+}
+
+.mikkun-quest-mascot {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #65b4d2;
+  font-size: 18px;
+}
+
+.mikkun-quest-stars {
+  display: flex;
+  justify-content: space-around;
+  gap: 3px;
+}
+
+.mikkun-quest-stars i {
+  color: #dfd7c4;
+  font-size: clamp(16px, 5vw, 22px);
+  font-style: normal;
+  filter: grayscale(1);
+  transform: scale(0.88);
+}
+
+.mikkun-quest-stars i.complete {
+  color: #ffc43d;
+  filter: none;
+  text-shadow: 0 2px 0 #e5951c;
+  transform: scale(1);
+}
+
+.mikkun-quest-stars i.current {
+  color: #ffdb69;
+  filter: none;
+  animation: mikkun-star-pulse 850ms ease-in-out infinite alternate;
+}
+
+.mikkun-quest-progress > b {
+  color: #806329;
+  font-size: 11px;
+  text-align: right;
+}
+
+@keyframes mikkun-star-pulse {
+  to {
+    transform: scale(1.2) rotate(8deg);
+  }
+}
+
+.mikkun-adventure-lesson {
+  background:
+    radial-gradient(circle at 92% 19%, rgba(255, 203, 72, 0.18) 0 9%, transparent 9.5%),
+    radial-gradient(circle at 8% 62%, rgba(82, 173, 207, 0.1) 0 8%, transparent 8.5%),
+    var(--paper);
+}
+
+.mikkun-adventure-lesson .lesson-progress i {
+  background: linear-gradient(90deg, #ffc845, #ff8b59);
+}
+
+.mikkun-choice-prompt {
+  padding: 15px 0 12px;
+}
+
+.mikkun-choice-prompt .eyebrow {
+  color: #a06423;
+  font-size: 12px;
+}
+
+.reading-card.mikkun-choice-display {
+  width: min(100%, 350px);
+  min-height: 190px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 3px solid #f1d58f;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 214, 94, 0.16), transparent 22%),
+    #fffdf7;
+  box-shadow:
+    0 0 0 7px rgba(255, 212, 89, 0.08),
+    0 13px 28px rgba(102, 76, 30, 0.1);
+}
+
+.mikkun-choice-display .mikkun-target-card {
+  width: min(170px, 43vw);
+  border-radius: 28px;
+  box-shadow:
+    0 10px 25px rgba(82, 61, 27, 0.13),
+    inset 0 0 0 1px rgba(93, 71, 31, 0.06);
+}
+
+.reading-card.mikkun-choice-display .mikkun-theme-symbol {
+  font-family: inherit;
+  font-size: 82px;
+}
+
+.mikkun-pattern-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.5vw, 8px);
+}
+
+.mikkun-pattern-row .mikkun-pattern-card {
+  width: clamp(44px, 13vw, 60px);
+  border-radius: 13px;
+}
+
+.reading-card .mikkun-pattern-question {
+  width: clamp(42px, 12vw, 54px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px dashed #e7b84a;
+  border-radius: 13px;
+  background: #fff8db;
+  color: #cf8e20;
+  font-family: inherit;
+  font-size: clamp(25px, 8vw, 38px);
+}
+
+.mikkun-emoji-pattern {
+  flex-wrap: wrap;
+}
+
+.reading-card .mikkun-emoji-pattern > span:not(.mikkun-pattern-question) {
+  font-family: inherit;
+  font-size: clamp(29px, 9vw, 42px);
+  letter-spacing: 0;
+}
+
+.mikkun-counting-scene {
+  max-width: 280px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+}
+
+.reading-card .mikkun-counting-scene span {
+  font-family: inherit;
+  font-size: clamp(42px, 13vw, 62px);
+  line-height: 1.1;
+}
+
+.mikkun-options.mikkun-picture-options,
+.mikkun-options.mikkun-number-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mikkun-options.mikkun-picture-options button {
+  position: relative;
+  min-height: 116px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 4px 6px;
+}
+
+.mikkun-options .mikkun-choice-card {
+  width: min(76px, 20vw);
+  border-radius: 17px;
+}
+
+.mikkun-options button small {
+  color: #655d4e;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mikkun-options.mikkun-picture-options button i {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+}
+
+.mikkun-options.mikkun-number-options button {
+  min-height: 76px;
+  justify-content: center;
+  padding: 8px;
+}
+
+.mikkun-options.mikkun-number-options button span {
+  font-size: clamp(30px, 9vw, 42px);
+}
+
+.mikkun-win {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #fff4bb, #e7f7d7);
+  color: #5f762b;
+  font-size: 12px;
+  box-shadow: inset 0 0 0 1px rgba(225, 176, 47, 0.25);
+}
+
+.mikkun-win::before,
+.mikkun-win::after {
+  content: "★";
+  position: absolute;
+  top: 50%;
+  color: #ffc83e;
+  font-size: 20px;
+  transform: translateY(-50%) rotate(-12deg);
+}
+
+.mikkun-win::before {
+  left: 12px;
+}
+
+.mikkun-win::after {
+  right: 12px;
+  transform: translateY(-50%) rotate(12deg);
+}
+
+.mikkun-auto-next {
+  background: #fff7d7;
+  color: #85601f;
+}
+
+.mikkun-result-screen .result-hero {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.35) 0 5%, transparent 5.5%),
+    linear-gradient(145deg, #68b9d5, #438db6);
+}
+
+.memory-main-card-art {
+  width: 178px;
+  border-radius: 27px;
+}
+
+.memory-card-placeholder {
+  font-size: 92px;
+}
+
+.memory-choice-card-art {
+  width: 58px;
+  border-radius: 13px;
+}
+
+.memory-order-card-art {
+  width: clamp(30px, 9vw, 40px);
+  border-radius: 9px;
+}
+
+.memory-order-strip > span:has(.memory-order-card-art) {
+  overflow: hidden;
+}
+
+.digits-stage {
+  overflow: hidden;
+}
+
+.digits-stage.is-answering {
+  min-height: 0;
+  justify-content: flex-start;
+  overflow: visible;
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.digits-stage.is-answering .number-pad {
+  margin-bottom: 78px;
+}
+
+.digits-submit-dock {
+  position: fixed;
+  z-index: 19;
+  left: 50%;
+  bottom: calc(
+    10px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom)
+  );
+  width: min(calc(100% - 44px), 476px);
+  padding-top: 12px;
+  background: linear-gradient(
+    to bottom,
+    rgba(251, 250, 245, 0),
+    rgba(251, 250, 245, 0.98) 32%
+  );
+  transform: translateX(-50%);
+}
+
+.digits-submit-dock .primary-button.wide,
+.digits-submit-dock .auto-next-note {
+  margin: 0;
+}
+
+@media (max-height: 760px) {
+  .mikkun-choice-prompt {
+    padding-top: 8px;
+  }
+
+  .reading-card.mikkun-choice-display {
+    min-height: 154px;
+  }
+
+  .mikkun-choice-display .mikkun-target-card {
+    width: 130px;
+  }
+
+  .mikkun-options.mikkun-picture-options button {
+    min-height: 98px;
+  }
+
+  .digits-answer-stage h1 {
+    font-size: 23px;
+  }
+
+  .digits-answer-stage .answer-box {
+    height: 58px;
+    margin-top: 10px;
+    margin-bottom: 7px;
+  }
+
+  .digits-answer-stage .result-message {
+    margin-top: 7px;
+    margin-bottom: 7px;
+  }
+
+  .digits-answer-stage .number-pad button {
+    height: 43px;
+  }
+}
