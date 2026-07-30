@@ -2059,6 +2059,18 @@
     const band = bandForLevel(level);
     const bank = mode === "write" ? kanjiProblems : readingProblems;
     const pool = bank.filter((problem) => problem.band === band);
+    /*
+     * question-data.js のアップロード漏れや一時的な読込失敗があっても、
+     * 旧6問だけを繰り返さない。まず同じ難易度帯を使い、不足分だけ
+     * 隣接する難易度帯から近い順に補って30問の候補を確保する。
+     */
+    for (let distance = 1; pool.length < 30 && distance < levelGroups.length; distance += 1) {
+      [band - distance, band + distance].forEach((nearbyBand) => {
+        if (nearbyBand < 1 || nearbyBand > levelGroups.length || pool.length >= 30) return;
+        const nearbyProblems = bank.filter((problem) => problem.band === nearbyBand);
+        pool.push(...nearbyProblems.slice(0, 30 - pool.length));
+      });
+    }
     const recentKey = `${state.learnerName}:${mode}:${band}`;
     const recent = Array.isArray(state.recentProblems[recentKey])
       ? state.recentProblems[recentKey]

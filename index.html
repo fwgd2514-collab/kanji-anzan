@@ -21,7 +21,7 @@
     </main>
     <script>
       (() => {
-        const fallbackVersion = "20260730-picture-safe-21";
+        const fallbackVersion = "20260730-no-repeat-fallback-22";
         let loadedVersion = "";
         let checkingForUpdate = false;
 
@@ -50,7 +50,14 @@
             scriptStarted = true;
             await appendScript(`./firebase-config.js?v=${versionQuery}`);
             await appendScript(`./firebase-sync.js?v=${versionQuery}`);
-            await appendScript(`./question-data.js?v=${versionQuery}`);
+            const questionDataLoaded = await appendScript(`./question-data.js?v=${versionQuery}`);
+            if (
+              !questionDataLoaded ||
+              !Array.isArray(window.NOBIRU_ADDITIONAL_KANJI) ||
+              window.NOBIRU_ADDITIONAL_KANJI.length < 240
+            ) {
+              console.warn("追加問題ファイルを読み込めなかったため、近い難易度の問題で補います。");
+            }
             await appendScript(`./app.js?v=${versionQuery}`);
           };
 
