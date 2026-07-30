@@ -60,7 +60,7 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 - `index.html`：アプリを開くファイル
 - `styles.css`：画面デザイン
 - `app.js`：学習機能
-- `assets/learning-card-atlas.png`：フラッシュカードとみっくんメニューの絵
+- `assets/learning-card-atlas-v2.png`：フラッシュカードとみっくんメニューの余白付き絵
 - `names.txt`：選択できる名前（1行に1人）
 - `version.json`：iPhoneに最新版を読み込ませるための更新番号
 - `firebase-config.js`：Firebaseの接続設定

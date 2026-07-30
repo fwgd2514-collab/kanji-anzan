@@ -1,6 +1,6 @@
 # 6分野・みっくん冒険メニュー版への更新手順
 
-## みっくん冒険・絵カード改善版（version 19）について
+## 問題追加・絵カード余白改善版（version 21）について
 
 今回の更新内容は次のとおりです。
 
@@ -14,7 +14,7 @@
 - 操作音を短く澄んだ音、正解音を余韻のあるベル調へ変更
 - 数字記憶の「こたえる」ボタンを、iPhoneのSafari下部バーより上に固定
 
-version 18で最新の `firestore.rules` を公開済みの場合、version 19ではFirebaseルールの再公開は不要です。今回は `app.js`、`styles.css`、`index.html`、`version.json`、説明ファイルと、新しい `assets` フォルダをGitHubへアップロードしてください。
+version 18で最新の `firestore.rules` を公開済みの場合、version 21ではFirebaseルールの再公開は不要です。今回は `app.js`、`question-data.js`、`styles.css`、`index.html`、`version.json`、説明ファイルと、`assets` フォルダをGitHubへアップロードしてください。
 
 ## 学習日時・順番記憶・難易度改善版（version 18）について
 
@@ -112,7 +112,7 @@ version 17以前から更新する場合は次の順番で進めます。version
 
 - `app.js`
 - `styles.css`
-- `assets/learning-card-atlas.png`
+- `assets/learning-card-atlas-v2.png`
 - `firebase-sync.js`
 - `firebase-config.js`
 - `firestore.rules`
@@ -180,7 +180,7 @@ nobiru_groups
 
 1. Safariの学習アプリのタブを閉じます。
 2. GitHub PagesのURLをもう一度開きます。
-3. まだ古い場合は、URLの末尾に `?update=19` を付けて一度開きます。
+3. まだ古い場合は、URLの末尾に `?update=21` を付けて一度開きます。
 4. 設定画面で「今すぐ同期する」を押します。
 
 この更新では `version.json` の更新番号も変更しているため、通常は保存済みの名前やレベルを消さずに最新版へ切り替わります。
