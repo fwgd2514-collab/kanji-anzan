@@ -29,6 +29,7 @@
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
   const MIKKUN_NAME = "みっくん";
   const PRESCHOOL_QUESTION_COUNT = 5;
+  const DIFFICULTY_OFFSET = 12;
   let tapAudioContext = null;
 
   const kanjiProblems = [
@@ -291,6 +292,8 @@
     memoryPhase: "ready",
     memoryVisible: null,
     memoryChoice: "",
+    memorySelected: [],
+    memoryResult: "idle",
     memoryChecked: false,
     memoryChoices: [],
     memoryTimer: 0,
@@ -482,8 +485,13 @@
     return {
       skills,
       streak: Math.max(0, Number(profile?.streak) || 0),
+      lastStudiedAt: Math.max(
+        0,
+        Math.floor(Number(profile?.lastStudiedAt) || 0),
+      ),
       updatedAt: Math.max(
         legacyUpdatedAt,
+        Math.floor(Number(profile?.lastStudiedAt) || 0),
         ...SKILL_MODES.map((mode) => skills[mode].updatedAt),
       ),
     };
@@ -657,9 +665,17 @@
           merged.streak = local.streak;
           needsUpload = true;
         }
+        merged.lastStudiedAt = Math.max(
+          local.lastStudiedAt || 0,
+          remote.lastStudiedAt || 0,
+        );
+        if ((local.lastStudiedAt || 0) > (remote.lastStudiedAt || 0)) {
+          needsUpload = true;
+        }
         merged.updatedAt = Math.max(
           local.updatedAt,
           remote.updatedAt,
+          merged.lastStudiedAt,
           ...SKILL_MODES.map((mode) => merged.skills[mode].updatedAt),
         );
         state.profiles[name] = merged;
@@ -770,9 +786,15 @@
     return group ? group.label : "高校入試チャレンジ";
   }
 
+  function practiceLevel(level) {
+    return clamp(Number(level) - DIFFICULTY_OFFSET, 1, 100);
+  }
+
   function bandForLevel(level) {
+    const adjustedLevel = practiceLevel(level);
     const index = levelGroups.findIndex(
-      (group) => level >= group.start && level <= group.end,
+      (group) =>
+        adjustedLevel >= group.start && adjustedLevel <= group.end,
     );
     return index >= 0 ? index + 1 : levelGroups.length;
   }
@@ -831,6 +853,71 @@
     } catch {
       // 音が使えないブラウザでも、操作そのものは止めません。
     }
+  }
+
+  function playCorrectSound() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      unlockTapAudio();
+      if (!tapAudioContext) return;
+      const emitChime = () => {
+        const now = tapAudioContext.currentTime + 0.015;
+        [
+          { frequency: 880, start: 0, duration: 0.16, gain: 0.09 },
+          { frequency: 660, start: 0.17, duration: 0.42, gain: 0.075 },
+        ].forEach((tone) => {
+          const oscillator = tapAudioContext.createOscillator();
+          const gain = tapAudioContext.createGain();
+          const beginsAt = now + tone.start;
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(tone.frequency, beginsAt);
+          gain.gain.setValueAtTime(0.0001, beginsAt);
+          gain.gain.exponentialRampToValueAtTime(
+            tone.gain,
+            beginsAt + 0.018,
+          );
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            beginsAt + tone.duration,
+          );
+          oscillator.connect(gain);
+          gain.connect(tapAudioContext.destination);
+          oscillator.start(beginsAt);
+          oscillator.stop(beginsAt + tone.duration + 0.02);
+        });
+      };
+      if (tapAudioContext.state === "running") {
+        emitChime();
+      } else {
+        tapAudioContext.resume()?.then(emitChime).catch(() => {});
+      }
+    } catch {
+      // 正解音を使えない端末でも学習は続けられます。
+    }
+  }
+
+  function lastStudiedText(timestamp) {
+    const value = Number(timestamp) || 0;
+    if (!value) return "まだ学習していません";
+    const date = new Date(value);
+    const now = new Date();
+    const sameYear = date.getFullYear() === now.getFullYear();
+    const sameDay =
+      sameYear &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+    const time = date.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (sameDay) return `今日 ${time}`;
+    const day = date.toLocaleDateString("ja-JP", {
+      ...(sameYear ? {} : { year: "numeric" }),
+      month: "numeric",
+      day: "numeric",
+    });
+    return `${day} ${time}`;
   }
 
   function currentNumber() {
@@ -970,7 +1057,7 @@
               `;
             }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> ${mikkun ? "みっくんメニューは年中さん向けのやさしい問題です" : "選んだ分野のレベルに合う問題が出ます"}</p>
+          <p class="road-note"><span>◆</span> ${mikkun ? "みっくんメニューは年中さん向けのやさしい問題です" : "表示レベルより少しやさしい復習問題から出ます"}</p>
         </section>
 
         <div class="encouragement">
@@ -1043,6 +1130,8 @@
         xp: skill.xp,
         updatedAt: skill.updatedAt,
       },
+      lastStudiedAtAtStart:
+        ensureProfile(state.learnerName).lastStudiedAt || 0,
       problems,
       completed: 0,
       correct: 0,
@@ -1425,34 +1514,48 @@
         </div>
       `;
     } else {
-      const correct =
-        state.memoryChecked && state.memoryChoice === problem.answer.id;
+      const correct = state.memoryChecked && state.memoryResult === "correct";
+      const answerSequence = problem.sequence
+        .map((card) => `${card.symbol} ${card.label}`)
+        .join(" → ");
       const feedback = state.memoryChecked
         ? correct
-          ? '<div class="reading-feedback correct"><b>正解！</b> よく覚えられました。</div>'
-          : `<div class="reading-feedback wrong"><b>おしい！</b> 出てきたのは「${problem.answer.symbol} ${problem.answer.label}」です。</div>`
+          ? '<div class="reading-feedback correct"><b>正解！</b> 順番まで覚えられました。</div>'
+          : `<div class="reading-feedback wrong"><b>おしい！</b> 正しい順番は「${answerSequence}」です。</div>`
         : "";
       stage = `
         <div class="memory-answer-stage">
-          <p class="eyebrow">出てきたのはどれ？</p>
-          <h1>覚えているカードを選ぼう</h1>
+          <p class="eyebrow">どの順番だった？</p>
+          <h1>出てきた順にタップしよう</h1>
+          <div class="memory-order-strip" aria-label="選んだ順番">
+            ${problem.sequence.map((_, index) => {
+              const selectedId = state.memorySelected[index];
+              const card = memoryCards.find((item) => item.id === selectedId);
+              return `
+                <span class="${card ? "filled" : ""}">
+                  <small>${index + 1}</small>${card ? card.symbol : "？"}
+                </span>
+              `;
+            }).join("")}
+          </div>
           <div class="memory-choice-grid">
             ${state.memoryChoices.map((card) => {
-              const selected = state.memoryChoice === card.id;
-              const rightChoice = state.memoryChecked && card.id === problem.answer.id;
-              const wrongChoice =
-                state.memoryChecked && selected && card.id !== problem.answer.id;
+              const selected = state.memorySelected.includes(card.id);
               return `
-                <button type="button" data-memory-choice="${card.id}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.memoryChecked ? "disabled" : ""}>
+                <button type="button" data-memory-order="${card.id}" class="${selected ? "selected" : ""}" ${state.memoryChecked || selected ? "disabled" : ""}>
                   <strong>${card.symbol}</strong><span>${card.label}</span>
                 </button>
               `;
             }).join("")}
           </div>
+          ${!state.memoryChecked && state.memorySelected.length
+            ? '<button type="button" class="memory-undo-button" data-action="undo-memory">ひとつ戻す</button>'
+            : ""
+          }
           <div class="reading-feedback-slot">${feedback}</div>
           ${state.memoryChecked
             ? `<p class="auto-next-note ${correct ? "" : "wrong"}" aria-live="polite">${correct ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
-            : '<p class="choice-note">カードをひとつ選んでね</p>'
+            : `<p class="choice-note">${state.memorySelected.length} / ${problem.sequence.length}枚選択</p>`
           }
         </div>
       `;
@@ -1653,6 +1756,8 @@
     state.memoryPhase = "ready";
     state.memoryVisible = null;
     state.memoryChoice = "";
+    state.memorySelected = [];
+    state.memoryResult = "idle";
     state.memoryChecked = false;
     state.memoryChoices = shuffled(problem.choices || []);
   }
@@ -1748,7 +1853,7 @@
     if (mode === "read") return `${problem.kanji}:${problem.answer}`;
     if (mode === "memory") {
       return problem.sequence
-        ? `${problem.sequence.map((card) => card.id).join("-")}:${problem.answer.id}`
+        ? problem.sequence.map((card) => card.id).join("-")
         : `${problem.display}:${problem.answer}`;
     }
     if (mode === "digits") return problem.digits;
@@ -1886,14 +1991,13 @@
     const lengths = [2, 2, 3, 3, 4, 4, 5, 5, 6, 7];
     const delays = [1250, 1150, 1050, 950, 880, 820, 760, 700, 640, 580];
     const sequence = shuffled(memoryCards).slice(0, lengths[band - 1]);
-    const answer = sequence[randomInt(0, sequence.length - 1)];
+    const decoyCount = sequence.length <= 3 ? 3 : 2;
     const decoys = shuffled(
       memoryCards.filter((card) => !sequence.some((shown) => shown.id === card.id)),
-    ).slice(0, 3);
+    ).slice(0, decoyCount);
     return {
       sequence,
-      answer,
-      choices: shuffled([answer, ...decoys]),
+      choices: shuffled([...sequence, ...decoys]),
       delay: delays[band - 1],
     };
   }
@@ -1909,11 +2013,13 @@
   }
 
   function generateMathProblem(level) {
+    const adjustedLevel = practiceLevel(level);
     const band = bandForLevel(level);
     const choice = randomInt(0, 3);
 
     if (band === 1) {
-      const max = level <= 3 ? 5 : level <= 6 ? 10 : 20;
+      const max =
+        adjustedLevel <= 3 ? 5 : adjustedLevel <= 6 ? 10 : 20;
       if (choice % 2 === 0) {
         const left = randomInt(1, max - 1);
         const right = randomInt(1, max - left);
@@ -1933,7 +2039,7 @@
     }
 
     if (band === 2) {
-      if (level >= 16 && choice === 3) {
+      if (adjustedLevel >= 16 && choice === 3) {
         const left = randomInt(2, 9);
         const right = randomInt(2, 9);
         return {
@@ -1942,7 +2048,7 @@
           hint: `${left}のだんを思い出そう`,
         };
       }
-      const max = level < 16 ? 50 : 100;
+      const max = adjustedLevel < 16 ? 50 : 100;
       if (choice % 2 === 0) {
         const left = randomInt(10, max - 10);
         const right = randomInt(5, max - left);
@@ -2242,6 +2348,7 @@
     session.attempts += 1;
     if (correct) {
       session.correct += 1;
+      playCorrectSound();
       earnXp(MODE_INFO[session.mode].xp);
     } else {
       applyWrongAnswerPenalty(session.mode);
@@ -2308,7 +2415,7 @@
       (mode === "digits" && state.digitsResult === "wrong") ||
       (mode === "memory" &&
         state.memoryChecked &&
-        state.memoryChoice !== currentSessionProblem().answer.id)
+        state.memoryResult === "wrong")
         ? 1400
         : mode === "flash" && state.flashResult === "given-up"
           ? 1500
@@ -2357,6 +2464,7 @@
       xp: session.skillAtStart?.xp ?? 0,
       updatedAt: restoredAt,
     };
+    profile.lastStudiedAt = session.lastStudiedAtAtStart || 0;
     profile.updatedAt = Math.max(profile.updatedAt, restoredAt);
     applyActiveProfile();
     state.session = null;
@@ -2516,6 +2624,7 @@
                 <span class="learner-copy">
                   <b>${escapeHtml(name)}</b>
                   <small>総合 Lv.${overallLevel(profile)} ・ ${gradeForLevel(overallLevel(profile))}</small>
+                  <small class="learner-last-study">最終学習：${escapeHtml(lastStudiedText(profile.lastStudiedAt))}</small>
                 </span>
                 <span class="learner-skill-levels">
                   ${SKILL_MODES.map((mode) => {
@@ -2527,7 +2636,7 @@
             `;
           }).join("")}
         </div>
-        <p class="settings-note">名前をタップすると、学習する人を切り替えられます。</p>
+        <p class="settings-note">名前をタップすると学習する人を切り替えられます。最終学習日時も端末間で共有されます。</p>
       </section>
     `;
   }
@@ -2721,7 +2830,8 @@
               </button>
             `).join("")}
           </div>
-          <p class="sheet-note">−・＋ボタンや横バーでは1レベル単位で選べます。選んだ分野だけを変更します。</p>
+          <p class="sheet-note">変更後もこの画面は閉じません。上の分野タブから、ほかの分野を続けて調整できます。</p>
+          <button type="button" class="secondary-button wide placement-finish-button" data-action="close-placement">レベル調整を終える</button>
         </section>
       </div>
     `;
@@ -2758,10 +2868,9 @@
     );
     applyActiveProfile();
     state.placementDraftLevel = profile.skills[safeMode].level;
-    state.placementOpen = false;
     saveProgress(safeMode);
     showToast(
-      `${MODE_INFO[safeMode].short}はレベル ${profile.skills[safeMode].level} から！`,
+      `${MODE_INFO[safeMode].short}をレベル ${profile.skills[safeMode].level} に保存しました`,
     );
     render();
   }
@@ -2849,6 +2958,7 @@
       const correct = state.readingChoice === problem.answer;
       if (correct) {
         state.session.correct += 1;
+        playCorrectSound();
         earnXp(MODE_INFO[mode].xp);
       } else {
         applyWrongAnswerPenalty(mode);
@@ -2858,21 +2968,31 @@
       return;
     }
 
-    const memoryButton = event.target.closest("[data-memory-choice]");
-    if (memoryButton && !state.memoryChecked) {
+    const memoryButton = event.target.closest("[data-memory-order]");
+    if (
+      memoryButton &&
+      !state.memoryChecked &&
+      !state.memorySelected.includes(memoryButton.dataset.memoryOrder)
+    ) {
       const problem = currentSessionProblem();
-      state.memoryChoice = memoryButton.dataset.memoryChoice;
-      state.memoryChecked = true;
-      state.session.attempts += 1;
-      const correct = state.memoryChoice === problem.answer.id;
-      if (correct) {
-        state.session.correct += 1;
-        earnXp(MODE_INFO.memory.xp);
-      } else {
-        applyWrongAnswerPenalty("memory");
+      state.memorySelected.push(memoryButton.dataset.memoryOrder);
+      if (state.memorySelected.length >= problem.sequence.length) {
+        state.memoryChecked = true;
+        state.session.attempts += 1;
+        const correct = problem.sequence.every(
+          (card, index) => state.memorySelected[index] === card.id,
+        );
+        state.memoryResult = correct ? "correct" : "wrong";
+        if (correct) {
+          state.session.correct += 1;
+          playCorrectSound();
+          earnXp(MODE_INFO.memory.xp);
+        } else {
+          applyWrongAnswerPenalty("memory");
+        }
       }
       render();
-      scheduleAnswerAdvance("memory");
+      if (state.memoryChecked) scheduleAnswerAdvance("memory");
       return;
     }
 
@@ -2904,7 +3024,8 @@
     if (
       action === "close-placement" &&
       event.target.closest(".placement-sheet") &&
-      !event.target.closest(".sheet-close")
+      !event.target.closest(".sheet-close") &&
+      !event.target.closest(".placement-finish-button")
     ) {
       return;
     }
@@ -3046,6 +3167,7 @@
         state.mathResult = state.mathAnswer === problem.answer ? "correct" : "wrong";
         if (state.mathResult === "correct") {
           state.session.correct += 1;
+          playCorrectSound();
           earnXp(MODE_INFO.math.xp);
         } else {
           applyWrongAnswerPenalty("math");
@@ -3089,6 +3211,7 @@
         state.flashResult = Number(state.flashAnswer) === total ? "correct" : "wrong";
         if (state.flashResult === "correct") {
           state.session.correct += 1;
+          playCorrectSound();
           if (!state.questionPenaltyApplied) earnXp(MODE_INFO.flash.xp);
         } else {
           applyWrongAnswerPenalty("flash");
@@ -3103,6 +3226,11 @@
       "start-memory"() {
         startMemorySequence();
       },
+      "undo-memory"() {
+        if (state.memoryChecked) return;
+        state.memorySelected.pop();
+        render();
+      },
       "start-digits"() {
         startDigitsSequence();
       },
@@ -3114,6 +3242,7 @@
           state.digitsAnswer === problem.digits ? "correct" : "wrong";
         if (state.digitsResult === "correct") {
           state.session.correct += 1;
+          playCorrectSound();
           earnXp(MODE_INFO.digits.xp);
         } else {
           applyWrongAnswerPenalty("digits");
@@ -3262,6 +3391,8 @@
     state.memoryPhase = "ready";
     state.memoryVisible = null;
     state.memoryChoice = "";
+    state.memorySelected = [];
+    state.memoryResult = "idle";
     state.memoryChecked = false;
     state.memoryChoices = [];
     state.digitsPhase = "ready";
@@ -3283,7 +3414,9 @@
     } else {
       skill.xp = Math.min(100, total);
     }
-    skill.updatedAt = Date.now();
+    const studiedAt = Date.now();
+    skill.updatedAt = studiedAt;
+    profile.lastStudiedAt = studiedAt;
     profile.updatedAt = Math.max(profile.updatedAt, skill.updatedAt);
     applyActiveProfile();
     saveProgress(mode);
@@ -3305,7 +3438,9 @@
     const nextScore = Math.max(0, previousScore - MODE_INFO[mode].penalty);
     skill.level = Math.floor(nextScore / 100) + 1;
     skill.xp = nextScore % 100;
-    skill.updatedAt = Date.now();
+    const studiedAt = Date.now();
+    skill.updatedAt = studiedAt;
+    profile.lastStudiedAt = studiedAt;
     profile.updatedAt = Math.max(profile.updatedAt, skill.updatedAt);
     applyActiveProfile();
     saveProgress(mode);

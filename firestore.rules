@@ -30,6 +30,7 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly([
           'displayName',
           'streak',
+          'lastStudiedAt',
           'updatedAt',
           'schemaVersion'
         ])
@@ -39,10 +40,12 @@ service cloud.firestore {
         && request.resource.data.streak is int
         && request.resource.data.streak >= 0
         && request.resource.data.streak <= 9999
+        && request.resource.data.lastStudiedAt is int
+        && request.resource.data.lastStudiedAt >= 0
         && request.resource.data.updatedAt is int
         && request.resource.data.updatedAt >= 0
         && request.resource.data.schemaVersion is int
-        && request.resource.data.schemaVersion == 3;
+        && request.resource.data.schemaVersion == 4;
     }
 
     function isValidSkill(mode) {

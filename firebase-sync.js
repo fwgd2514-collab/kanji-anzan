@@ -142,8 +142,12 @@
       firestoreApi.setDoc(learnerDocument(name), {
         displayName: String(name).slice(0, 20),
         streak: Math.max(0, Math.min(9999, Number(profile.streak) || 0)),
+        lastStudiedAt: Math.max(
+          0,
+          Math.floor(Number(profile.lastStudiedAt) || 0),
+        ),
         updatedAt,
-        schemaVersion: 3,
+        schemaVersion: 4,
       }),
       ...modesToSave.map((mode) => {
         const skill = profile.skills?.[mode] || {};
