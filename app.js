@@ -1621,7 +1621,11 @@
       return drawing;
     });
     svg.append(guideGroup, drawingGroup, markerGroup);
-    svg.hidden = false;
+    // `hidden` is not reflected reliably by the `.hidden` property on SVGElement.
+    // Remove the attribute itself so the `svg[hidden]` rule no longer collapses
+    // the drawing area on Safari or Chromium.
+    svg.removeAttribute("hidden");
+    svg.style.display = "block";
     if (loading) loading.hidden = true;
     stage.classList.remove("has-error", "is-complete");
     if (replay) replay.disabled = false;
