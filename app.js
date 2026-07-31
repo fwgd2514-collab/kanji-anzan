@@ -3924,8 +3924,12 @@
       const nextMikkunStage = previousMikkunStage
         ? mikkunStage(skill.level)
         : null;
+      const advancedMikkunStage =
+        previousMikkunStage !== null &&
+        nextMikkunStage !== null &&
+        nextMikkunStage.rank > previousMikkunStage.rank;
       showToast(
-        nextMikkunStage?.rank > previousMikkunStage.rank
+        advancedMikkunStage
           ? `おめでとう！「${nextMikkunStage.label}」にステップアップ！`
           : `${MODE_INFO[mode].short}がレベル ${skill.level} にアップ！`,
       );
