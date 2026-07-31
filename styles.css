@@ -783,6 +783,15 @@ canvas:focus-visible {
   -webkit-touch-callout: none;
 }
 
+html.is-writing,
+html.is-writing body {
+  overscroll-behavior: none;
+}
+
+html.is-writing body {
+  overflow: hidden;
+}
+
 .guide-kanji {
   position: absolute;
   inset: 0;
@@ -1131,29 +1140,6 @@ canvas:focus-visible {
 
 .kanji-stroke-drawing path.complete {
   stroke: #273953;
-}
-
-.kanji-stroke-marker circle {
-  fill: #fffdf8;
-  stroke: #b7ac9b;
-  stroke-width: 0.9;
-}
-
-.kanji-stroke-marker text {
-  fill: #72695d;
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-  font-size: 6px;
-  font-weight: 900;
-}
-
-.kanji-stroke-marker.active circle {
-  fill: var(--coral);
-  stroke: #fff;
-  stroke-width: 1.2;
-}
-
-.kanji-stroke-marker.active text {
-  fill: white;
 }
 
 .kanji-stroke-status {

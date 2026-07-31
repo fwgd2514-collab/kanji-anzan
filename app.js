@@ -1387,8 +1387,8 @@
             ${kanjiFeedbackTemplate()}
             <div class="self-check-actions">
               <button type="button" data-action="kanji-retry">書き直す</button>
-              <button type="button" class="kanji-difficult" data-action="kanji-difficult">もう少し練習</button>
-              <button type="button" data-action="kanji-success">この字でOK</button>
+              <button type="button" class="kanji-difficult" data-action="kanji-difficult">次へ</button>
+              <button type="button" data-action="kanji-success">書き順</button>
             </div>
           </div>
         ` : `
@@ -1429,7 +1429,7 @@
         </section>
         <div class="kanji-stroke-actions">
           <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>
-            ↺ もう一度見る
+            ↺ もう一度
           </button>
           <button type="button" class="primary-button" data-action="finish-kanji-demo">
             次の問題へ
@@ -1455,6 +1455,25 @@
     }
     let drawing = false;
     let previous = null;
+    let pageScrollLocked = false;
+    const preventPageScroll = (event) => {
+      if (event.cancelable) event.preventDefault();
+    };
+    const lockPageScroll = () => {
+      if (pageScrollLocked) return;
+      pageScrollLocked = true;
+      document.documentElement.classList.add("is-writing");
+      document.addEventListener("touchmove", preventPageScroll, {
+        passive: false,
+        capture: true,
+      });
+    };
+    const unlockPageScroll = () => {
+      if (!pageScrollLocked) return;
+      pageScrollLocked = false;
+      document.documentElement.classList.remove("is-writing");
+      document.removeEventListener("touchmove", preventPageScroll, true);
+    };
     const pointFor = (event) => {
       const rect = canvas.getBoundingClientRect();
       return {
@@ -1468,6 +1487,7 @@
         if (state.kanjiChecking) return;
         event.preventDefault();
         drawing = true;
+        if (event.pointerType !== "mouse") lockPageScroll();
         state.kanjiStrokes += 1;
         previous = pointFor(event);
         canvas.setPointerCapture(event.pointerId);
@@ -1499,9 +1519,11 @@
       event?.preventDefault();
       drawing = false;
       previous = null;
+      unlockPageScroll();
     };
-    canvas.addEventListener("pointerup", stop);
-    canvas.addEventListener("pointercancel", stop);
+    canvas.addEventListener("pointerup", stop, { passive: false });
+    canvas.addEventListener("pointercancel", stop, { passive: false });
+    canvas.addEventListener("lostpointercapture", stop, { passive: false });
     const preventCanvasScroll = (event) => event.preventDefault();
     canvas.addEventListener("touchstart", preventCanvasScroll, { passive: false });
     canvas.addEventListener("touchmove", preventCanvasScroll, { passive: false });
@@ -1608,8 +1630,6 @@
     guideGroup.setAttribute("class", "kanji-stroke-guides");
     const drawingGroup = document.createElementNS(SVG_NAMESPACE, "g");
     drawingGroup.setAttribute("class", "kanji-stroke-drawing");
-    const markerGroup = document.createElementNS(SVG_NAMESPACE, "g");
-    markerGroup.setAttribute("class", "kanji-stroke-markers");
     const drawingPaths = strokes.map((stroke) => {
       const guide = document.createElementNS(SVG_NAMESPACE, "path");
       guide.setAttribute("d", stroke.d);
@@ -1620,7 +1640,7 @@
       drawingGroup.appendChild(drawing);
       return drawing;
     });
-    svg.append(guideGroup, drawingGroup, markerGroup);
+    svg.append(guideGroup, drawingGroup);
     // `hidden` is not reflected reliably by the `.hidden` property on SVGElement.
     // Remove the attribute itself so the `svg[hidden]` rule no longer collapses
     // the drawing area on Safari or Chromium.
@@ -1629,16 +1649,15 @@
     if (loading) loading.hidden = true;
     stage.classList.remove("has-error", "is-complete");
     if (replay) replay.disabled = false;
-    startKanjiStrokeAnimation(drawingPaths, markerGroup);
+    startKanjiStrokeAnimation(drawingPaths);
   }
 
-  async function startKanjiStrokeAnimation(drawingPaths, markerGroup) {
+  async function startKanjiStrokeAnimation(drawingPaths) {
     cancelKanjiStrokeAnimations();
     const token = ++kanjiStrokeRunToken;
     const status = document.querySelector("#kanjiStrokeStatus");
     const stage = document.querySelector("#kanjiStrokeStage");
     stage?.classList.remove("is-complete");
-    while (markerGroup.firstChild) markerGroup.removeChild(markerGroup.firstChild);
     drawingPaths.forEach((path) => {
       const length = Math.max(1, path.getTotalLength());
       path.dataset.pathLength = String(length);
@@ -1654,23 +1673,19 @@
       if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
       const path = drawingPaths[index];
       const length = Number(path.dataset.pathLength);
-      const marker = createKanjiStrokeMarker(path, index + 1);
-      markerGroup.appendChild(marker);
-      marker.classList.add("active");
       path.classList.add("active");
       if (status) {
         status.textContent = `第 ${index + 1} 画 ／ ${drawingPaths.length}画`;
       }
       const duration = reducedMotion
         ? 20
-        : Math.round(Math.max(330, Math.min(760, length * 9)));
+        : Math.round(Math.max(520, Math.min(1050, length * 12)));
       await animateKanjiStroke(path, length, duration);
       if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
       path.style.strokeDashoffset = "0";
       path.classList.remove("active");
       path.classList.add("complete");
-      marker.classList.remove("active");
-      if (!reducedMotion) await waitForKanjiStroke(130);
+      if (!reducedMotion) await waitForKanjiStroke(220);
     }
     if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
     if (status) status.textContent = "書き順を確認できました";
@@ -1701,21 +1716,6 @@
     });
   }
 
-  function createKanjiStrokeMarker(path, order) {
-    const point = path.getPointAtLength(0);
-    const marker = document.createElementNS(SVG_NAMESPACE, "g");
-    marker.setAttribute("class", "kanji-stroke-marker");
-    marker.setAttribute("transform", `translate(${point.x} ${point.y})`);
-    const circle = document.createElementNS(SVG_NAMESPACE, "circle");
-    circle.setAttribute("r", order >= 10 ? "6.5" : "5.8");
-    const number = document.createElementNS(SVG_NAMESPACE, "text");
-    number.setAttribute("text-anchor", "middle");
-    number.setAttribute("dominant-baseline", "central");
-    number.textContent = String(order);
-    marker.append(circle, number);
-    return marker;
-  }
-
   function waitForKanjiStroke(duration) {
     return new Promise((resolve) => window.setTimeout(resolve, duration));
   }
@@ -1724,14 +1724,11 @@
     const drawingPaths = [
       ...document.querySelectorAll("#kanjiStrokeSvg .kanji-stroke-drawing path"),
     ];
-    const markerGroup = document.querySelector(
-      "#kanjiStrokeSvg .kanji-stroke-markers",
-    );
-    if (!drawingPaths.length || !markerGroup) {
+    if (!drawingPaths.length) {
       setupKanjiStrokeDemo();
       return;
     }
-    startKanjiStrokeAnimation(drawingPaths, markerGroup);
+    startKanjiStrokeAnimation(drawingPaths);
   }
 
   function cancelKanjiStrokeAnimations() {
