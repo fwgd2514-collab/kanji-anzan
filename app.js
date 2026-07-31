@@ -36,7 +36,16 @@
     { rank: 3, min: 11, max: 20, label: "年中さん・はじめ", short: "年中さん", next: "年中さん・チャレンジ" },
     { rank: 4, min: 21, max: 100, label: "年中さん・チャレンジ", short: "年中さん", next: "マスター" },
   ];
+  const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+  const KANJIVG_SOURCES = [
+    "https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/",
+    "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/",
+  ];
+  const kanjiStrokeCache = new Map();
   let tapAudioContext = null;
+  let kanjiStrokeRunToken = 0;
+  let kanjiStrokeFetchController = null;
+  let kanjiStrokeAnimations = [];
 
   const kanjiProblems = [
     { band: 1, kanji: "山", reading: "やま", word: "山道", strokes: 3 },
@@ -362,6 +371,7 @@
     kanjiChecking: false,
     kanjiImage: "",
     kanjiFeedback: null,
+    kanjiDemoOpen: false,
     readingChoice: "",
     readingChecked: false,
     readingChoices: [],
@@ -1075,7 +1085,13 @@
       ${state.exitConfirmOpen ? exitConfirmTemplate() : ""}
       ${state.toast ? `<div class="toast" role="status"><span>★</span> ${state.toast}</div>` : ""}
     `;
-    if (state.view === "write") setupWritingCanvas();
+    if (state.view === "write") {
+      if (state.kanjiDemoOpen) {
+        setupKanjiStrokeDemo();
+      } else {
+        setupWritingCanvas();
+      }
+    }
   }
 
   function homeTemplate() {
@@ -1347,6 +1363,7 @@
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     if (preschool) return mikkunAdventureTemplate();
+    if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
     return `
       <div class="screen lesson-screen kanji-lesson">
         ${lessonHeader(preschool ? "あいうえお" : "漢字を書く")}
@@ -1382,6 +1399,47 @@
             </button>
           </div>
         `}
+      </div>
+    `;
+  }
+
+  function kanjiStrokeReviewTemplate(problem) {
+    return `
+      <div class="screen lesson-screen kanji-lesson kanji-stroke-review">
+        ${lessonHeader("漢字を書く")}
+        ${lessonLevelRow('<span class="timer stroke-order-pill">● 書き順</span>')}
+        <section class="prompt-area">
+          <p class="eyebrow">お手本の動きを見よう</p>
+          <h1>「${problem.kanji}」を<br />一画ずつ確認</h1>
+          <p class="word-example">書いた文字を消して、正しい順番で再生します。</p>
+        </section>
+        <section class="kanji-stroke-stage" id="kanjiStrokeStage" aria-live="polite">
+          <div class="kanji-stroke-loading" id="kanjiStrokeLoading">
+            <span aria-hidden="true">${problem.kanji}</span>
+            <p id="kanjiStrokeLoadingText">書き順を準備しています…</p>
+          </div>
+          <svg
+            id="kanjiStrokeSvg"
+            viewBox="0 0 109 109"
+            role="img"
+            aria-label="${problem.kanji}の書き順アニメーション"
+            hidden
+          ></svg>
+          <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
+        </section>
+        <div class="kanji-stroke-actions">
+          <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>
+            ↺ もう一度見る
+          </button>
+          <button type="button" class="primary-button" data-action="finish-kanji-demo">
+            次の問題へ
+          </button>
+        </div>
+        <p class="kanji-stroke-source">
+          書き順データ：
+          <a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">KanjiVG</a>
+          （CC BY-SA 3.0）
+        </p>
       </div>
     `;
   }
@@ -1447,6 +1505,247 @@
     const preventCanvasScroll = (event) => event.preventDefault();
     canvas.addEventListener("touchstart", preventCanvasScroll, { passive: false });
     canvas.addEventListener("touchmove", preventCanvasScroll, { passive: false });
+  }
+
+  async function setupKanjiStrokeDemo() {
+    const problem = currentSessionProblem();
+    const stage = document.querySelector("#kanjiStrokeStage");
+    if (!problem?.kanji || !stage || !state.kanjiDemoOpen) return;
+    stopKanjiStrokeAnimation();
+    const requestToken = kanjiStrokeRunToken;
+    try {
+      const paths = await loadKanjiStrokePaths(problem.kanji, requestToken);
+      if (
+        requestToken !== kanjiStrokeRunToken ||
+        !state.kanjiDemoOpen ||
+        state.view !== "write"
+      ) {
+        return;
+      }
+      buildKanjiStrokeAnimation(paths);
+    } catch {
+      if (
+        requestToken !== kanjiStrokeRunToken ||
+        !state.kanjiDemoOpen ||
+        state.view !== "write"
+      ) {
+        return;
+      }
+      const loadingText = document.querySelector("#kanjiStrokeLoadingText");
+      const status = document.querySelector("#kanjiStrokeStatus");
+      stage.classList.add("has-error");
+      if (loadingText) {
+        loadingText.textContent =
+          "書き順を読み込めませんでした。通信を確認してください。";
+      }
+      if (status) status.textContent = "「次の問題へ」はそのまま押せます";
+    }
+  }
+
+  async function loadKanjiStrokePaths(character, requestToken) {
+    const glyph = Array.from(String(character || ""))[0];
+    if (!glyph) throw new Error("kanji is empty");
+    if (kanjiStrokeCache.has(glyph)) return kanjiStrokeCache.get(glyph);
+    const filename = `${glyph.codePointAt(0).toString(16).padStart(5, "0")}.svg`;
+    let lastError = null;
+    for (const source of KANJIVG_SOURCES) {
+      if (requestToken !== kanjiStrokeRunToken) {
+        throw new Error("stroke loading cancelled");
+      }
+      const controller = new AbortController();
+      kanjiStrokeFetchController = controller;
+      const timeout = window.setTimeout(() => controller.abort(), 6500);
+      try {
+        const response = await fetch(`${source}${filename}`, {
+          cache: "force-cache",
+          mode: "cors",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`KanjiVG ${response.status}`);
+        const paths = parseKanjiStrokePaths(await response.text());
+        if (!paths.length) throw new Error("stroke paths are empty");
+        kanjiStrokeCache.set(glyph, paths);
+        return paths;
+      } catch (error) {
+        lastError = error;
+      } finally {
+        window.clearTimeout(timeout);
+        if (kanjiStrokeFetchController === controller) {
+          kanjiStrokeFetchController = null;
+        }
+      }
+    }
+    throw lastError || new Error("stroke data is unavailable");
+  }
+
+  function parseKanjiStrokePaths(svgText) {
+    const xml = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    if (xml.querySelector("parsererror")) return [];
+    return [...xml.getElementsByTagName("path")]
+      .map((path) => {
+        const id = path.getAttribute("id") || "";
+        const order = Number(id.match(/-s(\d+)$/)?.[1] || 0);
+        const d = path.getAttribute("d") || "";
+        return { order, d };
+      })
+      .filter(
+        (stroke) =>
+          stroke.order > 0 &&
+          stroke.d.length > 3 &&
+          /^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]+$/.test(stroke.d),
+      )
+      .sort((left, right) => left.order - right.order);
+  }
+
+  function buildKanjiStrokeAnimation(strokes) {
+    const svg = document.querySelector("#kanjiStrokeSvg");
+    const loading = document.querySelector("#kanjiStrokeLoading");
+    const replay = document.querySelector("#kanjiStrokeReplay");
+    const stage = document.querySelector("#kanjiStrokeStage");
+    if (!svg || !stage || !strokes.length) return;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const guideGroup = document.createElementNS(SVG_NAMESPACE, "g");
+    guideGroup.setAttribute("class", "kanji-stroke-guides");
+    const drawingGroup = document.createElementNS(SVG_NAMESPACE, "g");
+    drawingGroup.setAttribute("class", "kanji-stroke-drawing");
+    const markerGroup = document.createElementNS(SVG_NAMESPACE, "g");
+    markerGroup.setAttribute("class", "kanji-stroke-markers");
+    const drawingPaths = strokes.map((stroke) => {
+      const guide = document.createElementNS(SVG_NAMESPACE, "path");
+      guide.setAttribute("d", stroke.d);
+      guideGroup.appendChild(guide);
+      const drawing = document.createElementNS(SVG_NAMESPACE, "path");
+      drawing.setAttribute("d", stroke.d);
+      drawing.dataset.strokeOrder = String(stroke.order);
+      drawingGroup.appendChild(drawing);
+      return drawing;
+    });
+    svg.append(guideGroup, drawingGroup, markerGroup);
+    svg.hidden = false;
+    if (loading) loading.hidden = true;
+    stage.classList.remove("has-error", "is-complete");
+    if (replay) replay.disabled = false;
+    startKanjiStrokeAnimation(drawingPaths, markerGroup);
+  }
+
+  async function startKanjiStrokeAnimation(drawingPaths, markerGroup) {
+    cancelKanjiStrokeAnimations();
+    const token = ++kanjiStrokeRunToken;
+    const status = document.querySelector("#kanjiStrokeStatus");
+    const stage = document.querySelector("#kanjiStrokeStage");
+    stage?.classList.remove("is-complete");
+    while (markerGroup.firstChild) markerGroup.removeChild(markerGroup.firstChild);
+    drawingPaths.forEach((path) => {
+      const length = Math.max(1, path.getTotalLength());
+      path.dataset.pathLength = String(length);
+      path.style.transition = "none";
+      path.style.strokeDasharray = `${length} ${length}`;
+      path.style.strokeDashoffset = String(length);
+      path.style.opacity = "1";
+      path.classList.remove("active", "complete");
+    });
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches || false;
+    for (let index = 0; index < drawingPaths.length; index += 1) {
+      if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
+      const path = drawingPaths[index];
+      const length = Number(path.dataset.pathLength);
+      const marker = createKanjiStrokeMarker(path, index + 1);
+      markerGroup.appendChild(marker);
+      marker.classList.add("active");
+      path.classList.add("active");
+      if (status) {
+        status.textContent = `第 ${index + 1} 画 ／ ${drawingPaths.length}画`;
+      }
+      const duration = reducedMotion
+        ? 20
+        : Math.round(Math.max(330, Math.min(760, length * 9)));
+      await animateKanjiStroke(path, length, duration);
+      if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
+      path.style.strokeDashoffset = "0";
+      path.classList.remove("active");
+      path.classList.add("complete");
+      marker.classList.remove("active");
+      if (!reducedMotion) await waitForKanjiStroke(130);
+    }
+    if (token !== kanjiStrokeRunToken || !state.kanjiDemoOpen) return;
+    if (status) status.textContent = "書き順を確認できました";
+    stage?.classList.add("is-complete");
+  }
+
+  function animateKanjiStroke(path, length, duration) {
+    if (typeof path.animate !== "function") {
+      path.style.transition = `stroke-dashoffset ${duration}ms ease-in-out`;
+      path.style.strokeDashoffset = "0";
+      return waitForKanjiStroke(duration);
+    }
+    const animation = path.animate(
+      [
+        { strokeDashoffset: String(length) },
+        { strokeDashoffset: "0" },
+      ],
+      {
+        duration,
+        easing: "ease-in-out",
+        fill: "forwards",
+      },
+    );
+    kanjiStrokeAnimations.push(animation);
+    return new Promise((resolve) => {
+      animation.onfinish = resolve;
+      animation.oncancel = resolve;
+    });
+  }
+
+  function createKanjiStrokeMarker(path, order) {
+    const point = path.getPointAtLength(0);
+    const marker = document.createElementNS(SVG_NAMESPACE, "g");
+    marker.setAttribute("class", "kanji-stroke-marker");
+    marker.setAttribute("transform", `translate(${point.x} ${point.y})`);
+    const circle = document.createElementNS(SVG_NAMESPACE, "circle");
+    circle.setAttribute("r", order >= 10 ? "6.5" : "5.8");
+    const number = document.createElementNS(SVG_NAMESPACE, "text");
+    number.setAttribute("text-anchor", "middle");
+    number.setAttribute("dominant-baseline", "central");
+    number.textContent = String(order);
+    marker.append(circle, number);
+    return marker;
+  }
+
+  function waitForKanjiStroke(duration) {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  function replayKanjiStrokeAnimation() {
+    const drawingPaths = [
+      ...document.querySelectorAll("#kanjiStrokeSvg .kanji-stroke-drawing path"),
+    ];
+    const markerGroup = document.querySelector(
+      "#kanjiStrokeSvg .kanji-stroke-markers",
+    );
+    if (!drawingPaths.length || !markerGroup) {
+      setupKanjiStrokeDemo();
+      return;
+    }
+    startKanjiStrokeAnimation(drawingPaths, markerGroup);
+  }
+
+  function cancelKanjiStrokeAnimations() {
+    kanjiStrokeAnimations.forEach((animation) => {
+      try {
+        animation.cancel();
+      } catch {
+        // 終了済みのアニメーションはそのまま破棄する。
+      }
+    });
+    kanjiStrokeAnimations = [];
+  }
+
+  function stopKanjiStrokeAnimation() {
+    kanjiStrokeRunToken += 1;
+    cancelKanjiStrokeAnimations();
+    kanjiStrokeFetchController?.abort();
+    kanjiStrokeFetchController = null;
   }
 
   function kanjiFeedbackTemplate() {
@@ -2767,13 +3066,13 @@
     state.lastReadingAnswerIndex = answerIndex;
   }
 
-  function finishQuestion(correct) {
+  function finishQuestion(correct, options = {}) {
     const session = state.session;
     session.completed += 1;
     session.attempts += 1;
     if (correct) {
       session.correct += 1;
-      playCorrectSound();
+      if (options.playFeedback !== false) playCorrectSound();
       earnXp(MODE_INFO[session.mode].xp);
     } else {
       applyWrongAnswerPenalty(session.mode);
@@ -3390,6 +3689,7 @@
       stopMemory();
       stopDigits();
       stopAutoAdvance();
+      stopKanjiStrokeAnimation();
       state.exitConfirmOpen = false;
       if (SKILL_MODES.includes(viewButton.dataset.levelMode)) {
         state.levelViewMode = viewButton.dataset.levelMode;
@@ -3533,6 +3833,7 @@
         stopMemory();
         stopDigits();
         stopAutoAdvance();
+        stopKanjiStrokeAnimation();
         state.view = "home";
         state.session = null;
         state.checkpointOpen = false;
@@ -3545,6 +3846,7 @@
         stopMemory();
         stopDigits();
         stopAutoAdvance();
+        stopKanjiStrokeAnimation();
         if (
           state.session?.mode === "flash" &&
           ["countdown", "showing"].includes(state.flashPhase)
@@ -3629,7 +3931,19 @@
         render();
       },
       "kanji-success"() {
-        finishQuestion(true);
+        playCorrectSound();
+        state.kanjiDemoOpen = true;
+        state.kanjiChecking = false;
+        state.kanjiImage = "";
+        state.kanjiFeedback = null;
+        render();
+      },
+      "replay-kanji-strokes"() {
+        replayKanjiStrokeAnimation();
+      },
+      "finish-kanji-demo"() {
+        stopKanjiStrokeAnimation();
+        finishQuestion(true, { playFeedback: false });
       },
       "kanji-difficult"() {
         finishQuestion(false);
@@ -3880,12 +4194,14 @@
   }
 
   function resetQuestionState() {
+    stopKanjiStrokeAnimation();
     state.kanjiMarks = 0;
     state.kanjiStrokes = 0;
     state.questionPenaltyApplied = false;
     state.kanjiChecking = false;
     state.kanjiImage = "";
     state.kanjiFeedback = null;
+    state.kanjiDemoOpen = false;
     state.readingChoice = "";
     state.readingChecked = false;
     prepareReadingChoices();

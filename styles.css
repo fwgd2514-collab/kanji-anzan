@@ -1012,6 +1012,225 @@ canvas:focus-visible {
   line-height: 1.5;
 }
 
+.kanji-stroke-review .prompt-area {
+  padding-top: 20px;
+  padding-bottom: 13px;
+}
+
+.kanji-stroke-review .prompt-area h1 {
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.stroke-order-pill {
+  color: #a95a36 !important;
+  background: #fff0d9 !important;
+}
+
+.kanji-stroke-stage {
+  position: relative;
+  width: min(100%, 355px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 3px solid #e2d7c7;
+  border-radius: 25px;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 0.5px), #e6e0d7 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(transparent calc(50% - 0.5px), #e6e0d7 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(45deg, transparent calc(50% - 0.5px), #f0ebe3 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), #f0ebe3 50%, transparent calc(50% + 0.5px)),
+    #fffdf8;
+  box-shadow:
+    0 14px 28px rgba(49, 46, 38, 0.09),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.65);
+}
+
+.kanji-stroke-stage::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px dashed rgba(170, 156, 134, 0.34);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.kanji-stroke-stage.is-complete {
+  border-color: #87cbb6;
+  box-shadow:
+    0 14px 28px rgba(49, 46, 38, 0.09),
+    0 0 0 7px rgba(76, 181, 147, 0.09);
+}
+
+.kanji-stroke-loading {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.kanji-stroke-loading[hidden] {
+  display: none;
+}
+
+.kanji-stroke-loading span {
+  color: rgba(38, 52, 75, 0.13);
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 170px;
+  font-weight: 700;
+  line-height: 1;
+  animation: kanji-loading-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.kanji-stroke-loading p {
+  margin: 15px 20px 0;
+  color: #8e887d;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.kanji-stroke-stage.has-error .kanji-stroke-loading span {
+  animation: none;
+}
+
+.kanji-stroke-stage svg {
+  position: relative;
+  z-index: 1;
+  width: 88%;
+  height: 88%;
+  overflow: visible;
+}
+
+.kanji-stroke-stage svg[hidden] {
+  display: none;
+}
+
+.kanji-stroke-guides path,
+.kanji-stroke-drawing path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kanji-stroke-guides path {
+  stroke: #dcd8d0;
+  stroke-width: 3.4;
+}
+
+.kanji-stroke-drawing path {
+  stroke: #273953;
+  stroke-width: 4.2;
+}
+
+.kanji-stroke-drawing path.active {
+  stroke: var(--coral);
+  filter: drop-shadow(0 1px 1px rgba(179, 73, 49, 0.24));
+}
+
+.kanji-stroke-drawing path.complete {
+  stroke: #273953;
+}
+
+.kanji-stroke-marker circle {
+  fill: #fffdf8;
+  stroke: #b7ac9b;
+  stroke-width: 0.9;
+}
+
+.kanji-stroke-marker text {
+  fill: #72695d;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+  font-size: 6px;
+  font-weight: 900;
+}
+
+.kanji-stroke-marker.active circle {
+  fill: var(--coral);
+  stroke: #fff;
+  stroke-width: 1.2;
+}
+
+.kanji-stroke-marker.active text {
+  fill: white;
+}
+
+.kanji-stroke-status {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 12px;
+  min-width: 128px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.94);
+  color: #766d60;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(60, 52, 40, 0.08);
+  transform: translateX(-50%);
+}
+
+.kanji-stroke-stage.is-complete .kanji-stroke-status {
+  background: #e8f7f1;
+  color: #2f856d;
+}
+
+.kanji-stroke-actions {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.kanji-stroke-source {
+  margin: 13px 0 0;
+  color: #a09b91;
+  font-size: 8px;
+  text-align: center;
+}
+
+.kanji-stroke-source a {
+  color: #6f8f88;
+  font-weight: 800;
+}
+
+@keyframes kanji-loading-pulse {
+  from {
+    opacity: 0.45;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+}
+
+@media (max-height: 760px) {
+  .kanji-stroke-review .prompt-area {
+    padding-top: 10px;
+    padding-bottom: 9px;
+  }
+
+  .kanji-stroke-review .prompt-area h1 {
+    font-size: 20px;
+  }
+
+  .kanji-stroke-review .word-example {
+    margin-top: 6px;
+  }
+
+  .kanji-stroke-stage {
+    width: min(100%, 270px);
+  }
+
+  .kanji-stroke-actions {
+    margin-top: 12px;
+  }
+}
+
 .math-lesson {
   background:
     radial-gradient(circle at 90% 23%, rgba(40, 174, 151, 0.1) 0 8%, transparent 8.5%),
