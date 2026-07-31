@@ -4,12 +4,12 @@
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
   const MODE_INFO = {
-    write: { label: "漢字を書く", short: "漢字・書き", xp: 18, penalty: 6 },
-    read: { label: "漢字を読む", short: "漢字・読み", xp: 12, penalty: 4 },
-    math: { label: "暗算する", short: "暗算", xp: 16, penalty: 5 },
-    flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14, penalty: 4 },
-    memory: { label: "フラッシュカード", short: "カード", xp: 13, penalty: 4 },
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
+    memory: { label: "フラッシュカード", short: "カード", xp: 13, penalty: 4 },
+    flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14, penalty: 4 },
+    math: { label: "暗算する", short: "暗算", xp: 16, penalty: 5 },
+    read: { label: "漢字を読む", short: "漢字・読み", xp: 12, penalty: 4 },
+    write: { label: "漢字を書く", short: "漢字・書き", xp: 18, penalty: 6 },
   };
   const MIKKUN_MODE_LABELS = {
     write: "おたから さがし",
@@ -30,6 +30,12 @@
   const MIKKUN_NAME = "みっくん";
   const PRESCHOOL_QUESTION_COUNT = 5;
   const DIFFICULTY_OFFSET = 12;
+  const MIKKUN_STAGES = [
+    { rank: 1, min: 1, max: 5, label: "年少さん・はじめ", short: "年少さん", next: "年少さん・ぐんぐん" },
+    { rank: 2, min: 6, max: 10, label: "年少さん・ぐんぐん", short: "年少さん", next: "年中さん・はじめ" },
+    { rank: 3, min: 11, max: 20, label: "年中さん・はじめ", short: "年中さん", next: "年中さん・チャレンジ" },
+    { rank: 4, min: 21, max: 100, label: "年中さん・チャレンジ", short: "年中さん", next: "マスター" },
+  ];
   let tapAudioContext = null;
 
   const kanjiProblems = [
@@ -199,6 +205,22 @@
     { id: "sun", symbol: "☀️", label: "たいよう", artX: 33.333, artY: 100 },
     { id: "flower", symbol: "🌷", label: "はな", artX: 66.667, artY: 100 },
     { id: "umbrella", symbol: "☂️", label: "かさ", artX: 100, artY: 100 },
+    { id: "fox", symbol: "🦊", label: "きつね", artX: 0, artY: 0, sheet: "extra" },
+    { id: "bear", symbol: "🐻", label: "くま", artX: 33.333, artY: 0, sheet: "extra" },
+    { id: "penguin", symbol: "🐧", label: "ぺんぎん", artX: 66.667, artY: 0, sheet: "extra" },
+    { id: "koala", symbol: "🐨", label: "こあら", artX: 100, artY: 0, sheet: "extra" },
+    { id: "dolphin", symbol: "🐬", label: "いるか", artX: 0, artY: 33.333, sheet: "extra" },
+    { id: "whale", symbol: "🐳", label: "くじら", artX: 33.333, artY: 33.333, sheet: "extra" },
+    { id: "turtle", symbol: "🐢", label: "かめ", artX: 66.667, artY: 33.333, sheet: "extra" },
+    { id: "octopus", symbol: "🐙", label: "たこ", artX: 100, artY: 33.333, sheet: "extra" },
+    { id: "strawberry", symbol: "🍓", label: "いちご", artX: 0, artY: 66.667, sheet: "extra" },
+    { id: "orange", symbol: "🍊", label: "みかん", artX: 33.333, artY: 66.667, sheet: "extra" },
+    { id: "watermelon", symbol: "🍉", label: "すいか", artX: 66.667, artY: 66.667, sheet: "extra" },
+    { id: "grapes", symbol: "🍇", label: "ぶどう", artX: 100, artY: 66.667, sheet: "extra" },
+    { id: "bus", symbol: "🚌", label: "ばす", artX: 0, artY: 100, sheet: "extra" },
+    { id: "bicycle", symbol: "🚲", label: "じてんしゃ", artX: 33.333, artY: 100, sheet: "extra" },
+    { id: "ship", symbol: "🚢", label: "ふね", artX: 66.667, artY: 100, sheet: "extra" },
+    { id: "helicopter", symbol: "🚁", label: "へりこぷたー", artX: 100, artY: 100, sheet: "extra" },
   ];
 
   const mikkunTreasureProblems = [
@@ -210,6 +232,18 @@
     { prompt: "おだいと おなじ えは どれ？", displayCard: "car", answer: "car", answerLabel: "くるま", choices: ["car", "train", "plane"] },
     { prompt: "おだいと おなじ えは どれ？", displayCard: "umbrella", answer: "umbrella", answerLabel: "かさ", choices: ["umbrella", "flower", "banana"] },
     { prompt: "おだいと おなじ えは どれ？", displayCard: "panda", answer: "panda", answerLabel: "ぱんだ", choices: ["panda", "monkey", "cat"] },
+    { stage: 2, prompt: "おだいと おなじ えは どれ？", displayCard: "fox", answer: "fox", answerLabel: "きつね", choices: ["fox", "bear", "cat"] },
+    { stage: 2, prompt: "おだいと おなじ えは どれ？", displayCard: "penguin", answer: "penguin", answerLabel: "ぺんぎん", choices: ["penguin", "koala", "rabbit"] },
+    { stage: 2, prompt: "おだいと おなじ えは どれ？", displayCard: "turtle", answer: "turtle", answerLabel: "かめ", choices: ["turtle", "dolphin", "octopus"] },
+    { stage: 2, prompt: "おだいと おなじ えは どれ？", displayCard: "strawberry", answer: "strawberry", answerLabel: "いちご", choices: ["strawberry", "orange", "grapes"] },
+    { stage: 3, prompt: "よくみて おなじ えを みつけよう", displayCard: "dolphin", answer: "dolphin", answerLabel: "いるか", choices: ["whale", "dolphin", "turtle"] },
+    { stage: 3, prompt: "よくみて おなじ えを みつけよう", displayCard: "bicycle", answer: "bicycle", answerLabel: "じてんしゃ", choices: ["bus", "ship", "bicycle"] },
+    { stage: 3, prompt: "よくみて おなじ えを みつけよう", displayCard: "helicopter", answer: "helicopter", answerLabel: "へりこぷたー", choices: ["plane", "helicopter", "ship"] },
+    { stage: 3, prompt: "よくみて おなじ えを みつけよう", displayCard: "watermelon", answer: "watermelon", answerLabel: "すいか", choices: ["orange", "watermelon", "apple"] },
+    { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "whale", answer: "whale", answerLabel: "くじら", choices: ["dolphin", "whale", "turtle"] },
+    { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "octopus", answer: "octopus", answerLabel: "たこ", choices: ["octopus", "flower", "grapes"] },
+    { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "ship", answer: "ship", answerLabel: "ふね", choices: ["bus", "ship", "helicopter"] },
+    { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "grapes", answer: "grapes", answerLabel: "ぶどう", choices: ["grapes", "watermelon", "orange"] },
   ];
 
   const mikkunGroupProblems = [
@@ -221,6 +255,18 @@
     { prompt: "どうぶつを みつけよう", display: "🐾", answer: "giraffe", answerLabel: "きりん", choices: ["banana", "giraffe", "sun"] },
     { prompt: "あめの ひに つかうのは？", display: "🌧️", answer: "umbrella", answerLabel: "かさ", choices: ["umbrella", "apple", "monkey"] },
     { prompt: "おはなを みつけよう", display: "🌱", answer: "flower", answerLabel: "はな", choices: ["car", "flower", "rabbit"] },
+    { stage: 2, prompt: "もりの どうぶつは どれ？", display: "🌳", answer: "fox", answerLabel: "きつね", choices: ["fox", "ship", "orange"] },
+    { stage: 2, prompt: "くだものを みつけよう", display: "🧺", answer: "strawberry", answerLabel: "いちご", choices: ["koala", "strawberry", "bus"] },
+    { stage: 2, prompt: "うみの なかまは どれ？", display: "🌊", answer: "turtle", answerLabel: "かめ", choices: ["turtle", "bear", "bicycle"] },
+    { stage: 2, prompt: "みんなを はこぶものは？", display: "🚏", answer: "bus", answerLabel: "ばす", choices: ["bus", "grapes", "penguin"] },
+    { stage: 3, prompt: "うみの なかまを みつけよう", display: "🐚", answer: "octopus", answerLabel: "たこ", choices: ["octopus", "fox", "helicopter"] },
+    { stage: 3, prompt: "そらを とぶ のりものは？", display: "☁️", answer: "helicopter", answerLabel: "へりこぷたー", choices: ["ship", "helicopter", "bicycle"] },
+    { stage: 3, prompt: "みずの うえを すすむものは？", display: "⚓", answer: "ship", answerLabel: "ふね", choices: ["ship", "bus", "watermelon"] },
+    { stage: 3, prompt: "むらさきの くだものは？", display: "🟣", answer: "grapes", answerLabel: "ぶどう", choices: ["orange", "grapes", "strawberry"] },
+    { stage: 4, prompt: "うみで およぐ どうぶつは？", display: "🌊", answer: "dolphin", answerLabel: "いるか", choices: ["dolphin", "koala", "bicycle"] },
+    { stage: 4, prompt: "みずの なかを すすむ のりものは？", display: "⚓", answer: "ship", answerLabel: "ふね", choices: ["helicopter", "ship", "bus"] },
+    { stage: 4, prompt: "たねが みえる くだものは？", display: "●", answer: "watermelon", answerLabel: "すいか", choices: ["watermelon", "orange", "grapes"] },
+    { stage: 4, prompt: "タイヤが 2つの のりものは？", display: "◯ ◯", answer: "bicycle", answerLabel: "じてんしゃ", choices: ["bus", "bicycle", "ship"] },
   ];
 
   const mikkunCountingProblems = [
@@ -232,6 +278,16 @@
     { prompt: "でんしゃは いくつ？", displayItems: ["🚃", "🚃"], answer: "2", answerLabel: "2こ", choices: ["1", "2", "4"] },
     { prompt: "ふうせんは いくつ？", displayItems: ["🎈", "🎈", "🎈", "🎈"], answer: "4", answerLabel: "4こ", choices: ["2", "3", "4"] },
     { prompt: "おさかなは いくつ？", displayItems: ["🐟", "🐟", "🐟"], answer: "3", answerLabel: "3こ", choices: ["1", "3", "5"] },
+    { stage: 2, prompt: "みかんは いくつ？", displayItems: ["🍊", "🍊", "🍊", "🍊", "🍊", "🍊"], answer: "6", answerLabel: "6こ", choices: ["5", "6", "7"] },
+    { stage: 2, prompt: "かめは いくつ？", displayItems: ["🐢", "🐢", "🐢", "🐢", "🐢", "🐢", "🐢"], answer: "7", answerLabel: "7こ", choices: ["6", "7", "8"] },
+    { stage: 3, prompt: "ほしは いくつ？", displayItems: ["⭐", "⭐", "⭐", "⭐", "⭐", "⭐", "⭐", "⭐"], answer: "8", answerLabel: "8こ", choices: ["7", "8", "9"] },
+    { stage: 3, prompt: "ぶどうは いくつ？", displayItems: ["🍇", "🍇", "🍇", "🍇", "🍇", "🍇", "🍇", "🍇", "🍇"], answer: "9", answerLabel: "9こ", choices: ["8", "9", "10"] },
+    { stage: 3, prompt: "おさかなは いくつ？", displayItems: ["🐟", "🐟", "🐟", "🐟", "🐟", "🐟", "🐟", "🐟", "🐟", "🐟"], answer: "10", answerLabel: "10こ", choices: ["8", "9", "10"] },
+    { stage: 3, prompt: "ばすは いくつ？", displayItems: ["🚌", "🚌", "🚌", "🚌", "🚌", "🚌"], answer: "6", answerLabel: "6こ", choices: ["4", "5", "6"] },
+    { stage: 4, prompt: "あかい まるは いくつ？", displayItems: ["🔴", "🔵", "🔴", "🟡", "🔴"], answer: "3", answerLabel: "3こ", choices: ["2", "3", "4"] },
+    { stage: 4, prompt: "ほしは いくつ？", displayItems: ["⭐", "🌙", "⭐", "⭐", "🌙", "⭐"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { stage: 4, prompt: "りんごは いくつ？", displayItems: ["🍎", "🍊", "🍎", "🍎", "🍊", "🍎", "🍎"], answer: "5", answerLabel: "5こ", choices: ["4", "5", "6"] },
+    { stage: 4, prompt: "あおい まるは いくつ？", displayItems: ["🔵", "🟢", "🔵", "🟡", "🔵", "🔵"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
   ];
 
   const mikkunPatternProblems = [
@@ -243,6 +299,18 @@
     { prompt: "つぎに くるのは どれ？", patternItems: ["🍓", "🍓", "🍌", "🍓", "🍓", "🍌"], answer: "🍓", answerLabel: "いちご", choices: ["🍓", "🍌", "🍎"] },
     { prompt: "つぎに くるのは どれ？", patternCards: ["sun", "umbrella", "sun", "umbrella"], answer: "sun", answerLabel: "たいよう", choices: ["sun", "umbrella", "flower"] },
     { prompt: "つぎに くるのは どれ？", patternItems: ["🐟", "🐠", "🐟", "🐠"], answer: "🐟", answerLabel: "あおい さかな", choices: ["🐟", "🐠", "🐙"] },
+    { stage: 2, prompt: "つぎに くるのは どれ？", patternCards: ["fox", "bear", "fox", "bear"], answer: "fox", answerLabel: "きつね", choices: ["fox", "bear", "koala"] },
+    { stage: 2, prompt: "つぎに くるのは どれ？", patternCards: ["strawberry", "orange", "strawberry", "orange"], answer: "strawberry", answerLabel: "いちご", choices: ["grapes", "orange", "strawberry"] },
+    { stage: 2, prompt: "つぎに くるのは どれ？", patternCards: ["bus", "bicycle", "bus", "bicycle"], answer: "bus", answerLabel: "ばす", choices: ["bus", "bicycle", "ship"] },
+    { stage: 2, prompt: "つぎに くるのは どれ？", patternItems: ["🟢", "🟡", "🟢", "🟡"], answer: "🟢", answerLabel: "みどり", choices: ["🟢", "🟡", "🔵"] },
+    { stage: 3, prompt: "3つの ならび。つぎは どれ？", patternCards: ["dolphin", "whale", "turtle", "dolphin", "whale"], answer: "turtle", answerLabel: "かめ", choices: ["dolphin", "whale", "turtle"] },
+    { stage: 3, prompt: "3つの ならび。つぎは どれ？", patternCards: ["orange", "grapes", "watermelon", "orange", "grapes"], answer: "watermelon", answerLabel: "すいか", choices: ["orange", "grapes", "watermelon"] },
+    { stage: 3, prompt: "3つの ならび。つぎは どれ？", patternItems: ["⭐", "🌙", "☀️", "⭐", "🌙"], answer: "☀️", answerLabel: "たいよう", choices: ["⭐", "🌙", "☀️"] },
+    { stage: 3, prompt: "おなじ ならび。つぎは どれ？", patternCards: ["ship", "ship", "helicopter", "ship", "ship"], answer: "helicopter", answerLabel: "へりこぷたー", choices: ["ship", "helicopter", "bus"] },
+    { stage: 4, prompt: "ならびを よくみて。つぎは？", patternCards: ["fox", "bear", "bear", "fox", "bear"], answer: "bear", answerLabel: "くま", choices: ["fox", "bear", "koala"] },
+    { stage: 4, prompt: "ならびを よくみて。つぎは？", patternCards: ["bus", "bicycle", "ship", "bus", "bicycle"], answer: "ship", answerLabel: "ふね", choices: ["bus", "bicycle", "ship"] },
+    { stage: 4, prompt: "ならびを よくみて。つぎは？", patternItems: ["🔴", "🔵", "🔵", "🔴", "🔵"], answer: "🔵", answerLabel: "あお", choices: ["🔴", "🔵", "🟡"] },
+    { stage: 4, prompt: "ならびを よくみて。つぎは？", patternCards: ["strawberry", "strawberry", "orange", "grapes", "strawberry", "strawberry", "orange"], answer: "grapes", answerLabel: "ぶどう", choices: ["orange", "grapes", "watermelon"] },
   ];
 
   const levelGroups = [
@@ -290,8 +358,10 @@
     questionPenaltyApplied: false,
     session: null,
     kanjiMarks: 0,
+    kanjiStrokes: 0,
     kanjiChecking: false,
     kanjiImage: "",
+    kanjiFeedback: null,
     readingChoice: "",
     readingChecked: false,
     readingChoices: [],
@@ -833,6 +903,26 @@
     return String(name || "").trim() === MIKKUN_NAME;
   }
 
+  function mikkunStage(level) {
+    const safeLevel = clamp(level, 1, 100);
+    return (
+      MIKKUN_STAGES.find(
+        (stage) => safeLevel >= stage.min && safeLevel <= stage.max,
+      ) || MIKKUN_STAGES[MIKKUN_STAGES.length - 1]
+    );
+  }
+
+  function mikkunStageProgress(level, xp = 0) {
+    const stage = mikkunStage(level);
+    const stageSpan = Math.max(1, stage.max - stage.min + 1);
+    const completedLevels = clamp(level, stage.min, stage.max) - stage.min;
+    return clamp(
+      Math.round(((completedLevels * 100 + clamp(xp, 0, 100)) / (stageSpan * 100)) * 100),
+      0,
+      100,
+    );
+  }
+
   function unlockTapAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -1008,6 +1098,8 @@
           ) / homeModes.length,
         )
       : state.xp;
+    const currentMikkunStage = mikkunStage(homeLevel);
+    const currentMikkunProgress = mikkunStageProgress(homeLevel, homeXp);
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -1022,7 +1114,7 @@
         <section class="today-section home-training-primary ${mikkun ? "mikkun-training" : ""}">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">${mikkun ? "ねんちゅうさんコース" : `おかえり、${escapeHtml(displayName())}`}</p>
+              <p class="eyebrow">${mikkun ? currentMikkunStage.label : `おかえり、${escapeHtml(displayName())}`}</p>
               <h1>${mikkun ? "みっくんメニュー" : "きょうのトレーニング"}</h1>
             </div>
             <button class="daily-count settings-link" type="button" data-view="profile">${mikkun ? "5もんずつ" : "問題数を変更"}</button>
@@ -1030,24 +1122,28 @@
           ${mikkun ? `
             <div class="mikkun-intro">
               <span>🚀</span>
-              <p><b>4つの ぼうけんで ほしを あつめよう！</b><small>みつける・わける・かぞえる・かんがえる ミニゲーム</small></p>
+              <p>
+                <b>4つの ぼうけんで ほしを あつめよう！</b>
+                <small>つぎは「${currentMikkunStage.next}」</small>
+                <span class="mikkun-stage-meter"><i style="width:${currentMikkunProgress}%"></i></span>
+              </p>
             </div>
-          ` : ""}
+              ` : ""}
           <div class="subject-grid">
             ${mikkun
               ? `
                 ${mikkunSubjectCard("write", "🔎", "おたから さがし", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
                 ${mikkunSubjectCard("read", "🧺", "なかま さがし", "なかまを みわける", "reading-subject-card", "reading-icon", "groups")}
-                ${mikkunSubjectCard("math", "⭐", "かずの たからばこ", "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
+                ${mikkunSubjectCard("math", "⭐", "かずの たからばこ", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
                 ${mikkunSubjectCard("memory", "🚀", "つぎは どっち？", "ならびの つづきを えらぶ", "memory-subject-card", "memory-icon", "patterns")}
               `
               : `
-                ${subjectCard("write", "漢", "漢字を書く", "手書き", "kanji-card", "kanji-icon")}
-                ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
-                ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
-                ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
-                ${subjectCard("memory", "絵", "フラッシュカード", "絵カードを記憶", "memory-subject-card", "memory-icon")}
                 ${subjectCard("digits", "123", "数字記憶", "流れる数字を記憶", "digits-subject-card", "digits-icon")}
+                ${subjectCard("memory", "絵", "フラッシュカード", "絵カードを記憶", "memory-subject-card", "memory-icon")}
+                ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
+                ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
+                ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
+                ${subjectCard("write", "漢", "漢字を書く", "手書き＋形チェック", "kanji-card", "kanji-icon")}
               `}
           </div>
         </section>
@@ -1062,7 +1158,7 @@
           <div class="level-copy">
             <span class="level-kicker">${mikkun ? "みっくんの がんばりレベル" : "6分野の総合レベル"}</span>
             <div class="level-number"><small>Lv.</small>${homeLevel}</div>
-            <span class="grade-chip">${mikkun ? "年中さんコース" : gradeForLevel(homeLevel)}</span>
+            <span class="grade-chip">${mikkun ? currentMikkunStage.label : gradeForLevel(homeLevel)}</span>
             <button type="button" class="text-link" data-action="open-placement" data-mode="write">
               分野別の開始レベルを調整 <span aria-hidden="true">›</span>
             </button>
@@ -1086,7 +1182,7 @@
                 <button type="button" data-view="levels" data-level-mode="${mode}">
                   <span>${mikkun ? MIKKUN_MODE_LABELS[mode] : MODE_INFO[mode].short}</span>
                   <b>Lv.${skill.level}</b>
-                  <small>${mikkun ? "年中さん" : gradeForLevel(skill.level)} ・ ${skill.xp}%</small>
+                  <small>${mikkun ? mikkunStage(skill.level).label : gradeForLevel(skill.level)} ・ ${skill.xp}%</small>
                 </button>
               `;
             }).join("")}
@@ -1125,11 +1221,12 @@
     iconClass,
     preschoolType,
   ) {
+    const stage = mikkunStage(activeSkill(mode).level);
     return `
       <button type="button" class="subject-card mikkun-subject-card ${cardClass}" data-start="${mode}" data-preschool="true" data-preschool-type="${preschoolType}">
         <span class="subject-icon ${iconClass}">${icon}</span>
         <span class="subject-time">ゆっくり</span>
-        <span class="subject-level-chip">ねんちゅう</span>
+        <span class="subject-level-chip">${stage.label}</span>
         <span class="subject-name">${name}</span>
         <span class="subject-detail">${PRESCHOOL_QUESTION_COUNT}もん ・ ${detail}</span>
         <span class="start-arrow" aria-hidden="true">→</span>
@@ -1146,7 +1243,7 @@
     if (!card) return `<span class="learning-card-fallback ${className}">${escapeHtml(id)}</span>`;
     return `
       <span
-        class="learning-card-art ${className}"
+        class="learning-card-art ${card.sheet === "extra" ? "learning-card-art-extra" : ""} ${className}"
         data-card-id="${card.id}"
         role="img"
         aria-label="${card.label}"
@@ -1220,9 +1317,10 @@
   function lessonLevelRow(extra = "") {
     if (state.session?.preschool) {
       const completed = state.session.completed;
+      const stage = mikkunStage(state.session.levelAtStart);
       return `
         <div class="lesson-level-row mikkun-lesson-level">
-          <span>みっくんの ぼうけん</span><span>年中さん</span>${extra}
+          <span>みっくんの ぼうけん</span><span>${stage.label}</span>${extra}
         </div>
         <div class="mikkun-quest-progress" aria-label="ほし ${completed}こ、ぜんぶで${state.session.total}こ">
           <span class="mikkun-quest-mascot">🚀</span>
@@ -1267,12 +1365,13 @@
           <div class="self-check-card">
             <div>
               <span class="answer-stamp">${problem.kanji}</span>
-              <p><b>形と書き順を見くらべよう</b><br />うまく書けたかな？</p>
+              <p><b>アプリの形チェック</b><br />大きさ・位置・画数・形のバランスを目安にしています。</p>
             </div>
+            ${kanjiFeedbackTemplate()}
             <div class="self-check-actions">
               <button type="button" data-action="kanji-retry">書き直す</button>
-              <button type="button" class="kanji-difficult" data-action="kanji-difficult">むずかしかった</button>
-              <button type="button" data-action="kanji-success">できた！</button>
+              <button type="button" class="kanji-difficult" data-action="kanji-difficult">もう少し練習</button>
+              <button type="button" data-action="kanji-success">この字でOK</button>
             </div>
           </div>
         ` : `
@@ -1308,8 +1407,10 @@
     canvas.addEventListener(
       "pointerdown",
       (event) => {
+        if (state.kanjiChecking) return;
         event.preventDefault();
         drawing = true;
+        state.kanjiStrokes += 1;
         previous = pointFor(event);
         canvas.setPointerCapture(event.pointerId);
       },
@@ -1346,6 +1447,178 @@
     const preventCanvasScroll = (event) => event.preventDefault();
     canvas.addEventListener("touchstart", preventCanvasScroll, { passive: false });
     canvas.addEventListener("touchmove", preventCanvasScroll, { passive: false });
+  }
+
+  function kanjiFeedbackTemplate() {
+    const feedback = state.kanjiFeedback;
+    if (!feedback) return "";
+    return `
+      <div class="kanji-auto-feedback">
+        <div class="kanji-feedback-score">
+          <span>かたちの めやす</span>
+          <b>${feedback.score}<small> / ${feedback.total}</small></b>
+        </div>
+        <div class="kanji-feedback-checks">
+          ${feedback.checks.map((check) => `
+            <span class="${check.ok ? "ok" : "retry"}">
+              <i>${check.ok ? "✓" : "△"}</i>
+              <b>${check.label}</b>
+              <small>${check.detail}</small>
+            </span>
+          `).join("")}
+        </div>
+        <p>${feedback.message}</p>
+      </div>
+    `;
+  }
+
+  function analyzeKanjiWriting(canvas, problem) {
+    const context = canvas?.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    const width = canvas.width;
+    const height = canvas.height;
+    const imageData = context.getImageData(0, 0, width, height);
+    const handBounds = inkBounds(imageData.data, width, height);
+    if (!handBounds) {
+      return {
+        score: 0,
+        total: 3,
+        checks: [
+          { label: "大きさ", ok: false, detail: "もう少し大きく" },
+          { label: "まんなか", ok: false, detail: "中央を意識" },
+          { label: "形", ok: false, detail: "お手本を見よう" },
+        ],
+        message: "お手本を見ながら、もう一度ゆっくり書いてみよう。",
+      };
+    }
+
+    const referenceCanvas = document.createElement("canvas");
+    referenceCanvas.width = width;
+    referenceCanvas.height = height;
+    const referenceContext = referenceCanvas.getContext("2d", {
+      willReadFrequently: true,
+    });
+    referenceContext.fillStyle = "#000";
+    referenceContext.font =
+      '700 470px "Yu Mincho", "Hiragino Mincho ProN", serif';
+    referenceContext.textAlign = "center";
+    referenceContext.textBaseline = "middle";
+    referenceContext.fillText(problem.kanji, width / 2, height / 2 + 18);
+    const referenceData = referenceContext.getImageData(0, 0, width, height);
+    const referenceBounds =
+      inkBounds(referenceData.data, width, height) || handBounds;
+
+    const handWidth = handBounds.maxX - handBounds.minX + 1;
+    const handHeight = handBounds.maxY - handBounds.minY + 1;
+    const referenceWidth = referenceBounds.maxX - referenceBounds.minX + 1;
+    const referenceHeight = referenceBounds.maxY - referenceBounds.minY + 1;
+    const widthRatio = handWidth / Math.max(1, referenceWidth);
+    const heightRatio = handHeight / Math.max(1, referenceHeight);
+    const sizeOk =
+      widthRatio >= 0.52 &&
+      widthRatio <= 1.38 &&
+      heightRatio >= 0.46 &&
+      heightRatio <= 1.55;
+
+    const centerX = (handBounds.minX + handBounds.maxX) / 2;
+    const centerY = (handBounds.minY + handBounds.maxY) / 2;
+    const centerOk =
+      Math.abs(centerX - width / 2) <= width * 0.15 &&
+      Math.abs(centerY - height / 2) <= height * 0.15;
+
+    const handDistribution = inkDistribution(
+      imageData.data,
+      width,
+      height,
+      handBounds,
+    );
+    const referenceDistribution = inkDistribution(
+      referenceData.data,
+      width,
+      height,
+      referenceBounds,
+    );
+    const shapeSimilarity = handDistribution.reduce(
+      (sum, value, index) =>
+        sum + Math.min(value, referenceDistribution[index]),
+      0,
+    );
+    const shapeOk = shapeSimilarity >= 0.43;
+
+    const checks = [
+      {
+        label: "大きさ",
+        ok: sizeOk,
+        detail: sizeOk ? "ちょうどいい" : widthRatio < 0.52 ? "もう少し大きく" : "少し小さめに",
+      },
+      {
+        label: "まんなか",
+        ok: centerOk,
+        detail: centerOk ? "中央に書けた" : "中央へ寄せよう",
+      },
+      {
+        label: "形",
+        ok: shapeOk,
+        detail: shapeOk ? "バランス良好" : "お手本と比べよう",
+      },
+    ];
+
+    if (Number.isFinite(problem.strokes)) {
+      const strokeDifference = Math.abs(state.kanjiStrokes - problem.strokes);
+      const strokeOk = strokeDifference <= Math.max(1, Math.round(problem.strokes * 0.3));
+      checks.push({
+        label: "画数",
+        ok: strokeOk,
+        detail: `${state.kanjiStrokes}画 / お手本${problem.strokes}画`,
+      });
+    }
+
+    const score = checks.filter((check) => check.ok).length;
+    return {
+      score,
+      total: checks.length,
+      checks,
+      message:
+        score === checks.length
+          ? "いいバランスです！ 最後はお手本と見比べて決めよう。"
+          : score >= checks.length - 1
+            ? "あと少し！ △のところを意識すると、もっと整います。"
+            : "△のところを意識して、書き直してみるのもおすすめです。",
+    };
+  }
+
+  function inkBounds(data, width, height) {
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        if (data[(y * width + x) * 4 + 3] < 24) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    return maxX >= 0 ? { minX, minY, maxX, maxY } : null;
+  }
+
+  function inkDistribution(data, width, height, bounds) {
+    const bins = Array(9).fill(0);
+    const boundWidth = Math.max(1, bounds.maxX - bounds.minX + 1);
+    const boundHeight = Math.max(1, bounds.maxY - bounds.minY + 1);
+    let total = 0;
+    for (let y = bounds.minY; y <= bounds.maxY; y += 2) {
+      for (let x = bounds.minX; x <= bounds.maxX; x += 2) {
+        if (data[(y * width + x) * 4 + 3] < 24) continue;
+        const column = Math.min(2, Math.floor(((x - bounds.minX) / boundWidth) * 3));
+        const row = Math.min(2, Math.floor(((y - bounds.minY) / boundHeight) * 3));
+        bins[row * 3 + column] += 1;
+        total += 1;
+      }
+    }
+    return bins.map((value) => value / Math.max(1, total));
   }
 
   function readTemplate() {
@@ -1995,9 +2268,13 @@
             : preschoolType === "counting"
               ? mikkunCountingProblems
               : mikkunPatternProblems;
+      const stageRank = mikkunStage(level).rank;
+      const unlockedBank = bank.filter(
+        (problem) => Number(problem.stage || 1) <= stageRank,
+      );
       const result = [];
       while (result.length < total) {
-        const cycle = shuffled(bank);
+        const cycle = shuffled(unlockedBank);
         result.push(...cycle.slice(0, total - result.length));
       }
       if (
@@ -2683,7 +2960,7 @@
           <h1>${session.endedEarly ? "ここまで、よくできました。" : preschoolComplete ? `ほしを ${session.correct}こ ゲット！` : "さいごまで、できました！"}</h1>
           <p>
             ${escapeHtml(displayName())}の「${currentLessonLabel(session.mode)}」
-            ・ ${session.preschool ? "年中さんコース" : `Lv.${activeSkill(session.mode).level}`}
+            ・ ${session.preschool ? mikkunStage(activeSkill(session.mode).level).label : `Lv.${activeSkill(session.mode).level}`}
           </p>
         </section>
         <div class="result-score-card">
@@ -2702,56 +2979,102 @@
   }
 
   function levelsTemplate() {
-    const mode = SKILL_MODES.includes(state.levelViewMode)
+    const mikkun = isMikkunLearner();
+    const levelModes = mikkun
+      ? ["write", "read", "math", "memory"]
+      : SKILL_MODES;
+    const mode = levelModes.includes(state.levelViewMode)
       ? state.levelViewMode
-      : "write";
+      : levelModes[0];
     const skill = activeSkill(mode);
     return `
       <div class="screen sub-screen level-map-screen">
         <header class="sub-header">
           <button class="round-button" type="button" data-action="back-home" aria-label="戻る">‹</button>
-          <div><p class="eyebrow">6 SKILLS / LEVEL 1–100</p><h1>分野別レベル</h1></div>
+          <div>
+            <p class="eyebrow">${mikkun ? "MIKKUN ADVENTURE / 4 STEPS" : "6 SKILLS / LEVEL 1–100"}</p>
+            <h1>${mikkun ? "ぼうけんステップ" : "分野別レベル"}</h1>
+          </div>
         </header>
-        <div class="skill-mode-tabs" aria-label="表示する分野">
-          ${SKILL_MODES.map((itemMode) => `
+        <div class="skill-mode-tabs ${mikkun ? "mikkun-level-tabs" : ""}" aria-label="表示する分野">
+          ${levelModes.map((itemMode) => `
             <button
               type="button"
               class="${itemMode === mode ? "active" : ""}"
               data-level-mode="${itemMode}"
-            >${MODE_INFO[itemMode].short}</button>
+            >${mikkun ? MIKKUN_MODE_LABELS[itemMode] : MODE_INFO[itemMode].short}</button>
           `).join("")}
         </div>
         <div class="map-intro">
-          <span>${MODE_INFO[mode].label}の現在地</span>
+          <span>${mikkun ? MIKKUN_MODE_LABELS[mode] : MODE_INFO[mode].label}の現在地</span>
           <b>Lv.${skill.level}</b>
-          <p>${gradeForLevel(skill.level)} ・ XP ${skill.xp}%</p>
+          <p>${mikkun ? mikkunStage(skill.level).label : gradeForLevel(skill.level)} ・ XP ${skill.xp}%</p>
         </div>
-        ${learnerLevelListTemplate()}
-        <div class="level-groups">
-          ${levelGroups.map((group) => {
-            const complete = skill.level > group.end;
-            const active = skill.level >= group.start && skill.level <= group.end;
-            const percent = complete
-              ? 100
-              : active
-                ? Math.round(((skill.level - group.start + 1) / (group.end - group.start + 1)) * 100)
-                : 0;
-            return `
-              <article class="level-group ${active ? "active" : ""}">
-                <span class="group-orb" style="background:${group.color}">${complete ? "✓" : group.start}</span>
-                <div>
-                  <p>LEVEL ${group.start}–${group.end}</p><h2>${group.label}</h2>
-                  <div class="group-progress"><i style="width:${percent}%;background:${group.color}"></i></div>
-                </div>
-                <span class="group-status">${complete ? "修了" : active ? `${percent}%` : "🔒"}</span>
-              </article>
-            `;
-          }).join("")}
-        </div>
+        ${mikkun ? "" : learnerLevelListTemplate()}
+        ${mikkun ? mikkunStageMapTemplate(skill) : `
+          <div class="level-groups">
+            ${levelGroups.map((group) => {
+              const complete = skill.level > group.end;
+              const active = skill.level >= group.start && skill.level <= group.end;
+              const percent = complete
+                ? 100
+                : active
+                  ? Math.round(((skill.level - group.start + 1) / (group.end - group.start + 1)) * 100)
+                  : 0;
+              return `
+                <article class="level-group ${active ? "active" : ""}">
+                  <span class="group-orb" style="background:${group.color}">${complete ? "✓" : group.start}</span>
+                  <div>
+                    <p>LEVEL ${group.start}–${group.end}</p><h2>${group.label}</h2>
+                    <div class="group-progress"><i style="width:${percent}%;background:${group.color}"></i></div>
+                  </div>
+                  <span class="group-status">${complete ? "修了" : active ? `${percent}%` : "🔒"}</span>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        `}
         <div class="fine-level-note">
-          <span>100</span>
-          <p><b>得意な人にも、次の一歩を。</b><br />高いレベルほどテーマを細かく分け、達成のチャンスがたくさんあります。</p>
+          <span>${mikkun ? "★" : "100"}</span>
+          <p>
+            <b>${mikkun ? "できることが、ひとつずつふえていく！" : "得意な人にも、次の一歩を。"}</b><br />
+            ${mikkun
+              ? "年少さんから年中さんへ、4つのぼうけんでステップアップできます。"
+              : "高いレベルほどテーマを細かく分け、達成のチャンスがたくさんあります。"}
+          </p>
         </div>
+      </div>
+    `;
+  }
+
+  function mikkunStageMapTemplate(skill) {
+    const colors = ["#f4a64d", "#f07c64", "#55bca5", "#756bd7"];
+    return `
+      <div class="level-groups mikkun-stage-groups">
+        ${MIKKUN_STAGES.map((stage, index) => {
+          const complete = skill.level > stage.max;
+          const active = skill.level >= stage.min && skill.level <= stage.max;
+          const levelProgress = Math.max(
+            0,
+            Math.min(
+              1,
+              (skill.level - stage.min + skill.xp / 100) /
+                (stage.max - stage.min + 1),
+            ),
+          );
+          const percent = complete ? 100 : active ? Math.round(levelProgress * 100) : 0;
+          return `
+            <article class="level-group mikkun-stage-group ${active ? "active" : ""}">
+              <span class="group-orb" style="background:${colors[index]}">${complete ? "✓" : index + 1}</span>
+              <div>
+                <p>STEP ${index + 1} ・ LEVEL ${stage.min}–${stage.max}</p>
+                <h2>${stage.label}</h2>
+                <div class="group-progress"><i style="width:${percent}%;background:${colors[index]}"></i></div>
+              </div>
+              <span class="group-status">${complete ? "できた！" : active ? `${percent}%` : "🔒"}</span>
+            </article>
+          `;
+        }).join("")}
       </div>
     `;
   }
@@ -2791,6 +3114,16 @@
   }
 
   function profileTemplate() {
+    const mikkun = isMikkunLearner();
+    const profileModes = mikkun
+      ? ["write", "read", "math", "memory"]
+      : SKILL_MODES;
+    const profileLevel = mikkun
+      ? Math.round(
+          profileModes.reduce((sum, mode) => sum + activeSkill(mode).level, 0) /
+            profileModes.length,
+        )
+      : state.level;
     return `
       <div class="screen sub-screen profile-screen">
         <header class="sub-header">
@@ -2892,17 +3225,17 @@
 
         <section class="profile-summary">
           <div class="profile-summary-heading">
-            <span>現在の分野別レベル</span>
-            <b>総合 Lv.${state.level}</b>
+            <span>${mikkun ? "現在のぼうけんステップ" : "現在の分野別レベル"}</span>
+            <b>${mikkun ? mikkunStage(profileLevel).label : `総合 Lv.${state.level}`}</b>
           </div>
           <div class="profile-skill-list">
-            ${SKILL_MODES.map((mode) => {
+            ${profileModes.map((mode) => {
               const skill = activeSkill(mode);
               return `
                 <button type="button" data-action="open-placement" data-mode="${mode}">
-                  <span>${MODE_INFO[mode].short}</span>
+                  <span>${mikkun ? MIKKUN_MODE_LABELS[mode] : MODE_INFO[mode].short}</span>
                   <b>Lv.${skill.level}</b>
-                  <small>${gradeForLevel(skill.level)} ・ XP ${skill.xp}%</small>
+                  <small>${mikkun ? mikkunStage(skill.level).label : gradeForLevel(skill.level)} ・ XP ${skill.xp}%</small>
                   <i>調整 ›</i>
                 </button>
               `;
@@ -2914,35 +3247,39 @@
   }
 
   function placementTemplate() {
-    const mode = SKILL_MODES.includes(state.placementMode)
+    const mikkun = isMikkunLearner();
+    const placementModes = mikkun
+      ? ["write", "read", "math", "memory"]
+      : SKILL_MODES;
+    const mode = placementModes.includes(state.placementMode)
       ? state.placementMode
-      : "write";
+      : placementModes[0];
     const draftLevel = clamp(
       state.placementDraftLevel || activeSkill(mode).level,
       1,
       100,
     );
-    const choices = levelGroups.map((group) => ({
-      level: group.start,
+    const choices = (mikkun ? MIKKUN_STAGES : levelGroups).map((group) => ({
+      level: mikkun ? group.min : group.start,
       title: group.label,
-      detail: `Lv.${group.start}〜${group.end}`,
+      detail: `Lv.${mikkun ? group.min : group.start}〜${mikkun ? group.max : group.end}`,
     }));
     return `
       <div class="sheet-backdrop" data-action="close-placement">
         <section class="placement-sheet" role="dialog" aria-modal="true" aria-labelledby="placement-title">
           <div class="sheet-handle"></div>
           <button type="button" class="sheet-close" data-action="close-placement" aria-label="閉じる">×</button>
-          <p class="eyebrow">STARTING POINT</p><h2 id="placement-title">分野ごとに調整</h2>
-          <div class="placement-skill-tabs" aria-label="調整する分野">
-            ${SKILL_MODES.map((itemMode) => `
+          <p class="eyebrow">STARTING POINT</p><h2 id="placement-title">${mikkun ? "ぼうけんごとに調整" : "分野ごとに調整"}</h2>
+          <div class="placement-skill-tabs ${mikkun ? "mikkun-level-tabs" : ""}" aria-label="調整する分野">
+            ${placementModes.map((itemMode) => `
               <button
                 type="button"
                 class="${itemMode === mode ? "active" : ""}"
                 data-placement-skill="${itemMode}"
-              >${MODE_INFO[itemMode].short}</button>
+              >${mikkun ? MIKKUN_MODE_LABELS[itemMode] : MODE_INFO[itemMode].short}</button>
             `).join("")}
           </div>
-          <p class="sheet-lead"><b>${MODE_INFO[mode].label}</b>はどこから始める？<br />ほかの分野のレベルは変わりません。</p>
+          <p class="sheet-lead"><b>${mikkun ? MIKKUN_MODE_LABELS[mode] : MODE_INFO[mode].label}</b>はどこから始める？<br />ほかの${mikkun ? "ぼうけん" : "分野"}のレベルは変わりません。</p>
           <div class="placement-fine-tune">
             <div class="placement-fine-heading">
               <span>1レベルずつ微調整</span>
@@ -2953,7 +3290,7 @@
               <div>
                 <small>開始レベル</small>
                 <b>Lv.${draftLevel}</b>
-                <span>${gradeForLevel(draftLevel)}</span>
+                <span>${mikkun ? mikkunStage(draftLevel).label : gradeForLevel(draftLevel)}</span>
               </div>
               <button type="button" data-action="placement-step" data-delta="1" aria-label="開始レベルを1上げる">＋</button>
             </div>
@@ -2970,7 +3307,7 @@
               Lv.${draftLevel} から始める
             </button>
           </div>
-          <p class="placement-option-title">学年の目安から選ぶ</p>
+          <p class="placement-option-title">${mikkun ? "ぼうけんステップから選ぶ" : "学年の目安から選ぶ"}</p>
           <div class="placement-options">
             ${choices.map((choice) => `
               <button type="button" data-placement="${choice.level}">
@@ -2979,7 +3316,7 @@
               </button>
             `).join("")}
           </div>
-          <p class="sheet-note">変更後もこの画面は閉じません。上の分野タブから、ほかの分野を続けて調整できます。</p>
+          <p class="sheet-note">変更後もこの画面は閉じません。上の${mikkun ? "ぼうけん" : "分野"}タブから、ほかの${mikkun ? "ぼうけん" : "分野"}を続けて調整できます。</p>
           <button type="button" class="secondary-button wide placement-finish-button" data-action="close-placement">レベル調整を終える</button>
         </section>
       </div>
@@ -3268,21 +3605,27 @@
       },
       "clear-kanji"() {
         state.kanjiMarks = 0;
+        state.kanjiStrokes = 0;
         state.kanjiChecking = false;
         state.kanjiImage = "";
+        state.kanjiFeedback = null;
         render();
       },
       "check-kanji"() {
         if (state.kanjiMarks < 5) return;
         const canvas = document.querySelector("#writingCanvas");
+        const problem = currentSessionProblem();
+        state.kanjiFeedback = analyzeKanjiWriting(canvas, problem);
         state.kanjiImage = canvas?.toDataURL("image/png") || "";
         state.kanjiChecking = true;
         render();
       },
       "kanji-retry"() {
         state.kanjiMarks = 0;
+        state.kanjiStrokes = 0;
         state.kanjiChecking = false;
         state.kanjiImage = "";
+        state.kanjiFeedback = null;
         render();
       },
       "kanji-success"() {
@@ -3538,9 +3881,11 @@
 
   function resetQuestionState() {
     state.kanjiMarks = 0;
+    state.kanjiStrokes = 0;
     state.questionPenaltyApplied = false;
     state.kanjiChecking = false;
     state.kanjiImage = "";
+    state.kanjiFeedback = null;
     state.readingChoice = "";
     state.readingChecked = false;
     prepareReadingChoices();
@@ -3569,11 +3914,21 @@
     if (!SKILL_MODES.includes(mode)) return;
     const profile = ensureProfile(state.learnerName);
     const skill = profile.skills[mode];
+    const previousMikkunStage = isMikkunLearner()
+      ? mikkunStage(skill.level)
+      : null;
     const total = skill.xp + amount;
     if (total >= 100 && skill.level < 100) {
       skill.level += 1;
       skill.xp = total - 100;
-      showToast(`${MODE_INFO[mode].short}がレベル ${skill.level} にアップ！`);
+      const nextMikkunStage = previousMikkunStage
+        ? mikkunStage(skill.level)
+        : null;
+      showToast(
+        nextMikkunStage?.rank > previousMikkunStage.rank
+          ? `おめでとう！「${nextMikkunStage.label}」にステップアップ！`
+          : `${MODE_INFO[mode].short}がレベル ${skill.level} にアップ！`,
+      );
     } else {
       skill.xp = Math.min(100, total);
     }
@@ -3598,7 +3953,13 @@
     const skill = profile.skills[mode];
     const previousLevel = skill.level;
     const previousScore = (skill.level - 1) * 100 + skill.xp;
-    const nextScore = Math.max(0, previousScore - MODE_INFO[mode].penalty);
+    const stageFloorScore = isMikkunLearner()
+      ? (mikkunStage(previousLevel).min - 1) * 100
+      : 0;
+    const nextScore = Math.max(
+      stageFloorScore,
+      previousScore - MODE_INFO[mode].penalty,
+    );
     skill.level = Math.floor(nextScore / 100) + 1;
     skill.xp = nextScore % 100;
     const studiedAt = Date.now();

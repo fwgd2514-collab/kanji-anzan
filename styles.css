@@ -923,6 +923,95 @@ canvas:focus-visible {
   color: white;
 }
 
+.kanji-auto-feedback {
+  margin-top: 13px;
+  padding: 11px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(214, 119, 85, 0.13);
+}
+
+.kanji-feedback-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #81685e;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kanji-feedback-score b {
+  color: var(--coral);
+  font-size: 21px;
+}
+
+.kanji-feedback-score small {
+  font-size: 10px;
+}
+
+.kanji-feedback-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.kanji-feedback-checks > span {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 11px;
+  background: #fff3e7;
+}
+
+.kanji-feedback-checks > span.ok {
+  background: #e9f7ef;
+}
+
+.kanji-feedback-checks i {
+  grid-row: 1 / 3;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8ae5c;
+  color: white;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.kanji-feedback-checks .ok i {
+  background: #45a985;
+}
+
+.kanji-feedback-checks b,
+.kanji-feedback-checks small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanji-feedback-checks b {
+  color: #5d504a;
+  font-size: 10px;
+}
+
+.kanji-feedback-checks small {
+  color: #9c847a;
+  font-size: 8px;
+}
+
+.kanji-auto-feedback > p {
+  margin: 9px 2px 0;
+  color: #7f6c65;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
 .math-lesson {
   background:
     radial-gradient(circle at 90% 23%, rgba(40, 174, 151, 0.1) 0 8%, transparent 8.5%),
@@ -1239,6 +1328,39 @@ canvas:focus-visible {
 .fine-level-note b {
   color: #365f58;
   font-size: 11px;
+}
+
+.mikkun-stage-groups {
+  gap: 13px;
+}
+
+.mikkun-stage-groups::before {
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(#f4a64d, #f07c64, #55bca5, #756bd7);
+}
+
+.mikkun-stage-group {
+  min-height: 76px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+.mikkun-stage-group.active {
+  border-color: #f4d687;
+  background: linear-gradient(135deg, #fff9df, #fff3e9);
+  box-shadow: 0 7px 18px rgba(140, 104, 35, 0.08);
+}
+
+.mikkun-stage-group.active .group-orb {
+  border-color: #fff7e5;
+  box-shadow:
+    0 0 0 1px #e4c879,
+    0 5px 12px rgba(126, 93, 30, 0.14);
+}
+
+.mikkun-stage-group h2 {
+  font-size: 15px;
 }
 
 .profile-card {
@@ -1989,6 +2111,28 @@ canvas:focus-visible {
   margin-top: 2px;
   color: #9a8154;
   font-size: 10px;
+}
+
+.mikkun-intro p {
+  min-width: 0;
+  flex: 1;
+}
+
+.mikkun-stage-meter {
+  height: 7px;
+  display: block;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f3e7bf;
+}
+
+.mikkun-stage-meter i {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffca45, #ff7e5a);
+  transition: width 240ms ease;
 }
 
 .mikkun-subject-card {
@@ -2978,6 +3122,11 @@ canvas:focus-visible {
   margin: 3px 0 12px;
 }
 
+.skill-mode-tabs.mikkun-level-tabs,
+.placement-skill-tabs.mikkun-level-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .skill-mode-tabs button,
 .placement-skill-tabs button {
   min-width: 0;
@@ -3708,6 +3857,10 @@ canvas:focus-visible {
   box-shadow: inset 0 0 0 1px rgba(93, 71, 31, 0.06);
 }
 
+.learning-card-art.learning-card-art-extra {
+  background-image: url("./assets/learning-card-atlas-extra.png");
+}
+
 .learning-card-fallback {
   display: grid;
   place-items: center;
@@ -3837,7 +3990,7 @@ canvas:focus-visible {
 }
 
 .mikkun-choice-prompt {
-  padding: 15px 0 12px;
+  padding: 10px 0 0;
 }
 
 .mikkun-choice-prompt .eyebrow {
@@ -3847,9 +4000,9 @@ canvas:focus-visible {
 
 .reading-card.mikkun-choice-display {
   width: min(100%, 350px);
-  min-height: 190px;
+  min-height: 238px;
   margin-top: 10px;
-  padding: 12px;
+  padding: 14px;
   border: 3px solid #f1d58f;
   background:
     radial-gradient(circle at 18% 20%, rgba(255, 214, 94, 0.16), transparent 22%),
@@ -3860,8 +4013,8 @@ canvas:focus-visible {
 }
 
 .mikkun-choice-display .mikkun-target-card {
-  width: min(170px, 43vw);
-  border-radius: 28px;
+  width: min(210px, 52vw);
+  border-radius: 30px;
   box-shadow:
     0 10px 25px rgba(82, 61, 27, 0.13),
     inset 0 0 0 1px rgba(93, 71, 31, 0.06);
@@ -3869,7 +4022,11 @@ canvas:focus-visible {
 
 .reading-card.mikkun-choice-display .mikkun-theme-symbol {
   font-family: inherit;
-  font-size: 82px;
+  font-size: 102px;
+}
+
+.mikkun-options {
+  margin-top: 26px;
 }
 
 .mikkun-pattern-row {
@@ -3881,7 +4038,7 @@ canvas:focus-visible {
 }
 
 .mikkun-pattern-row .mikkun-pattern-card {
-  width: clamp(44px, 13vw, 60px);
+  width: clamp(48px, 14.5vw, 68px);
   border-radius: 13px;
 }
 
@@ -3909,7 +4066,7 @@ canvas:focus-visible {
 }
 
 .mikkun-counting-scene {
-  max-width: 280px;
+  max-width: 310px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3919,7 +4076,7 @@ canvas:focus-visible {
 
 .reading-card .mikkun-counting-scene span {
   font-family: inherit;
-  font-size: clamp(42px, 13vw, 62px);
+  font-size: clamp(46px, 14vw, 68px);
   line-height: 1.1;
 }
 
@@ -3939,7 +4096,7 @@ canvas:focus-visible {
 }
 
 .mikkun-options .mikkun-choice-card {
-  width: min(76px, 20vw);
+  width: min(82px, 21vw);
   border-radius: 17px;
 }
 
@@ -4070,11 +4227,15 @@ canvas:focus-visible {
   }
 
   .reading-card.mikkun-choice-display {
-    min-height: 154px;
+    min-height: 170px;
   }
 
   .mikkun-choice-display .mikkun-target-card {
-    width: 130px;
+    width: 148px;
+  }
+
+  .mikkun-options {
+    margin-top: 12px;
   }
 
   .mikkun-options.mikkun-picture-options button {
