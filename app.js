@@ -9,7 +9,7 @@
     flash: { label: "フラッシュ暗算", short: "フラッシュ", xp: 14, penalty: 4 },
     math: { label: "暗算する", short: "暗算", xp: 16, penalty: 5 },
     read: { label: "漢字を読む", short: "漢字・読み", xp: 12, penalty: 4 },
-    write: { label: "漢字を書く", short: "漢字・書き", xp: 18, penalty: 6 },
+    write: { label: "漢字を選ぶ", short: "漢字・選択", xp: 18, penalty: 6 },
   };
   const MIKKUN_MODE_LABELS = {
     write: "おたから さがし",
@@ -111,18 +111,18 @@
   ];
 
   const readingProblems = [
-    { band: 1, kanji: "山", answer: "やま", choices: ["やま", "かわ", "そら", "もり"] },
-    { band: 1, kanji: "川", answer: "かわ", choices: ["かわ", "やま", "うみ", "みち"] },
-    { band: 1, kanji: "人", answer: "ひと", choices: ["ひと", "いぬ", "こども", "おとな"] },
-    { band: 1, kanji: "大きい", answer: "おおきい", choices: ["おおきい", "ちいさい", "たかい", "ひろい"] },
-    { band: 1, kanji: "日", answer: "ひ", choices: ["ひ", "つき", "ほし", "そら"] },
-    { band: 1, kanji: "月", answer: "つき", choices: ["つき", "ひ", "よる", "ほし"] },
-    { band: 2, kanji: "海", answer: "うみ", choices: ["うみ", "かわ", "いけ", "そら"] },
-    { band: 2, kanji: "春", answer: "はる", choices: ["はる", "なつ", "あき", "ふゆ"] },
-    { band: 2, kanji: "夏", answer: "なつ", choices: ["なつ", "はる", "あき", "ふゆ"] },
-    { band: 2, kanji: "秋", answer: "あき", choices: ["あき", "はる", "なつ", "ふゆ"] },
-    { band: 2, kanji: "冬", answer: "ふゆ", choices: ["ふゆ", "はる", "なつ", "あき"] },
-    { band: 2, kanji: "星", answer: "ほし", choices: ["ほし", "つき", "そら", "くも"] },
+    { band: 1, kanji: "山道", answer: "やまみち", choices: ["やまみち", "さんどう", "やまどう", "さんみち"] },
+    { band: 1, kanji: "川上", answer: "かわかみ", choices: ["かわかみ", "せんじょう", "かわうえ", "せんかみ"] },
+    { band: 1, kanji: "人口", answer: "じんこう", choices: ["じんこう", "にんこう", "ひとぐち", "じんぐち"] },
+    { band: 1, kanji: "大学", answer: "だいがく", choices: ["だいがく", "たいがく", "おおがく", "だいかく"] },
+    { band: 1, kanji: "休日", answer: "きゅうじつ", choices: ["きゅうじつ", "やすみび", "きゅうにち", "きゅじつ"] },
+    { band: 1, kanji: "月日", answer: "つきひ", choices: ["つきひ", "げつじつ", "つきび", "げっぴ"] },
+    { band: 2, kanji: "海辺", answer: "うみべ", choices: ["うみべ", "かいへん", "うみへん", "かいべ"] },
+    { band: 2, kanji: "春休み", answer: "はるやすみ", choices: ["はるやすみ", "しゅんやすみ", "はるきゅうみ", "しゅんきゅう"] },
+    { band: 2, kanji: "夏休み", answer: "なつやすみ", choices: ["なつやすみ", "かやすみ", "なつきゅうみ", "げやすみ"] },
+    { band: 2, kanji: "秋空", answer: "あきぞら", choices: ["あきぞら", "しゅうくう", "あきそら", "しゅうぞら"] },
+    { band: 2, kanji: "冬休み", answer: "ふゆやすみ", choices: ["ふゆやすみ", "とうやすみ", "ふゆきゅうみ", "とうきゅう"] },
+    { band: 2, kanji: "星空", answer: "ほしぞら", choices: ["ほしぞら", "せいくう", "ほしそら", "せいぞら"] },
     { band: 3, kanji: "緑茶", answer: "りょくちゃ", choices: ["りょくちゃ", "みどりちゃ", "りくちゃ", "ろくちゃ"] },
     { band: 3, kanji: "深海", answer: "しんかい", choices: ["しんかい", "ふかうみ", "じんかい", "しんがい"] },
     { band: 3, kanji: "農業", answer: "のうぎょう", choices: ["のうぎょう", "のぎょう", "のうごう", "のうきょう"] },
@@ -173,28 +173,122 @@
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
+  const fallbackIdiomEntries = [
+    [1, "一石二鳥", "いっせきにちょう"],
+    [2, "温故知新", "おんこちしん"],
+    [3, "臨機応変", "りんきおうへん"],
+    [4, "切磋琢磨", "せっさたくま"],
+    [5, "画竜点睛", "がりょうてんせい"],
+    [6, "森羅万象", "しんらばんしょう"],
+    [7, "疑心暗鬼", "ぎしんあんき"],
+    [8, "不撓不屈", "ふとうふくつ"],
+    [9, "臥薪嘗胆", "がしんしょうたん"],
+    [10, "虚心坦懐", "きょしんたんかい"],
+  ];
+  const idiomEntries =
+    Array.isArray(window.NOBIRU_IDIOMS) && window.NOBIRU_IDIOMS.length
+      ? window.NOBIRU_IDIOMS
+      : fallbackIdiomEntries;
+  const idiomProblems = buildIdiomProblems(idiomEntries);
+  readingProblems.push(...buildIdiomReadingProblems(idiomEntries));
+
+  function buildIdiomProblems(entries) {
+    const safeEntries = entries
+      .map(([band, idiom, reading]) => ({
+        band: Number(band),
+        idiom: String(idiom || ""),
+        reading: String(reading || ""),
+      }))
+      .filter((entry) => entry.band >= 1 && entry.band <= 10 && Array.from(entry.idiom).length === 4);
+    const fallbackKanji = Array.from("山川天地春夏秋冬東西南北上下左右大小心力学道光風花月");
+
+    return safeEntries.flatMap((entry, entryIndex) => {
+      const characters = Array.from(entry.idiom);
+      const first = (entryIndex + entry.band) % 4;
+      const second = (first + 2) % 4;
+      const third = (first + 1) % 4;
+      const masks = entry.band <= 3
+        ? [[first], [second], [third]]
+        : entry.band <= 6
+          ? [[first], [second], [first, second]]
+          : [[first], [first, second], [second, third]];
+      const peers = safeEntries.filter(
+        (candidate) => candidate.band === entry.band && candidate.idiom !== entry.idiom,
+      );
+
+      return masks.map((mask, variantIndex) => {
+        const hiddenIndexes = [...new Set(mask)].sort((left, right) => left - right);
+        const answer = hiddenIndexes.map((index) => characters[index]).join("・");
+        const candidates = peers
+          .map((candidate) => {
+            const peerCharacters = Array.from(candidate.idiom);
+            return hiddenIndexes.map((index) => peerCharacters[index]).join("・");
+          })
+          .filter((candidate, index, list) =>
+            candidate !== answer && list.indexOf(candidate) === index,
+          );
+        for (let offset = 0; candidates.length < 3 && offset < fallbackKanji.length; offset += 1) {
+          const filler = hiddenIndexes
+            .map((_, index) => fallbackKanji[(entryIndex + variantIndex + offset + index * 7) % fallbackKanji.length])
+            .join("・");
+          if (filler !== answer && !candidates.includes(filler)) candidates.push(filler);
+        }
+        return {
+          band: entry.band,
+          idiom: entry.idiom,
+          reading: entry.reading,
+          masked: characters
+            .map((character, index) => hiddenIndexes.includes(index) ? "□" : character)
+            .join(""),
+          hiddenCount: hiddenIndexes.length,
+          answer,
+          choices: [answer, ...candidates.slice(0, 3)],
+        };
+      });
+    });
+  }
+
+  function buildIdiomReadingProblems(entries) {
+    const safeEntries = entries
+      .map(([band, idiom, reading]) => ({
+        band: Number(band),
+        idiom: String(idiom || ""),
+        reading: String(reading || ""),
+      }))
+      .filter((entry) => entry.band >= 1 && entry.band <= 10 && entry.idiom && entry.reading);
+
+    return safeEntries.map((entry, entryIndex) => {
+      const candidates = safeEntries
+        .filter((candidate) => candidate.band === entry.band && candidate.reading !== entry.reading)
+        .map((candidate) => candidate.reading);
+      if (candidates.length < 3) {
+        safeEntries.forEach((candidate) => {
+          if (
+            candidate.reading !== entry.reading &&
+            !candidates.includes(candidate.reading)
+          ) {
+            candidates.push(candidate.reading);
+          }
+        });
+      }
+      const start = candidates.length ? entryIndex % candidates.length : 0;
+      const rotated = [...candidates.slice(start), ...candidates.slice(0, start)];
+      return {
+        band: entry.band,
+        kanji: entry.idiom,
+        answer: entry.reading,
+        choices: [entry.reading, ...rotated.slice(0, 3)],
+        isIdiom: true,
+      };
+    });
+  }
+
   const additionalKanjiProblems = Array.isArray(window.NOBIRU_ADDITIONAL_KANJI)
     ? window.NOBIRU_ADDITIONAL_KANJI
     : [];
 
   additionalKanjiProblems.forEach(([band, kanji, reading, word]) => {
     kanjiProblems.push({ band, kanji, reading, word, strokes: null });
-  });
-
-  additionalKanjiProblems.forEach(([band, kanji, reading]) => {
-    const distractors = [
-      ...new Set(
-        additionalKanjiProblems
-          .filter((item) => item[0] === band && item[2] !== reading)
-          .map((item) => item[2]),
-      ),
-    ].slice(0, 3);
-    readingProblems.push({
-      band,
-      kanji,
-      answer: reading,
-      choices: [reading, ...distractors],
-    });
   });
 
   const memoryCards = [
@@ -343,6 +437,8 @@
     learnerName: DEFAULT_NAMES[0],
     learnerNames: [...DEFAULT_NAMES],
     namesSource: "初期名簿",
+    learnerGateReady: false,
+    learnerConfirmed: false,
     profiles: {},
     lastFirstByMode: {
       write: "",
@@ -422,7 +518,11 @@
   loadProgress();
   initializeLearnerProfiles();
   render();
-  loadLearnerNames().finally(initializeCloudSync);
+  loadLearnerNames().finally(() => {
+    state.learnerGateReady = true;
+    render();
+    initializeCloudSync();
+  });
   app.addEventListener("pointerdown", unlockTapAudio, { passive: true });
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
@@ -1064,6 +1164,10 @@
   }
 
   function render() {
+    if (!state.learnerConfirmed) {
+      app.innerHTML = learnerGateTemplate();
+      return;
+    }
     const views = {
       home: homeTemplate,
       write: writeTemplate,
@@ -1092,6 +1196,41 @@
         setupWritingCanvas();
       }
     }
+  }
+
+  function learnerGateTemplate() {
+    if (!state.learnerGateReady) {
+      return `
+        <div class="screen learner-gate-screen learner-gate-loading" aria-live="polite">
+          <span class="brand-mark">の</span>
+          <p>名前の一覧を読み込んでいます…</p>
+        </div>
+      `;
+    }
+    return `
+      <div class="screen learner-gate-screen">
+        <div class="learner-gate-brand"><span class="brand-mark">の</span><b>のびる</b></div>
+        <section class="learner-gate-card" aria-labelledby="learner-gate-title">
+          <span class="learner-gate-icon" aria-hidden="true">人</span>
+          <p class="eyebrow">WHO IS LEARNING?</p>
+          <h1 id="learner-gate-title">自分の名前を<br />選んでください</h1>
+          <p>選んだ名前に、今日のレベルと学習記録が保存されます。</p>
+          <label class="learner-gate-field" for="startupLearnerName">
+            <span>学習する人</span>
+            <select id="startupLearnerName" aria-label="自分の名前を選ぶ" required>
+              <option value="" selected disabled>ここを押して名前を選ぶ</option>
+              ${state.learnerNames.map((name) => `
+                <option value="${escapeHtml(name)}">${escapeHtml(name)}</option>
+              `).join("")}
+            </select>
+          </label>
+          <button type="button" class="primary-button wide learner-gate-confirm" data-action="confirm-startup-learner" disabled>
+            この名前で始める
+          </button>
+          <small>間違った人のレベルへ記録しないため、開くたびに確認します。</small>
+        </section>
+      </div>
+    `;
   }
 
   function homeTemplate() {
@@ -1158,8 +1297,8 @@
                 ${subjectCard("memory", "絵", "フラッシュカード", "絵カードを記憶", "memory-subject-card", "memory-icon")}
                 ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
                 ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
-                ${subjectCard("read", "読", "漢字を読む", "4択クイズ", "reading-subject-card", "reading-icon")}
-                ${subjectCard("write", "漢", "漢字を書く", "手書き＋形チェック", "kanji-card", "kanji-icon")}
+                ${subjectCard("read", "読", "漢字を読む", "熟語・四字熟語", "reading-subject-card", "reading-icon")}
+                ${subjectCard("write", "選", "漢字を選ぶ", "四字熟語の穴埋め", "kanji-card", "kanji-icon")}
               `}
           </div>
         </section>
@@ -1363,42 +1502,46 @@
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     if (preschool) return mikkunAdventureTemplate();
-    if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
+    const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
+    const correct = state.readingChecked && state.readingChoice === problem.answer;
+    const feedback = state.readingChecked
+      ? correct
+        ? `<div class="reading-feedback correct"><b>正解！</b> ${problem.idiom}（${problem.reading}）</div>`
+        : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」。<br />${problem.idiom}（${problem.reading}）</div>`
+      : "";
     return `
-      <div class="screen lesson-screen kanji-lesson">
-        ${lessonHeader(preschool ? "あいうえお" : "漢字を書く")}
+      <div class="screen lesson-screen kanji-lesson idiom-choice-lesson">
+        ${lessonHeader("漢字を選ぶ")}
         ${lessonLevelRow()}
-        <section class="prompt-area">
-          <p class="eyebrow">${preschool ? "ひらがなを ゆびで なぞろう" : "お題"}</p>
-          <h1>「${problem.reading}」を<br />${preschool ? "かいてみよう" : "漢字で書こう"}</h1>
-          <p class="word-example">${preschool ? "ことば" : "ことば"}：<b>${problem.word}</b>${problem.strokes ? ` ・ ${problem.strokes}かく` : " ・ お手本をよく見よう"}</p>
+        <section class="idiom-prompt">
+          <p class="eyebrow">□に入る漢字を選ぼう</p>
+          <h1>四字熟語を完成させよう</h1>
+          <div class="idiom-card" aria-label="${problem.masked}">
+            ${Array.from(problem.masked).map((character) => `
+              <span class="${character === "□" ? "blank" : ""}">${character}</span>
+            `).join("")}
+          </div>
+          <p class="idiom-hint">${problem.hiddenCount > 1 ? `${problem.hiddenCount}文字を順番どおり選んでね` : "入る漢字はどれかな？"}</p>
         </section>
-        <div class="writing-pad ${state.kanjiChecking ? "checking" : ""}">
-          <span class="guide-kanji" aria-hidden="true">${problem.kanji}</span>
-          <canvas id="writingCanvas" width="640" height="640" aria-label="${problem.reading}を手書きするスペース"></canvas>
-          <span class="pad-label">ゆびやペンで書いてね</span>
+        <div class="reading-options idiom-options">
+          ${choices.map((choice) => {
+            const selected = state.readingChoice === choice;
+            const rightChoice = state.readingChecked && choice === problem.answer;
+            const wrongChoice = state.readingChecked && selected && choice !== problem.answer;
+            return `
+              <button type="button" data-reading="${choice}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.readingChecked ? "disabled" : ""}>
+                <span>${choice}</span><i>${rightChoice ? "✓" : wrongChoice ? "×" : "›"}</i>
+              </button>
+            `;
+          }).join("")}
         </div>
-        ${state.kanjiChecking ? `
-          <div class="self-check-card">
-            <div>
-              <span class="answer-stamp">${problem.kanji}</span>
-              <p><b>アプリの形チェック</b><br />大きさ・位置・画数・形のバランスを目安にしています。</p>
-            </div>
-            ${kanjiFeedbackTemplate()}
-            <div class="self-check-actions">
-              <button type="button" data-action="kanji-retry">書き直す</button>
-              <button type="button" class="kanji-difficult" data-action="kanji-difficult">次へ</button>
-              <button type="button" data-action="kanji-success">書き順</button>
-            </div>
-          </div>
-        ` : `
-          <div class="lesson-actions">
-            <button type="button" class="secondary-button" data-action="clear-kanji">↺ 書きなおす</button>
-            <button type="button" class="primary-button" data-action="check-kanji" ${state.kanjiMarks < 5 ? "disabled" : ""}>
-              お手本とくらべる
-            </button>
-          </div>
-        `}
+        <div class="reading-feedback-slot">${feedback}</div>
+        ${state.readingChecked
+          ? correct
+            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
+            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
+          : '<p class="choice-note">答えをひとつ選んでね</p>'
+        }
       </div>
     `;
   }
@@ -1406,7 +1549,7 @@
   function kanjiStrokeReviewTemplate(problem) {
     return `
       <div class="screen lesson-screen kanji-lesson kanji-stroke-review">
-        ${lessonHeader("漢字を書く")}
+        ${lessonHeader("漢字を選ぶ")}
         ${lessonLevelRow('<span class="timer stroke-order-pill">● 書き順</span>')}
         <section class="prompt-area">
           <p class="eyebrow">お手本の動きを見よう</p>
@@ -1936,8 +2079,8 @@
         ${lessonHeader(preschool ? "どうぶつの なまえ" : "漢字を読む")}
         ${lessonLevelRow()}
         <section class="reading-prompt">
-          <p class="eyebrow">${preschool ? "この どうぶつは なあに？" : "この漢字、なんて読む？"}</p>
-          <div class="reading-card"><span>${problem.kanji}</span></div>
+          <p class="eyebrow">${preschool ? "この どうぶつは なあに？" : "この熟語、なんて読む？"}</p>
+          <div class="reading-card compound-reading-card"><span>${problem.kanji}</span></div>
         </section>
         <div class="reading-options">
           ${choices.map((choice) => {
@@ -2161,7 +2304,7 @@
         <div class="memory-ready">
           <span class="memory-symbol">絵</span>
           <h1>出てくるカードを<br />おぼえよう</h1>
-          <p>${problem.sequence.length}枚の絵カードが順番に出ます。</p>
+          <p>${problem.sequence.length}枚の絵カードが順番に出ます。<br /><b>文字は出ないので、絵と順番を見てね。</b></p>
           <button type="button" class="primary-button wide" data-action="start-memory">カードを始める</button>
         </div>
       `;
@@ -2184,7 +2327,7 @@
               ? learningCardArt(state.memoryVisible.id, "memory-main-card-art")
               : '<strong class="memory-card-placeholder">★</strong>'
             }
-            <span>${state.memoryVisible?.label || ""}</span>
+            <small>絵だけをおぼえよう</small>
           </div>
         </div>
       `;
@@ -2218,7 +2361,7 @@
               const selected = state.memorySelected.includes(card.id);
               return `
                 <button type="button" data-memory-order="${card.id}" class="${selected ? "selected" : ""}" ${state.memoryChecked || selected ? "disabled" : ""}>
-                  ${learningCardArt(card.id, "memory-choice-card-art")}<span>${card.label}</span>
+                  ${learningCardArt(card.id, "memory-choice-card-art")}<span class="visually-hidden">${card.label}</span>
                 </button>
               `;
             }).join("")}
@@ -2539,7 +2682,7 @@
     if (problem.display && problem.answer) {
       return `${problem.prompt}:${problem.display}:${problem.answer}`;
     }
-    if (mode === "write") return problem.kanji;
+    if (mode === "write") return `${problem.idiom}:${problem.masked}:${problem.answer}`;
     if (mode === "read") return `${problem.kanji}:${problem.answer}`;
     if (mode === "memory") {
       return problem.sequence
@@ -2634,7 +2777,7 @@
     }
 
     const band = bandForLevel(level);
-    const bank = mode === "write" ? kanjiProblems : readingProblems;
+    const bank = mode === "write" ? idiomProblems : readingProblems;
     const pool = bank.filter((problem) => problem.band === band);
     /*
      * question-data.js のアップロード漏れや一時的な読込失敗があっても、
@@ -2703,7 +2846,7 @@
     const mode = session?.mode || "write";
     const level = session?.levelAtStart ?? activeSkill(mode).level;
     if (session?.mode === "write") {
-      return kanjiProblems.find((problem) => problem.band === bandForLevel(level));
+      return idiomProblems.find((problem) => problem.band === bandForLevel(level));
     }
     if (session?.mode === "read") {
       return readingProblems.find((problem) => problem.band === bandForLevel(level));
@@ -3052,7 +3195,8 @@
   function prepareReadingChoices() {
     const problem = state.session ? currentSessionProblem() : null;
     const usesChoiceButtons =
-      state.session?.mode === "read" || Boolean(state.session?.preschool);
+      ["write", "read"].includes(state.session?.mode) ||
+      Boolean(state.session?.preschool);
     if (!usesChoiceButtons || !problem?.choices) {
       state.readingChoices = [];
       return;
@@ -3112,6 +3256,7 @@
   function currentAnswerCanAdvance(mode) {
     if (!state.session || state.session.mode !== mode) return false;
     if (
+      mode === "write" ||
       mode === "read" ||
       state.session.preschool
     ) {
@@ -3162,7 +3307,7 @@
   function resumeAnswerAdvance() {
     const mode = state.session?.mode;
     if (
-      ["read", "math", "flash", "memory", "digits"].includes(mode) &&
+      ["write", "read", "math", "flash", "memory", "digits"].includes(mode) &&
       currentAnswerCanAdvance(mode)
     ) {
       scheduleAnswerAdvance(mode);
@@ -4091,6 +4236,9 @@
       "save-learner"() {
         saveLearnerSelection();
       },
+      "confirm-startup-learner"() {
+        confirmStartupLearner();
+      },
       "reload-names"() {
         loadLearnerNames(true);
       },
@@ -4110,6 +4258,13 @@
   }
 
   async function handleChange(event) {
+    if (event.target.id === "startupLearnerName") {
+      const confirmButton = document.querySelector(
+        "[data-action='confirm-startup-learner']",
+      );
+      if (confirmButton) confirmButton.disabled = !event.target.value;
+      return;
+    }
     if (event.target.id === "placementLevelRange") {
       state.placementDraftLevel = clamp(event.target.value, 1, 100);
       render();
@@ -4192,6 +4347,20 @@
     } else if (window.NobiruCloud?.isConfigured?.()) {
       await initializeCloudSync();
     }
+  }
+
+  function confirmStartupLearner() {
+    const nameField = document.querySelector("#startupLearnerName");
+    const selectedName = String(nameField?.value || "").trim();
+    if (!selectedName || !state.learnerNames.includes(selectedName)) return;
+    activateLearner(selectedName, false);
+    state.learnerConfirmed = true;
+    state.view = "home";
+    saveProgress();
+    showToast(`${displayName()}で学習を始めます`);
+    render();
+    window.scrollTo({ top: 0, left: 0 });
+    if (state.cloudReady) syncCloudProfiles();
   }
 
   function resetQuestionState() {
