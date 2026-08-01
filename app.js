@@ -1046,89 +1046,136 @@
     }
   }
 
-  function playTapSound() {
+  function playAudioCue(tones, options = {}) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
     try {
       unlockTapAudio();
       if (!tapAudioContext) return;
-      const emitTone = () => {
-        const now = tapAudioContext.currentTime + 0.005;
-        [
-          { frequency: 1480, type: "sine", gain: 0.042, duration: 0.075 },
-          { frequency: 2220, type: "triangle", gain: 0.012, duration: 0.045 },
-        ].forEach((tone) => {
+      const emitCue = () => {
+        const now = tapAudioContext.currentTime + 0.008;
+        const master = tapAudioContext.createGain();
+        const compressor = tapAudioContext.createDynamicsCompressor();
+        master.gain.setValueAtTime(options.volume ?? 0.78, now);
+        compressor.threshold.setValueAtTime(-26, now);
+        compressor.knee.setValueAtTime(18, now);
+        compressor.ratio.setValueAtTime(4, now);
+        compressor.attack.setValueAtTime(0.004, now);
+        compressor.release.setValueAtTime(0.2, now);
+        master.connect(compressor);
+        compressor.connect(tapAudioContext.destination);
+
+        const echoAmount = Number(options.echo || 0);
+        if (echoAmount > 0) {
+          const delay = tapAudioContext.createDelay(0.4);
+          const echoGain = tapAudioContext.createGain();
+          delay.delayTime.setValueAtTime(options.echoDelay || 0.11, now);
+          echoGain.gain.setValueAtTime(echoAmount, now);
+          master.connect(delay);
+          delay.connect(echoGain);
+          echoGain.connect(compressor);
+        }
+
+        tones.forEach((tone) => {
           const oscillator = tapAudioContext.createOscillator();
           const gain = tapAudioContext.createGain();
+          const filter = tapAudioContext.createBiquadFilter();
+          const beginsAt = now + Number(tone.start || 0);
+          const attack = Math.max(0.004, Number(tone.attack || 0.014));
           oscillator.type = tone.type;
-          oscillator.frequency.setValueAtTime(tone.frequency, now);
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.exponentialRampToValueAtTime(tone.gain, now + 0.006);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.duration);
-          oscillator.connect(gain);
-          gain.connect(tapAudioContext.destination);
-          oscillator.start(now);
-          oscillator.stop(now + tone.duration + 0.015);
+          oscillator.frequency.setValueAtTime(tone.frequency, beginsAt);
+          if (tone.endFrequency) {
+            oscillator.frequency.exponentialRampToValueAtTime(
+              tone.endFrequency,
+              beginsAt + tone.duration,
+            );
+          }
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(tone.filter || 6200, beginsAt);
+          filter.Q.setValueAtTime(0.65, beginsAt);
+          gain.gain.setValueAtTime(0.0001, beginsAt);
+          gain.gain.exponentialRampToValueAtTime(tone.gain, beginsAt + attack);
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            beginsAt + tone.duration,
+          );
+          oscillator.connect(filter);
+          filter.connect(gain);
+          gain.connect(master);
+          oscillator.start(beginsAt);
+          oscillator.stop(beginsAt + tone.duration + 0.025);
         });
       };
       if (tapAudioContext.state === "running") {
-        emitTone();
+        emitCue();
         return;
       }
       const resumed = tapAudioContext.resume();
       if (resumed?.then) {
-        resumed.then(emitTone).catch(() => {});
+        resumed.then(emitCue).catch(() => {});
       } else {
-        emitTone();
+        emitCue();
       }
     } catch {
       // 音が使えないブラウザでも、操作そのものは止めません。
     }
   }
 
+  function playTapSound() {
+    playAudioCue(
+      [
+        { frequency: 1174.66, type: "sine", gain: 0.036, duration: 0.085 },
+        { frequency: 2349.32, type: "triangle", gain: 0.008, duration: 0.05 },
+      ],
+      { volume: 0.72, echo: 0.025, echoDelay: 0.075 },
+    );
+  }
+
   function playCorrectSound() {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    try {
-      unlockTapAudio();
-      if (!tapAudioContext) return;
-      const emitChime = () => {
-        const now = tapAudioContext.currentTime + 0.015;
-        [
-          { frequency: 1318.51, type: "sine", start: 0, duration: 0.32, gain: 0.07 },
-          { frequency: 2637.02, type: "triangle", start: 0, duration: 0.2, gain: 0.014 },
-          { frequency: 1046.5, type: "sine", start: 0.16, duration: 0.62, gain: 0.075 },
-          { frequency: 2093, type: "triangle", start: 0.16, duration: 0.4, gain: 0.013 },
-          { frequency: 523.25, type: "sine", start: 0.16, duration: 0.5, gain: 0.018 },
-        ].forEach((tone) => {
-          const oscillator = tapAudioContext.createOscillator();
-          const gain = tapAudioContext.createGain();
-          const beginsAt = now + tone.start;
-          oscillator.type = tone.type;
-          oscillator.frequency.setValueAtTime(tone.frequency, beginsAt);
-          gain.gain.setValueAtTime(0.0001, beginsAt);
-          gain.gain.exponentialRampToValueAtTime(
-            tone.gain,
-            beginsAt + 0.018,
-          );
-          gain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            beginsAt + tone.duration,
-          );
-          oscillator.connect(gain);
-          gain.connect(tapAudioContext.destination);
-          oscillator.start(beginsAt);
-          oscillator.stop(beginsAt + tone.duration + 0.02);
-        });
-      };
-      if (tapAudioContext.state === "running") {
-        emitChime();
-      } else {
-        tapAudioContext.resume()?.then(emitChime).catch(() => {});
-      }
-    } catch {
-      // 正解音を使えない端末でも学習は続けられます。
-    }
+    playAudioCue(
+      [
+        { frequency: 1046.5, type: "sine", start: 0, duration: 0.58, gain: 0.045 },
+        { frequency: 1318.51, type: "sine", start: 0.085, duration: 0.64, gain: 0.047 },
+        { frequency: 1567.98, type: "sine", start: 0.17, duration: 0.72, gain: 0.048 },
+        { frequency: 2093, type: "triangle", start: 0.27, duration: 0.82, gain: 0.025 },
+        { frequency: 523.25, type: "sine", start: 0.27, duration: 0.7, gain: 0.018 },
+      ],
+      { volume: 0.82, echo: 0.12, echoDelay: 0.14 },
+    );
+  }
+
+  function playWrongSound() {
+    playAudioCue(
+      [
+        { frequency: 392, endFrequency: 369.99, type: "sine", start: 0, duration: 0.3, gain: 0.036 },
+        { frequency: 329.63, endFrequency: 311.13, type: "triangle", start: 0.14, duration: 0.42, gain: 0.027 },
+      ],
+      { volume: 0.7, echo: 0.035, echoDelay: 0.12 },
+    );
+  }
+
+  function playStartSound() {
+    playAudioCue(
+      [
+        { frequency: 523.25, type: "sine", start: 0, duration: 0.28, gain: 0.03 },
+        { frequency: 783.99, type: "sine", start: 0.09, duration: 0.34, gain: 0.033 },
+        { frequency: 1046.5, type: "triangle", start: 0.18, duration: 0.46, gain: 0.026 },
+      ],
+      { volume: 0.76, echo: 0.075, echoDelay: 0.12 },
+    );
+  }
+
+  function playLevelUpSound() {
+    playAudioCue(
+      [
+        { frequency: 783.99, type: "sine", start: 0, duration: 0.45, gain: 0.028 },
+        { frequency: 1046.5, type: "sine", start: 0.08, duration: 0.55, gain: 0.034 },
+        { frequency: 1318.51, type: "sine", start: 0.17, duration: 0.68, gain: 0.038 },
+        { frequency: 1567.98, type: "triangle", start: 0.28, duration: 0.78, gain: 0.026 },
+        { frequency: 2093, type: "sine", start: 0.42, duration: 0.88, gain: 0.024 },
+      ],
+      { volume: 0.82, echo: 0.14, echoDelay: 0.15 },
+    );
   }
 
   function lastStudiedText(timestamp) {
@@ -1412,6 +1459,7 @@
     stopMemory();
     stopDigits();
     stopAutoAdvance();
+    playStartSound();
     const skill = activeSkill(mode);
     const usePreschoolMenu = Boolean(preschool && isMikkunLearner());
     const total = usePreschoolMenu ? PRESCHOOL_QUESTION_COUNT : state.counts[mode];
@@ -2521,6 +2569,7 @@
 
   function startFlashSequence() {
     stopFlash();
+    playStartSound();
     const token = ++state.flashRunToken;
     state.flashPhase = "countdown";
     render();
@@ -2584,6 +2633,7 @@
 
   function startMemorySequence() {
     stopMemory();
+    playStartSound();
     const token = ++state.memoryRunToken;
     state.memoryPhase = "countdown";
     render();
@@ -2630,6 +2680,7 @@
 
   function startDigitsSequence() {
     stopDigits();
+    playStartSound();
     const token = ++state.digitsRunToken;
     state.digitsPhase = "countdown";
     render();
@@ -2694,6 +2745,92 @@
     return `${problem.question}:${problem.answer}`;
   }
 
+  function createWriteSessionProblems(total, level) {
+    const band = bandForLevel(level);
+    const variantsByIdiom = new Map();
+    idiomProblems.forEach((problem) => {
+      if (!variantsByIdiom.has(problem.idiom)) variantsByIdiom.set(problem.idiom, []);
+      variantsByIdiom.get(problem.idiom).push(problem);
+    });
+
+    const targetPoolSize = Math.min(
+      variantsByIdiom.size,
+      Math.max(40, Number(total) || 10),
+    );
+    const pool = [];
+    const usedIdioms = new Set();
+    const addBand = (targetBand) => {
+      if (targetBand < 1 || targetBand > levelGroups.length) return;
+      idiomProblems.forEach((problem) => {
+        if (
+          pool.length >= targetPoolSize ||
+          problem.band !== targetBand ||
+          usedIdioms.has(problem.idiom)
+        ) {
+          return;
+        }
+        usedIdioms.add(problem.idiom);
+        pool.push(problem.idiom);
+      });
+    };
+
+    addBand(band);
+    for (
+      let distance = 1;
+      pool.length < targetPoolSize && distance < levelGroups.length;
+      distance += 1
+    ) {
+      addBand(band - distance);
+      addBand(band + distance);
+    }
+
+    const recentKey = `${state.learnerName}:write-idiom:${band}`;
+    const recent = Array.isArray(state.recentProblems[recentKey])
+      ? state.recentProblems[recentKey]
+      : [];
+    const recentSet = new Set(recent);
+    const freshPool = pool.filter((idiom) => !recentSet.has(idiom));
+    const olderPool = pool.filter((idiom) => recentSet.has(idiom));
+    const result = [];
+    let cycle = [...shuffled(freshPool), ...shuffled(olderPool)];
+
+    while (result.length < total && pool.length) {
+      if (!cycle.length) cycle = shuffled(pool);
+      if (
+        result.length &&
+        cycle.length > 1 &&
+        result[result.length - 1].idiom === cycle[0]
+      ) {
+        cycle.push(cycle.shift());
+      }
+      const idiom = cycle.shift();
+      const variants = variantsByIdiom.get(idiom) || [];
+      if (variants.length) result.push(shuffled(variants)[0]);
+    }
+
+    if (
+      result.length > 1 &&
+      result[0].idiom === state.lastFirstByMode.write
+    ) {
+      const swapIndex = result.findIndex(
+        (problem, index) => index > 0 && problem.idiom !== state.lastFirstByMode.write,
+      );
+      if (swapIndex > 0) {
+        [result[0], result[swapIndex]] = [result[swapIndex], result[0]];
+      }
+    }
+    if (result.length) state.lastFirstByMode.write = result[0].idiom;
+
+    const updatedRecent = [...recent];
+    result.forEach((problem) => {
+      const previousIndex = updatedRecent.indexOf(problem.idiom);
+      if (previousIndex >= 0) updatedRecent.splice(previousIndex, 1);
+      updatedRecent.push(problem.idiom);
+    });
+    state.recentProblems[recentKey] = updatedRecent.slice(-30);
+    return result;
+  }
+
   function createSessionProblems(
     mode,
     total,
@@ -2729,6 +2866,7 @@
       state.lastFirstByMode[mode] = problemSignature(mode, result[0]);
       return result;
     }
+    if (mode === "write") return createWriteSessionProblems(total, level);
     if (mode === "memory" || mode === "digits") {
       const generator =
         mode === "memory" ? generateMemoryProblem : generateDigitsProblem;
@@ -2777,7 +2915,7 @@
     }
 
     const band = bandForLevel(level);
-    const bank = mode === "write" ? idiomProblems : readingProblems;
+    const bank = readingProblems;
     const pool = bank.filter((problem) => problem.band === band);
     /*
      * question-data.js のアップロード漏れや一時的な読込失敗があっても、
@@ -2791,21 +2929,28 @@
         pool.push(...nearbyProblems.slice(0, 30 - pool.length));
       });
     }
+    const uniqueSignatures = new Set();
+    const uniquePool = pool.filter((problem) => {
+      const signature = problemSignature(mode, problem);
+      if (uniqueSignatures.has(signature)) return false;
+      uniqueSignatures.add(signature);
+      return true;
+    });
     const recentKey = `${state.learnerName}:${mode}:${band}`;
     const recent = Array.isArray(state.recentProblems[recentKey])
       ? state.recentProblems[recentKey]
       : [];
     const recentSet = new Set(recent);
-    const freshPool = pool.filter(
+    const freshPool = uniquePool.filter(
       (problem) => !recentSet.has(problemSignature(mode, problem)),
     );
-    const olderPool = pool.filter((problem) =>
+    const olderPool = uniquePool.filter((problem) =>
       recentSet.has(problemSignature(mode, problem)),
     );
     const result = [];
     let cycle = [...shuffled(freshPool), ...shuffled(olderPool)];
     while (result.length < total) {
-      if (!cycle.length) cycle = shuffled(pool);
+      if (!cycle.length) cycle = shuffled(uniquePool);
       if (
         result.length &&
         problemSignature(mode, result[result.length - 1]) ===
@@ -3220,6 +3365,7 @@
       if (options.playFeedback !== false) playCorrectSound();
       earnXp(MODE_INFO[session.mode].xp);
     } else {
+      playWrongSound();
       applyWrongAnswerPenalty(session.mode);
     }
     if (session.completed >= session.total) {
@@ -3413,12 +3559,14 @@
           <div><b>${session.correct}</b><span>${session.preschool ? "ゲットした ほし" : "できた問題"}</span></div>
           <div><b>${ratio}%</b><span>達成率</span></div>
         </div>
+        <div class="result-actions">
+          <button type="button" class="primary-button wide result-home-button" data-action="back-home">ホームへ戻る</button>
+          <button type="button" class="secondary-button wide" data-action="restart-session">もう一度する</button>
+        </div>
         <div class="result-message-card">
           <span>☺</span>
           <p><b>${session.preschool ? "ぼうけん だいせいこう！" : session.completed >= state.checkpointEvery ? "小さな積み重ねが、力になります。" : "まず始められたことが大切です。"}</b><br />${session.preschool ? "つぎは どの ぼうけんに いく？" : "次も自分のペースで進めよう。"}</p>
         </div>
-        <button type="button" class="primary-button wide" data-action="restart-session">もう一度する</button>
-        <button type="button" class="secondary-button wide result-home-button" data-action="back-home">ホームへ戻る</button>
       </div>
     `;
   }
@@ -3627,11 +3775,26 @@
 
         <section class="settings-card sound-check-card">
           <div class="settings-heading">
-            <div><p class="eyebrow">SOUND</p><h2>操作音</h2></div>
-            <span>ピ</span>
+            <div><p class="eyebrow">SOUND</p><h2>学習サウンド</h2></div>
+            <span>5種類</span>
           </div>
-          <button type="button" class="secondary-button wide" data-action="test-sound">「ピ」音を確認する</button>
+          <div class="sound-preview-grid">
+            <button type="button" data-action="test-sound"><span>◇</span>操作</button>
+            <button type="button" data-action="test-start-sound"><span>▶</span>開始</button>
+            <button type="button" data-action="test-correct-sound"><span>○</span>正解</button>
+            <button type="button" data-action="test-wrong-sound"><span>△</span>不正解</button>
+            <button type="button" data-action="test-level-sound"><span>★</span>レベルUP</button>
+          </div>
           <p class="settings-note">音が聞こえない場合は、iPhoneの消音モードを解除して音量を上げてください。</p>
+        </section>
+
+        <section class="settings-card data-source-card">
+          <div class="settings-heading">
+            <div><p class="eyebrow">DATA SOURCE</p><h2>問題データの出典</h2></div>
+            <span>CC BY-SA</span>
+          </div>
+          <p class="settings-note">四字熟語の表記・読みの一部は、EDRDGのJMdict/EDICTを参照しています。</p>
+          <a class="data-source-link" href="https://www.edrdg.org/edrdg/licence.html" target="_blank" rel="noopener noreferrer">出典と利用条件を見る ↗</a>
         </section>
 
         <section class="settings-card">
@@ -3748,8 +3911,8 @@
               value="${draftLevel}"
               aria-label="開始レベルを1から100で選ぶ"
             />
-            <button type="button" class="primary-button wide placement-apply-button" data-action="apply-placement-level">
-              Lv.${draftLevel} から始める
+            <button type="button" class="primary-button wide placement-apply-button placement-finish-button" data-action="finish-placement">
+              レベル調整を終える
             </button>
           </div>
           <p class="placement-option-title">${mikkun ? "ぼうけんステップから選ぶ" : "学年の目安から選ぶ"}</p>
@@ -3761,8 +3924,7 @@
               </button>
             `).join("")}
           </div>
-          <p class="sheet-note">変更後もこの画面は閉じません。上の${mikkun ? "ぼうけん" : "分野"}タブから、ほかの${mikkun ? "ぼうけん" : "分野"}を続けて調整できます。</p>
-          <button type="button" class="secondary-button wide placement-finish-button" data-action="close-placement">レベル調整を終える</button>
+          <p class="sheet-note">上の「レベル調整を終える」で微調整した値を保存します。${mikkun ? "ぼうけんステップ" : "学年の目安"}を押した場合は、その場ですぐ保存されます。</p>
         </section>
       </div>
     `;
@@ -3785,7 +3947,7 @@
     `;
   }
 
-  function applyPlacementLevel(mode, level) {
+  function applyPlacementLevel(mode, level, closeAfter = false) {
     const safeMode = SKILL_MODES.includes(mode) ? mode : "write";
     const profile = ensureProfile(state.learnerName);
     profile.skills[safeMode] = {
@@ -3799,6 +3961,7 @@
     );
     applyActiveProfile();
     state.placementDraftLevel = profile.skills[safeMode].level;
+    if (closeAfter) state.placementOpen = false;
     saveProgress(safeMode);
     showToast(
       `${MODE_INFO[safeMode].short}をレベル ${profile.skills[safeMode].level} に保存しました`,
@@ -3817,7 +3980,21 @@
       ["kanji-success", "submit-math", "submit-flash", "submit-digits"].includes(
         tapAction,
       );
-    if (tappedControl && !tappedControl.disabled && !answerCommit) playTapSound();
+    const usesStartCue =
+      Boolean(event.target.closest("[data-start]")) ||
+      ["restart-session", "start-flash", "replay-flash", "start-memory", "start-digits"].includes(
+        tapAction,
+      );
+    const soundPreview = tapAction.startsWith("test-");
+    if (
+      tappedControl &&
+      !tappedControl.disabled &&
+      !answerCommit &&
+      !usesStartCue &&
+      !soundPreview
+    ) {
+      playTapSound();
+    }
 
     const startButton = event.target.closest("[data-start]");
     if (startButton) {
@@ -3900,7 +4077,7 @@
         playCorrectSound();
         earnXp(MODE_INFO[mode].xp);
       } else {
-        playTapSound();
+        playWrongSound();
         applyWrongAnswerPenalty(mode);
       }
       render();
@@ -3928,7 +4105,7 @@
           playCorrectSound();
           earnXp(MODE_INFO.memory.xp);
         } else {
-          playTapSound();
+          playWrongSound();
           applyWrongAnswerPenalty("memory");
         }
       } else {
@@ -4047,6 +4224,9 @@
       "apply-placement-level"() {
         applyPlacementLevel(state.placementMode, state.placementDraftLevel);
       },
+      "finish-placement"() {
+        applyPlacementLevel(state.placementMode, state.placementDraftLevel, true);
+      },
       "close-placement"() {
         state.placementOpen = false;
         render();
@@ -4133,7 +4313,7 @@
           playCorrectSound();
           earnXp(MODE_INFO.math.xp);
         } else {
-          playTapSound();
+          playWrongSound();
           applyWrongAnswerPenalty("math");
         }
         render();
@@ -4159,6 +4339,7 @@
         }
         state.session.attempts += 1;
         state.flashResult = "given-up";
+        playWrongSound();
         applyWrongAnswerPenalty("flash");
         render();
         scheduleAnswerAdvance("flash");
@@ -4178,7 +4359,7 @@
           playCorrectSound();
           if (!state.questionPenaltyApplied) earnXp(MODE_INFO.flash.xp);
         } else {
-          playTapSound();
+          playWrongSound();
           applyWrongAnswerPenalty("flash");
         }
         render();
@@ -4210,7 +4391,7 @@
           playCorrectSound();
           earnXp(MODE_INFO.digits.xp);
         } else {
-          playTapSound();
+          playWrongSound();
           applyWrongAnswerPenalty("digits");
         }
         render();
@@ -4250,7 +4431,28 @@
         }
       },
       "test-sound"() {
+        playTapSound();
         showToast("操作音を再生しました");
+        render();
+      },
+      "test-start-sound"() {
+        playStartSound();
+        showToast("開始音を再生しました");
+        render();
+      },
+      "test-correct-sound"() {
+        playCorrectSound();
+        showToast("正解音を再生しました");
+        render();
+      },
+      "test-wrong-sound"() {
+        playWrongSound();
+        showToast("不正解音を再生しました");
+        render();
+      },
+      "test-level-sound"() {
+        playLevelUpSound();
+        showToast("レベルアップ音を再生しました");
         render();
       },
     };
@@ -4419,6 +4621,7 @@
           ? `おめでとう！「${nextMikkunStage.label}」にステップアップ！`
           : `${MODE_INFO[mode].short}がレベル ${skill.level} にアップ！`,
       );
+      window.setTimeout(playLevelUpSound, 420);
     } else {
       skill.xp = Math.min(100, total);
     }

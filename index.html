@@ -21,7 +21,7 @@
     </main>
     <script>
       (() => {
-        const fallbackVersion = "20260802-required-learner-visual-memory-29";
+        const fallbackVersion = "20260802-unique-kanji-safe-actions-sound-30";
         let loadedVersion = "";
         let checkingForUpdate = false;
 
@@ -54,7 +54,9 @@
             if (
               !questionDataLoaded ||
               !Array.isArray(window.NOBIRU_ADDITIONAL_KANJI) ||
-              window.NOBIRU_ADDITIONAL_KANJI.length < 240
+              window.NOBIRU_ADDITIONAL_KANJI.length < 240 ||
+              !Array.isArray(window.NOBIRU_IDIOMS) ||
+              window.NOBIRU_IDIOMS.length < 400
             ) {
               console.warn("追加問題ファイルを読み込めなかったため、近い難易度の問題で補います。");
             }
