@@ -152,7 +152,7 @@
       ...modesToSave.map((mode) => {
         const skill = profile.skills?.[mode] || {};
         return firestoreApi.setDoc(learnerSkillDocument(name, mode), {
-          level: Math.min(100, Math.max(1, Math.floor(Number(skill.level) || 1))),
+          level: Math.min(120, Math.max(1, Math.floor(Number(skill.level) || 1))),
           xp: Math.min(100, Math.max(0, Math.floor(Number(skill.xp) || 0))),
           updatedAt: Math.max(
             0,

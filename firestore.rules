@@ -15,7 +15,7 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 20
         && request.resource.data.level is int
         && request.resource.data.level >= 1
-        && request.resource.data.level <= 100
+        && request.resource.data.level <= 120
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
         && request.resource.data.xp <= 100
@@ -57,7 +57,7 @@ service cloud.firestore {
         ])
         && request.resource.data.level is int
         && request.resource.data.level >= 1
-        && request.resource.data.level <= 100
+        && request.resource.data.level <= 120
         && request.resource.data.xp is int
         && request.resource.data.xp >= 0
         && request.resource.data.xp <= 100

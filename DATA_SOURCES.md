@@ -2,7 +2,7 @@
 
 ## 四字熟語の表記・読み
 
-追加した四字熟語の表記と読みの一部は、Electronic Dictionary Research and Development Group（EDRDG）のJMdict/EDICT四字熟語一覧を参照しています。
+追加した四字熟語の表記・読み・意味の確認には、Electronic Dictionary Research and Development Group（EDRDG）のJMdict/EDICT四字熟語一覧を参照しています。アプリに表示する日本語の意味は、学習用に短く言い換えた独自の説明です。
 
 - 四字熟語一覧：https://www.edrdg.org/projects/yojijukugo.html
 - JMdict/EDICTプロジェクト：https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project

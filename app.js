@@ -12,10 +12,10 @@
     write: { label: "漢字を選ぶ", short: "漢字・選択", xp: 18, penalty: 6 },
   };
   const MIKKUN_MODE_LABELS = {
-    write: "おたから さがし",
-    read: "なかま さがし",
-    math: "かずの たからばこ",
-    memory: "つぎは どっち？",
+    write: "パンヒーローの おたから",
+    read: "だだんメカを なおそう",
+    math: "メカパーツを かぞえよう",
+    memory: "メカの ひかり",
   };
   const SKILL_MODES = Object.keys(MODE_INFO);
   const DEFAULT_COUNTS = {
@@ -28,8 +28,10 @@
   };
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
   const MIKKUN_NAME = "みっくん";
+  const MAX_LEVEL = 120;
+  const MIKKUN_MAX_LEVEL = 100;
   const PRESCHOOL_QUESTION_COUNT = 5;
-  const DIFFICULTY_OFFSET = 12;
+  const QUESTION_BAND_COUNT = 10;
   const MIKKUN_STAGES = [
     { rank: 1, min: 1, max: 5, label: "年少さん・はじめ", short: "年少さん", next: "年少さん・ぐんぐん" },
     { rank: 2, min: 6, max: 10, label: "年少さん・ぐんぐん", short: "年少さん", next: "年中さん・はじめ" },
@@ -173,17 +175,43 @@
     { band: 10, kanji: "帰納", answer: "きのう", choices: ["きのう", "きな", "かえりのう", "きどう"] },
   ];
 
+  const basicWordMeanings = {
+    山道: "山の中にある道。", 川上: "川の流れてくる、上流の方。", 人口: "ある地域に住んでいる人の数。",
+    大学: "専門的な学問を学び、研究する学校。", 休日: "仕事や学校が休みの日。", 月日: "月と日。また、過ぎていく時間。",
+    海辺: "海の近く。", 春休み: "春の時期にある学校の休み。", 夏休み: "夏の時期にある長い休み。",
+    秋空: "秋の季節の空。", 冬休み: "冬の時期にある学校の休み。", 星空: "星がたくさん見える夜空。",
+    緑茶: "茶葉を発酵させずに作る、緑色のお茶。", 深海: "太陽の光が届きにくい、深い海。", 農業: "作物を育てたり、家畜を飼ったりする仕事。",
+    登山: "山に登ること。", 空港: "飛行機が発着する場所。", 歩道橋: "人が道路を安全に渡るための橋。",
+    愛情: "人や物を大切に思う、温かい気持ち。", 案内: "道や内容を知らせ、導くこと。", 位置: "物や人がある場所。",
+    印刷: "文字や絵を、紙などに刷ること。", 衣服: "体に着るもの。", 英語: "イギリスやアメリカなどで使われる言語。",
+    圧力: "物を押す力。また、人に無理をさせる力。", 移動: "場所を別の所へ移ること。", 原因: "ある結果を起こしたもと。",
+    永遠: "いつまでも終わらず続くこと。", 営業: "店や会社が仕事を行うこと。", 衛生: "健康を守るため、清潔にすること。",
+    異常: "いつもの正常な状態と違うこと。", 遺産: "亡くなった人が残した財産や文化。", 地域: "一定の広がりを持つ土地。",
+    宇宙: "地球や星を含む、すべての空間。", 映画: "映像と音で物語などを表す作品。", 延長: "時間や距離を、さらに長くすること。",
+    概要: "物事の大切な点をまとめた、おおよその内容。", 包括: "複数のものを、一つにまとめて含むこと。", 据える: "物を動かないよう、ある場所に置くこと。",
+    推薦: "よい人や物として、他の人にすすめること。", 遂行: "仕事や計画を、最後までやりとげること。", 乏しい: "必要なものが少なく、十分でないこと。",
+    曖昧: "内容や態度が、はっきりしないこと。", 憂慮: "悪いことにならないか、心配すること。", 顕著: "はっきり目立っていること。",
+    把握: "内容や状況を、しっかり理解すること。", 矛盾: "二つのことのつじつまが合わないこと。", 著しい: "変化や違いが、はっきり分かるほど大きいこと。",
+    凝縮: "広がっているものを、濃く小さくまとめること。", 脈絡: "話や物事の、前後のつながり。", 培養: "細胞や微生物などを、条件を整えて育てること。",
+    媒体: "情報を伝える仲立ちとなるもの。", 謙虚: "自分を偉いと思わず、素直に学ぶ態度。", 養う: "食べ物を与えて育てる。また、力を身につける。",
+    抽象: "共通する特徴を取り出し、一般的に考えたもの。", 論理: "考えや説明を組み立てる筋道。", 俯瞰: "高い所から見下ろすように、全体を見ること。",
+    踏襲: "以前のやり方を、そのまま受け継ぐこと。", 漸進: "少しずつ、順を追って進むこと。", 帰納: "いくつもの具体例から、共通する結論を導くこと。",
+  };
+  readingProblems.forEach((problem) => {
+    problem.meaning = basicWordMeanings[problem.kanji] || "";
+  });
+
   const fallbackIdiomEntries = [
-    [1, "一石二鳥", "いっせきにちょう"],
-    [2, "温故知新", "おんこちしん"],
-    [3, "臨機応変", "りんきおうへん"],
-    [4, "切磋琢磨", "せっさたくま"],
-    [5, "画竜点睛", "がりょうてんせい"],
-    [6, "森羅万象", "しんらばんしょう"],
-    [7, "疑心暗鬼", "ぎしんあんき"],
-    [8, "不撓不屈", "ふとうふくつ"],
-    [9, "臥薪嘗胆", "がしんしょうたん"],
-    [10, "虚心坦懐", "きょしんたんかい"],
+    [1, "一石二鳥", "いっせきにちょう", "一つの行動で、二つのよい結果を得ること。"],
+    [2, "温故知新", "おんこちしん", "昔のことを学び、そこから新しい知識や考えを得ること。"],
+    [3, "臨機応変", "りんきおうへん", "その場の状況に合わせて、うまく対応すること。"],
+    [4, "切磋琢磨", "せっさたくま", "仲間どうしで励まし合い、学問や技を高めること。"],
+    [5, "画竜点睛", "がりょうてんせい", "最後に大切な仕上げをして、全体を完成させること。"],
+    [6, "森羅万象", "しんらばんしょう", "宇宙に存在する、あらゆる物事や現象。"],
+    [7, "疑心暗鬼", "ぎしんあんき", "疑う気持ちがあると、何でも怖く怪しく感じること。"],
+    [8, "不撓不屈", "ふとうふくつ", "どんな困難にも負けず、くじけないこと。"],
+    [9, "臥薪嘗胆", "がしんしょうたん", "目的を果たすため、苦労に耐えて努力すること。"],
+    [10, "虚心坦懐", "きょしんたんかい", "先入観を持たず、素直で落ち着いた心で向き合うこと。"],
   ];
   const idiomEntries =
     Array.isArray(window.NOBIRU_IDIOMS) && window.NOBIRU_IDIOMS.length
@@ -194,10 +222,11 @@
 
   function buildIdiomProblems(entries) {
     const safeEntries = entries
-      .map(([band, idiom, reading]) => ({
+      .map(([band, idiom, reading, meaning]) => ({
         band: Number(band),
         idiom: String(idiom || ""),
         reading: String(reading || ""),
+        meaning: String(meaning || window.NOBIRU_IDIOM_MEANINGS?.[idiom] || ""),
       }))
       .filter((entry) => entry.band >= 1 && entry.band <= 10 && Array.from(entry.idiom).length === 4);
     const fallbackKanji = Array.from("山川天地春夏秋冬東西南北上下左右大小心力学道光風花月");
@@ -237,6 +266,7 @@
           band: entry.band,
           idiom: entry.idiom,
           reading: entry.reading,
+          meaning: entry.meaning,
           masked: characters
             .map((character, index) => hiddenIndexes.includes(index) ? "□" : character)
             .join(""),
@@ -250,10 +280,11 @@
 
   function buildIdiomReadingProblems(entries) {
     const safeEntries = entries
-      .map(([band, idiom, reading]) => ({
+      .map(([band, idiom, reading, meaning]) => ({
         band: Number(band),
         idiom: String(idiom || ""),
         reading: String(reading || ""),
+        meaning: String(meaning || window.NOBIRU_IDIOM_MEANINGS?.[idiom] || ""),
       }))
       .filter((entry) => entry.band >= 1 && entry.band <= 10 && entry.idiom && entry.reading);
 
@@ -277,6 +308,7 @@
         band: entry.band,
         kanji: entry.idiom,
         answer: entry.reading,
+        meaning: entry.meaning,
         choices: [entry.reading, ...rotated.slice(0, 3)],
         isIdiom: true,
       };
@@ -347,6 +379,10 @@
     { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "octopus", answer: "octopus", answerLabel: "たこ", choices: ["octopus", "flower", "grapes"] },
     { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "ship", answer: "ship", answerLabel: "ふね", choices: ["bus", "ship", "helicopter"] },
     { stage: 4, prompt: "よくみて おなじ えを みつけよう", displayCard: "grapes", answer: "grapes", answerLabel: "ぶどう", choices: ["grapes", "watermelon", "orange"] },
+    { prompt: "パンヒーローと おなじ パンは？", displayItems: ["🍞"], answer: "🍞", answerLabel: "パン", choices: ["🍞", "🔩", "⭐"] },
+    { stage: 2, prompt: "だだんメカの ねじと おなじものは？", displayItems: ["🔩"], answer: "🔩", answerLabel: "ねじ", choices: ["⚙️", "🔩", "🔧"] },
+    { stage: 3, prompt: "きらきらパワーと おなじものは？", displayItems: ["✨"], answer: "✨", answerLabel: "きらきら", choices: ["⭐", "✨", "⚡"] },
+    { stage: 4, prompt: "メカの うでと おなじものは？", displayItems: ["🦾"], answer: "🦾", answerLabel: "メカの うで", choices: ["🦿", "🦾", "🔧"] },
   ];
 
   const mikkunGroupProblems = [
@@ -370,6 +406,10 @@
     { stage: 4, prompt: "みずの なかを すすむ のりものは？", display: "⚓", answer: "ship", answerLabel: "ふね", choices: ["helicopter", "ship", "bus"] },
     { stage: 4, prompt: "たねが みえる くだものは？", display: "●", answer: "watermelon", answerLabel: "すいか", choices: ["watermelon", "orange", "grapes"] },
     { stage: 4, prompt: "タイヤが 2つの のりものは？", display: "◯ ◯", answer: "bicycle", answerLabel: "じてんしゃ", choices: ["bus", "bicycle", "ship"] },
+    { prompt: "メカを なおす どうぐは どれ？", display: "🤖", answer: "🔧", answerLabel: "れんち", choices: ["🔧", "🍎", "🌼"] },
+    { stage: 2, prompt: "メカの パーツは どれ？", display: "🦾", answer: "⚙️", answerLabel: "はぐるま", choices: ["🍞", "⚙️", "☂️"] },
+    { stage: 3, prompt: "パンヒーローが とどけるものは？", display: "🦸", answer: "🍞", answerLabel: "パン", choices: ["🔩", "🍞", "🚲"] },
+    { stage: 4, prompt: "メカを うごかす パワーは？", display: "🤖", answer: "⚡", answerLabel: "でんき", choices: ["🌧️", "⚡", "🍇"] },
   ];
 
   const mikkunCountingProblems = [
@@ -391,6 +431,10 @@
     { stage: 4, prompt: "ほしは いくつ？", displayItems: ["⭐", "🌙", "⭐", "⭐", "🌙", "⭐"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
     { stage: 4, prompt: "りんごは いくつ？", displayItems: ["🍎", "🍊", "🍎", "🍎", "🍊", "🍎", "🍎"], answer: "5", answerLabel: "5こ", choices: ["4", "5", "6"] },
     { stage: 4, prompt: "あおい まるは いくつ？", displayItems: ["🔵", "🟢", "🔵", "🟡", "🔵", "🔵"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { prompt: "パンは いくつ？", displayItems: ["🍞", "🍞"], answer: "2", answerLabel: "2こ", choices: ["1", "2", "3"] },
+    { stage: 2, prompt: "ねじは いくつ？", displayItems: ["🔩", "🔩", "🔩", "🔩"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { stage: 3, prompt: "はぐるまは いくつ？", displayItems: ["⚙️", "⚙️", "⚙️", "⚙️", "⚙️", "⚙️"], answer: "6", answerLabel: "6こ", choices: ["5", "6", "7"] },
+    { stage: 4, prompt: "きいろい ねじは いくつ？", displayItems: ["🔩", "🟡", "🔩", "🟡", "🟡", "🔩", "🟡"], answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
   ];
 
   const mikkunPatternProblems = [
@@ -414,6 +458,10 @@
     { stage: 4, prompt: "ならびを よくみて。つぎは？", patternCards: ["bus", "bicycle", "ship", "bus", "bicycle"], answer: "ship", answerLabel: "ふね", choices: ["bus", "bicycle", "ship"] },
     { stage: 4, prompt: "ならびを よくみて。つぎは？", patternItems: ["🔴", "🔵", "🔵", "🔴", "🔵"], answer: "🔵", answerLabel: "あお", choices: ["🔴", "🔵", "🟡"] },
     { stage: 4, prompt: "ならびを よくみて。つぎは？", patternCards: ["strawberry", "strawberry", "orange", "grapes", "strawberry", "strawberry", "orange"], answer: "grapes", answerLabel: "ぶどう", choices: ["orange", "grapes", "watermelon"] },
+    { prompt: "メカの ランプ。つぎは どれ？", patternItems: ["🔴", "🔵", "🔴", "🔵"], answer: "🔴", answerLabel: "あか", choices: ["🔴", "🔵", "🟡"] },
+    { stage: 2, prompt: "パーツの ならび。つぎは？", patternItems: ["🔩", "⚙️", "🔩", "⚙️"], answer: "🔩", answerLabel: "ねじ", choices: ["🔩", "⚙️", "🔧"] },
+    { stage: 3, prompt: "パンパワーの ならび。つぎは？", patternItems: ["🍞", "⭐", "⚡", "🍞", "⭐"], answer: "⚡", answerLabel: "でんき", choices: ["🍞", "⭐", "⚡"] },
+    { stage: 4, prompt: "だだんメカの うごき。つぎは？", patternItems: ["🦾", "🦾", "🦿", "🦾", "🦾"], answer: "🦿", answerLabel: "メカの あし", choices: ["🦾", "🦿", "⚙️"] },
   ];
 
   const levelGroups = [
@@ -427,6 +475,8 @@
     { start: 79, end: 88, label: "中学2年生相当", color: "#39559F" },
     { start: 89, end: 96, label: "中学3年生相当", color: "#243B72" },
     { start: 97, end: 100, label: "高校入試チャレンジ", color: "#18294F" },
+    { start: 101, end: 110, label: "大学レベル", color: "#532B75" },
+    { start: 111, end: 120, label: "天才レベル", color: "#8A5A00" },
   ];
 
   const state = {
@@ -468,6 +518,7 @@
     kanjiImage: "",
     kanjiFeedback: null,
     kanjiDemoOpen: false,
+    strokeKanji: "",
     readingChoice: "",
     readingChecked: false,
     readingChoices: [],
@@ -541,7 +592,7 @@
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!saved) return;
-      if (Number.isFinite(saved.level)) state.level = clamp(saved.level, 1, 100);
+      if (Number.isFinite(saved.level)) state.level = clamp(saved.level, 1, MAX_LEVEL);
       if (Number.isFinite(saved.xp)) state.xp = clamp(saved.xp, 0, 100);
       if (Number.isFinite(saved.streak)) state.streak = Math.max(0, Number(saved.streak));
       if (typeof saved.learnerName === "string" && saved.learnerName.trim()) {
@@ -660,7 +711,7 @@
 
   function normalizeSkill(skill, fallbackLevel = 1, fallbackXp = 0, fallbackUpdatedAt = 0) {
     return {
-      level: clamp(skill?.level ?? fallbackLevel, 1, 100),
+      level: clamp(skill?.level ?? fallbackLevel, 1, MAX_LEVEL),
       xp: clamp(skill?.xp ?? fallbackXp, 0, 100),
       updatedAt: Math.max(
         0,
@@ -670,7 +721,7 @@
   }
 
   function normalizeProfile(profile) {
-    const legacyLevel = clamp(profile?.level ?? 1, 1, 100);
+    const legacyLevel = clamp(profile?.level ?? 1, 1, MAX_LEVEL);
     const legacyXp = clamp(profile?.xp ?? 0, 0, 100);
     const legacyUpdatedAt = Math.max(
       0,
@@ -725,7 +776,7 @@
         ) / SKILL_MODES.length,
       ),
       1,
-      100,
+      MAX_LEVEL,
     );
   }
 
@@ -989,20 +1040,25 @@
 
   function gradeForLevel(level) {
     const group = levelGroups.find((item) => level >= item.start && level <= item.end);
-    return group ? group.label : "高校入試チャレンジ";
+    return group ? group.label : "天才レベル";
   }
 
   function practiceLevel(level) {
-    return clamp(Number(level) - DIFFICULTY_OFFSET, 1, 100);
+    return clamp(Number(level) - 12, 1, MAX_LEVEL);
   }
 
   function bandForLevel(level) {
-    const adjustedLevel = practiceLevel(level);
-    const index = levelGroups.findIndex(
-      (group) =>
-        adjustedLevel >= group.start && adjustedLevel <= group.end,
-    );
-    return index >= 0 ? index + 1 : levelGroups.length;
+    const safeLevel = clamp(Number(level), 1, MAX_LEVEL);
+    if (safeLevel <= 20) return 1;
+    if (safeLevel <= 32) return 2;
+    if (safeLevel <= 44) return 3;
+    if (safeLevel <= 56) return 4;
+    if (safeLevel <= 68) return 5;
+    if (safeLevel <= 78) return 6;
+    if (safeLevel <= 88) return 7;
+    if (safeLevel <= 100) return 8;
+    if (safeLevel <= 110) return 9;
+    return 10;
   }
 
   function displayName() {
@@ -1014,7 +1070,7 @@
   }
 
   function mikkunStage(level) {
-    const safeLevel = clamp(level, 1, 100);
+    const safeLevel = clamp(level, 1, MIKKUN_MAX_LEVEL);
     return (
       MIKKUN_STAGES.find(
         (stage) => safeLevel >= stage.min && safeLevel <= stage.max,
@@ -1236,12 +1292,10 @@
       ${state.exitConfirmOpen ? exitConfirmTemplate() : ""}
       ${state.toast ? `<div class="toast" role="status"><span>★</span> ${state.toast}</div>` : ""}
     `;
-    if (state.view === "write") {
-      if (state.kanjiDemoOpen) {
-        setupKanjiStrokeDemo();
-      } else {
-        setupWritingCanvas();
-      }
+    if (["write", "read"].includes(state.view) && state.kanjiDemoOpen) {
+      setupKanjiStrokeDemo();
+    } else if (state.view === "write") {
+      setupWritingCanvas();
     }
   }
 
@@ -1325,7 +1379,7 @@
             <div class="mikkun-intro">
               <span>🚀</span>
               <p>
-                <b>4つの ぼうけんで ほしを あつめよう！</b>
+                <b>パンヒーローと だだんメカの まちを ぼうけん！</b>
                 <small>つぎは「${currentMikkunStage.next}」</small>
                 <span class="mikkun-stage-meter"><i style="width:${currentMikkunProgress}%"></i></span>
               </p>
@@ -1334,10 +1388,10 @@
           <div class="subject-grid">
             ${mikkun
               ? `
-                ${mikkunSubjectCard("write", "🔎", "おたから さがし", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
-                ${mikkunSubjectCard("read", "🧺", "なかま さがし", "なかまを みわける", "reading-subject-card", "reading-icon", "groups")}
-                ${mikkunSubjectCard("math", "⭐", "かずの たからばこ", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
-                ${mikkunSubjectCard("memory", "🚀", "つぎは どっち？", "ならびの つづきを えらぶ", "memory-subject-card", "memory-icon", "patterns")}
+                ${mikkunSubjectCard("write", "🍞", "パンヒーローの おたから", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
+                ${mikkunSubjectCard("read", "🤖", "だだんメカを なおそう", "どうぐや パーツを えらぶ", "reading-subject-card", "reading-icon", "groups")}
+                ${mikkunSubjectCard("math", "🔩", "メカパーツを かぞえよう", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
+                ${mikkunSubjectCard("memory", "⚙️", "メカの ひかり", "ランプと パーツの ならび", "memory-subject-card", "memory-icon", "patterns")}
               `
               : `
                 ${subjectCard("digits", "123", "数字記憶", "流れる数字を記憶", "digits-subject-card", "digits-icon")}
@@ -1546,10 +1600,48 @@
     `;
   }
 
+  function kanjiCharactersForProblem(problem) {
+    const source = String(problem?.idiom || problem?.kanji || "");
+    return [...new Set(Array.from(source).filter((character) => /\p{Script=Han}/u.test(character)))];
+  }
+
+  function meaningForProblem(problem) {
+    if (problem?.meaning) return problem.meaning;
+    const word = String(problem?.idiom || problem?.kanji || "このことば");
+    return `「${word}」が表す内容や使い方を、読みといっしょに覚えよう。`;
+  }
+
+  function answerStudyTemplate(problem) {
+    if (!state.readingChecked || state.session?.preschool) return "";
+    const characters = kanjiCharactersForProblem(problem);
+    return `
+      <section class="answer-study-card" aria-label="答えの解説">
+        <span class="answer-study-label">ことばの意味</span>
+        <p>${escapeHtml(meaningForProblem(problem))}</p>
+        ${characters.length
+          ? `
+            <div class="stroke-choice-row">
+              <span>書き順を見る</span>
+              <div>
+                ${characters.map((character) => `
+                  <button type="button" class="stroke-choice-button" data-action="open-stroke-order" data-kanji="${character}">
+                    <b>${character}</b><small>書き順</small>
+                  </button>
+                `).join("")}
+              </div>
+            </div>
+          `
+          : ""
+        }
+      </section>
+    `;
+  }
+
   function writeTemplate() {
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     if (preschool) return mikkunAdventureTemplate();
+    if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const correct = state.readingChecked && state.readingChoice === problem.answer;
     const feedback = state.readingChecked
@@ -1584,10 +1676,9 @@
           }).join("")}
         </div>
         <div class="reading-feedback-slot">${feedback}</div>
+        ${answerStudyTemplate(problem)}
         ${state.readingChecked
-          ? correct
-            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
-            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
+          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">結果を確認したら次へ →</button>'
           : '<p class="choice-note">答えをひとつ選んでね</p>'
         }
       </div>
@@ -1595,25 +1686,26 @@
   }
 
   function kanjiStrokeReviewTemplate(problem) {
+    const character = state.strokeKanji || kanjiCharactersForProblem(problem)[0] || "字";
     return `
       <div class="screen lesson-screen kanji-lesson kanji-stroke-review">
-        ${lessonHeader("漢字を選ぶ")}
+        ${lessonHeader(currentLessonLabel())}
         ${lessonLevelRow('<span class="timer stroke-order-pill">● 書き順</span>')}
         <section class="prompt-area">
           <p class="eyebrow">お手本の動きを見よう</p>
-          <h1>「${problem.kanji}」を<br />一画ずつ確認</h1>
-          <p class="word-example">書いた文字を消して、正しい順番で再生します。</p>
+          <h1>「${character}」を<br />一画ずつ確認</h1>
+          <p class="word-example">結果はそのまま残っています。確認後に戻って「次へ」を押せます。</p>
         </section>
         <section class="kanji-stroke-stage" id="kanjiStrokeStage" aria-live="polite">
           <div class="kanji-stroke-loading" id="kanjiStrokeLoading">
-            <span aria-hidden="true">${problem.kanji}</span>
+            <span aria-hidden="true">${character}</span>
             <p id="kanjiStrokeLoadingText">書き順を準備しています…</p>
           </div>
           <svg
             id="kanjiStrokeSvg"
             viewBox="0 0 109 109"
             role="img"
-            aria-label="${problem.kanji}の書き順アニメーション"
+            aria-label="${character}の書き順アニメーション"
             hidden
           ></svg>
           <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
@@ -1622,8 +1714,8 @@
           <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>
             ↺ もう一度
           </button>
-          <button type="button" class="primary-button" data-action="finish-kanji-demo">
-            次の問題へ
+          <button type="button" class="primary-button" data-action="close-stroke-order">
+            結果に戻る
           </button>
         </div>
         <p class="kanji-stroke-source">
@@ -1721,17 +1813,17 @@
   }
 
   async function setupKanjiStrokeDemo() {
-    const problem = currentSessionProblem();
+    const character = state.strokeKanji;
     const stage = document.querySelector("#kanjiStrokeStage");
-    if (!problem?.kanji || !stage || !state.kanjiDemoOpen) return;
+    if (!character || !stage || !state.kanjiDemoOpen) return;
     stopKanjiStrokeAnimation();
     const requestToken = kanjiStrokeRunToken;
     try {
-      const paths = await loadKanjiStrokePaths(problem.kanji, requestToken);
+      const paths = await loadKanjiStrokePaths(character, requestToken);
       if (
         requestToken !== kanjiStrokeRunToken ||
         !state.kanjiDemoOpen ||
-        state.view !== "write"
+        !["write", "read"].includes(state.view)
       ) {
         return;
       }
@@ -1740,7 +1832,7 @@
       if (
         requestToken !== kanjiStrokeRunToken ||
         !state.kanjiDemoOpen ||
-        state.view !== "write"
+        !["write", "read"].includes(state.view)
       ) {
         return;
       }
@@ -1751,7 +1843,7 @@
         loadingText.textContent =
           "書き順を読み込めませんでした。通信を確認してください。";
       }
-      if (status) status.textContent = "「次の問題へ」はそのまま押せます";
+      if (status) status.textContent = "「結果に戻る」はそのまま押せます";
     }
   }
 
@@ -2116,6 +2208,7 @@
     const problem = currentSessionProblem();
     const preschool = state.session?.preschool;
     if (preschool) return mikkunAdventureTemplate();
+    if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
@@ -2143,10 +2236,9 @@
           }).join("")}
         </div>
         <div class="reading-feedback-slot">${feedback}</div>
+        ${answerStudyTemplate(problem)}
         ${state.readingChecked
-          ? state.readingChoice === problem.answer
-            ? '<p class="auto-next-note" aria-live="polite">正解！ 次の問題へ進みます…</p>'
-            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎの問題へ →</button>'
+          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">結果を確認したら次へ →</button>'
           : '<p class="choice-note">読み方をひとつ選んでね</p>'
         }
       </div>
@@ -2227,9 +2319,7 @@
         </div>
         <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
-          ? correct
-            ? '<p class="auto-next-note mikkun-auto-next" aria-live="polite">★を 1こ ゲット！ つぎへ しゅっぱつ…</p>'
-            : '<button type="button" class="primary-button wide" data-action="next-reading">つぎのもんだいへ →</button>'
+          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">みたら つぎへ →</button>'
           : '<p class="choice-note">こたえを ひとつ タップしてね</p>'
         }
       </div>
@@ -2243,7 +2333,7 @@
     const answered = state.mathResult !== "idle";
     const message =
       state.mathResult === "wrong"
-        ? `<p class="result-message">おしい！ 正解は ${problem.answer}。つぎへ進みます。</p>`
+        ? `<p class="result-message">おしい！ 正解は ${problem.answer} です。</p>`
         : state.mathResult === "correct"
           ? '<p class="result-message success">正解！ いいテンポ！</p>'
           : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
@@ -2261,7 +2351,7 @@
         ${numberPad("math")}
         <div class="math-answer-dock">
           ${answered
-            ? `<p class="auto-next-note ${state.mathResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.mathResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+            ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-math">結果を確認したら次へ →</button>'
             : `<button type="button" class="primary-button wide" data-action="submit-math" ${state.mathAnswer ? "" : "disabled"}>こたえる</button>`
           }
         </div>
@@ -2269,8 +2359,29 @@
     `;
   }
 
+  function timedBand(mode = state.session?.mode) {
+    return bandForLevel(
+      state.session?.levelAtStart ?? activeSkill(mode || "flash").level,
+    );
+  }
+
+  function speedLabel(mode = state.session?.mode) {
+    if (state.session?.preschool) return "ゆっくり";
+    const band = timedBand(mode);
+    if (band <= 2) return "ゆっくり";
+    if (band <= 5) return "ふつう";
+    if (band <= 7) return "やや速い";
+    if (band <= 9) return "高速";
+    return "天才スピード";
+  }
+
   function flashCountdownDuration() {
-    return state.session?.preschool ? 2800 : 2400;
+    if (state.session?.preschool) return 2800;
+    return [2700, 2600, 2500, 2400, 2300, 2200, 2000, 1800, 1600, 1400][timedBand("flash") - 1];
+  }
+
+  function memoryCountdownDuration(mode) {
+    return [2600, 2500, 2400, 2300, 2200, 2100, 1950, 1800, 1600, 1400][timedBand(mode) - 1];
   }
 
   function flashTemplate() {
@@ -2312,7 +2423,7 @@
           : state.flashResult === "correct"
             ? `<p class="result-message success">正解！ 合計は ${total} です。</p>`
             : state.flashResult === "given-up"
-              ? `<p class="result-message">答えは ${total} でした。次の問題へ進みます。</p>`
+              ? `<p class="result-message">答えは ${total} でした。</p>`
             : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
       stage = `
         <div class="flash-answer-stage">
@@ -2323,7 +2434,7 @@
         </div>
         ${numberPad("flash")}
         ${["correct", "given-up"].includes(state.flashResult)
-          ? `<p class="auto-next-note ${state.flashResult === "given-up" ? "wrong" : ""}" aria-live="polite">${state.flashResult === "correct" ? "正解！" : "答えを確認しました。"} 次の問題へ進みます…</p>`
+          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-flash">結果を確認したら次へ →</button>'
           : `<button type="button" class="primary-button wide" data-action="submit-flash" ${state.flashAnswer ? "" : "disabled"}>こたえる</button>`
         }
         ${["correct", "given-up"].includes(state.flashResult)
@@ -2337,7 +2448,7 @@
     return `
       <div class="screen lesson-screen flash-lesson">
         ${lessonHeader(preschool ? "ピカッとあんざん" : "フラッシュ暗算")}
-        ${lessonLevelRow(`<span class="timer">${preschool ? "★ ゆっくり" : "● 集中モード"}</span>`)}
+        ${lessonLevelRow(`<span class="timer">● ${speedLabel("flash")}</span>`)}
         <section class="flash-stage">${stage}</section>
       </div>
     `;
@@ -2360,7 +2471,7 @@
       stage = `
         <div class="flash-countdown" aria-live="polite">
           <p>もうすぐ はじまります</p>
-          <div class="flash-countdown-bar memory-countdown-bar" style="--countdown-duration:2200ms">
+          <div class="flash-countdown-bar memory-countdown-bar" style="--countdown-duration:${memoryCountdownDuration("memory")}ms">
             <i></i>
           </div>
           <small>バーがなくなったらカードが出ます</small>
@@ -2397,8 +2508,13 @@
             ${problem.sequence.map((_, index) => {
               const selectedId = state.memorySelected[index];
               const card = memoryCards.find((item) => item.id === selectedId);
+              const resultClass = state.memoryChecked
+                ? selectedId === problem.sequence[index]?.id
+                  ? "answer-correct"
+                  : "answer-wrong"
+                : "";
               return `
-                 <span class="${card ? "filled" : ""}">
+                 <span class="${card ? "filled" : ""} ${resultClass}">
                    <small>${index + 1}</small>${card ? learningCardArt(card.id, "memory-order-card-art") : "？"}
                  </span>
               `;
@@ -2418,9 +2534,19 @@
             ? '<button type="button" class="memory-undo-button" data-action="undo-memory">ひとつ戻す</button>'
             : ""
           }
+          ${state.memoryChecked ? `
+            <div class="memory-correct-review" aria-label="正しい順番">
+              <b>正しい順番</b>
+              <div>
+                ${problem.sequence.map((card, index) => `
+                  <span><small>${index + 1}</small>${learningCardArt(card.id, "memory-order-card-art")}<em>${card.label}</em></span>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
           <div class="reading-feedback-slot">${feedback}</div>
           ${state.memoryChecked
-            ? `<p class="auto-next-note ${correct ? "" : "wrong"}" aria-live="polite">${correct ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+            ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-memory">答え合わせを見たら次へ →</button>'
             : `<p class="choice-note">${state.memorySelected.length} / ${problem.sequence.length}枚選択</p>`
           }
         </div>
@@ -2429,7 +2555,7 @@
     return `
       <div class="screen lesson-screen memory-lesson">
         ${lessonHeader("フラッシュカード")}
-        ${lessonLevelRow('<span class="timer">● 記憶モード</span>')}
+        ${lessonLevelRow(`<span class="timer">● ${speedLabel("memory")}</span>`)}
         <section class="memory-stage">${stage}</section>
       </div>
     `;
@@ -2451,7 +2577,7 @@
       stage = `
         <div class="flash-countdown" aria-live="polite">
           <p>もうすぐ はじまります</p>
-          <div class="flash-countdown-bar digits-countdown-bar" style="--countdown-duration:2200ms">
+          <div class="flash-countdown-bar digits-countdown-bar" style="--countdown-duration:${memoryCountdownDuration("digits")}ms">
             <i></i>
           </div>
           <small>バーがなくなったら数字が流れます</small>
@@ -2483,7 +2609,7 @@
           <div class="digits-submit-dock">
             ${state.digitsResult === "idle"
               ? `<button type="button" class="primary-button wide" data-action="submit-digits" ${state.digitsAnswer ? "" : "disabled"}>こたえる</button>`
-              : `<p class="auto-next-note ${state.digitsResult === "wrong" ? "wrong" : ""}" aria-live="polite">${state.digitsResult === "correct" ? "正解！" : "今回は不正解です。"} 次の問題へ進みます…</p>`
+              : '<button type="button" class="primary-button wide answer-next-button" data-action="next-digits">結果を確認したら次へ →</button>'
             }
           </div>
         </div>
@@ -2492,7 +2618,7 @@
     return `
       <div class="screen lesson-screen digits-lesson">
         ${lessonHeader("数字記憶")}
-        ${lessonLevelRow('<span class="timer">● 記憶モード</span>')}
+        ${lessonLevelRow(`<span class="timer">● ${speedLabel("digits")}</span>`)}
         <section class="memory-stage digits-stage ${state.digitsPhase === "answer" ? "is-answering" : ""}">${stage}</section>
       </div>
     `;
@@ -2583,8 +2709,13 @@
 
   function runFlashNumbers(token) {
     let index = 0;
-    const numberDelay = state.session?.preschool ? 1100 : 700;
-    const separatorDelay = state.session?.preschool ? 360 : 240;
+    const band = timedBand("flash");
+    const numberDelay = state.session?.preschool
+      ? 1100
+      : [1100, 1000, 920, 850, 780, 720, 660, 600, 540, 460][band - 1];
+    const separatorDelay = state.session?.preschool
+      ? 360
+      : [350, 320, 295, 270, 245, 220, 195, 170, 150, 130][band - 1];
     const step = () => {
       if (token !== state.flashRunToken || state.view !== "flash") return;
       const numberElement = document.querySelector("#flashNumber");
@@ -2643,7 +2774,7 @@
       state.memoryVisible = null;
       render();
       runMemoryCards(token);
-    }, 2200);
+    }, memoryCountdownDuration("memory"));
   }
 
   function runMemoryCards(token) {
@@ -2696,7 +2827,7 @@
         state.digitsPhase = "answer";
         render();
       }, problem.duration);
-    }, 2200);
+    }, memoryCountdownDuration("digits"));
   }
 
   function stopDigits() {
@@ -2760,7 +2891,7 @@
     const pool = [];
     const usedIdioms = new Set();
     const addBand = (targetBand) => {
-      if (targetBand < 1 || targetBand > levelGroups.length) return;
+      if (targetBand < 1 || targetBand > QUESTION_BAND_COUNT) return;
       idiomProblems.forEach((problem) => {
         if (
           pool.length >= targetPoolSize ||
@@ -2777,7 +2908,7 @@
     addBand(band);
     for (
       let distance = 1;
-      pool.length < targetPoolSize && distance < levelGroups.length;
+      pool.length < targetPoolSize && distance < QUESTION_BAND_COUNT;
       distance += 1
     ) {
       addBand(band - distance);
@@ -2922,9 +3053,9 @@
      * 旧6問だけを繰り返さない。まず同じ難易度帯を使い、不足分だけ
      * 隣接する難易度帯から近い順に補って30問の候補を確保する。
      */
-    for (let distance = 1; pool.length < 30 && distance < levelGroups.length; distance += 1) {
+    for (let distance = 1; pool.length < 30 && distance < QUESTION_BAND_COUNT; distance += 1) {
       [band - distance, band + distance].forEach((nearbyBand) => {
-        if (nearbyBand < 1 || nearbyBand > levelGroups.length || pool.length >= 30) return;
+        if (nearbyBand < 1 || nearbyBand > QUESTION_BAND_COUNT || pool.length >= 30) return;
         const nearbyProblems = bank.filter((problem) => problem.band === nearbyBand);
         pool.push(...nearbyProblems.slice(0, 30 - pool.length));
       });
@@ -3399,67 +3530,6 @@
     state.answerAdvanceTimer = 0;
   }
 
-  function currentAnswerCanAdvance(mode) {
-    if (!state.session || state.session.mode !== mode) return false;
-    if (
-      mode === "write" ||
-      mode === "read" ||
-      state.session.preschool
-    ) {
-      return (
-        state.readingChecked &&
-        Boolean(state.readingChoice)
-      );
-    }
-    if (mode === "math") return ["correct", "wrong"].includes(state.mathResult);
-    if (mode === "flash") {
-      return ["correct", "given-up"].includes(state.flashResult);
-    }
-    if (mode === "memory") return state.memoryChecked;
-    if (mode === "digits") {
-      return ["correct", "wrong"].includes(state.digitsResult);
-    }
-    return false;
-  }
-
-  function scheduleAnswerAdvance(mode) {
-    stopAutoAdvance();
-    const session = state.session;
-    if (!session || !currentAnswerCanAdvance(mode)) return;
-    const delay =
-      (mode === "math" && state.mathResult === "wrong") ||
-      (mode === "digits" && state.digitsResult === "wrong") ||
-      (mode === "memory" &&
-        state.memoryChecked &&
-        state.memoryResult === "wrong")
-        ? 1400
-        : mode === "flash" && state.flashResult === "given-up"
-          ? 1500
-          : 700;
-    state.answerAdvanceTimer = window.setTimeout(() => {
-      state.answerAdvanceTimer = 0;
-      if (
-        state.session !== session ||
-        state.exitConfirmOpen ||
-        !currentAnswerCanAdvance(mode)
-      ) {
-        return;
-      }
-      state.session.completed += 1;
-      advanceAfterCompletedQuestion();
-    }, delay);
-  }
-
-  function resumeAnswerAdvance() {
-    const mode = state.session?.mode;
-    if (
-      ["write", "read", "math", "flash", "memory", "digits"].includes(mode) &&
-      currentAnswerCanAdvance(mode)
-    ) {
-      scheduleAnswerAdvance(mode);
-    }
-  }
-
   function discardCurrentSession() {
     const session = state.session;
     if (!session || !SKILL_MODES.includes(session.mode)) {
@@ -3585,7 +3655,7 @@
         <header class="sub-header">
           <button class="round-button" type="button" data-action="back-home" aria-label="戻る">‹</button>
           <div>
-            <p class="eyebrow">${mikkun ? "MIKKUN ADVENTURE / 4 STEPS" : "6 SKILLS / LEVEL 1–100"}</p>
+            <p class="eyebrow">${mikkun ? "MIKKUN ADVENTURE / 4 STEPS" : `6 SKILLS / LEVEL 1–${MAX_LEVEL}`}</p>
             <h1>${mikkun ? "ぼうけんステップ" : "分野別レベル"}</h1>
           </div>
         </header>
@@ -3628,7 +3698,7 @@
           </div>
         `}
         <div class="fine-level-note">
-          <span>${mikkun ? "★" : "100"}</span>
+          <span>${mikkun ? "★" : MAX_LEVEL}</span>
           <p>
             <b>${mikkun ? "できることが、ひとつずつふえていく！" : "得意な人にも、次の一歩を。"}</b><br />
             ${mikkun
@@ -3856,6 +3926,7 @@
 
   function placementTemplate() {
     const mikkun = isMikkunLearner();
+    const placementMax = mikkun ? MIKKUN_MAX_LEVEL : MAX_LEVEL;
     const placementModes = mikkun
       ? ["write", "read", "math", "memory"]
       : SKILL_MODES;
@@ -3865,7 +3936,7 @@
     const draftLevel = clamp(
       state.placementDraftLevel || activeSkill(mode).level,
       1,
-      100,
+      placementMax,
     );
     const choices = (mikkun ? MIKKUN_STAGES : levelGroups).map((group) => ({
       level: mikkun ? group.min : group.start,
@@ -3906,10 +3977,10 @@
               id="placementLevelRange"
               type="range"
               min="1"
-              max="100"
+              max="${placementMax}"
               step="1"
               value="${draftLevel}"
-              aria-label="開始レベルを1から100で選ぶ"
+              aria-label="開始レベルを1から${placementMax}で選ぶ"
             />
             <button type="button" class="primary-button wide placement-apply-button placement-finish-button" data-action="finish-placement">
               レベル調整を終える
@@ -3951,7 +4022,7 @@
     const safeMode = SKILL_MODES.includes(mode) ? mode : "write";
     const profile = ensureProfile(state.learnerName);
     profile.skills[safeMode] = {
-      level: clamp(level, 1, 100),
+      level: clamp(level, 1, isMikkunLearner() ? MIKKUN_MAX_LEVEL : MAX_LEVEL),
       xp: 0,
       updatedAt: Date.now(),
     };
@@ -4081,7 +4152,6 @@
         applyWrongAnswerPenalty(mode);
       }
       render();
-      if (correct) scheduleAnswerAdvance(mode);
       return;
     }
 
@@ -4112,7 +4182,6 @@
         playTapSound();
       }
       render();
-      if (state.memoryChecked) scheduleAnswerAdvance("memory");
       return;
     }
 
@@ -4200,7 +4269,6 @@
       "continue-learning"() {
         state.exitConfirmOpen = false;
         render();
-        resumeAnswerAdvance();
       },
       "discard-session"() {
         discardCurrentSession();
@@ -4217,7 +4285,7 @@
         state.placementDraftLevel = clamp(
           state.placementDraftLevel + Number(actionButton.dataset.delta || 0),
           1,
-          100,
+          isMikkunLearner() ? MIKKUN_MAX_LEVEL : MAX_LEVEL,
         );
         render();
       },
@@ -4267,14 +4335,30 @@
       "replay-kanji-strokes"() {
         replayKanjiStrokeAnimation();
       },
+      "open-stroke-order"() {
+        const character = String(actionButton.dataset.kanji || "").trim();
+        if (!character || !state.readingChecked) return;
+        state.strokeKanji = Array.from(character)[0] || "";
+        state.kanjiDemoOpen = Boolean(state.strokeKanji);
+        render();
+      },
+      "close-stroke-order"() {
+        stopKanjiStrokeAnimation();
+        state.kanjiDemoOpen = false;
+        state.strokeKanji = "";
+        render();
+      },
       "finish-kanji-demo"() {
         stopKanjiStrokeAnimation();
-        finishQuestion(true, { playFeedback: false });
+        state.kanjiDemoOpen = false;
+        state.strokeKanji = "";
+        render();
       },
       "kanji-difficult"() {
         finishQuestion(false);
       },
       "next-reading"() {
+        if (!state.readingChecked) return;
         const problem = currentSessionProblem();
         const wasCorrect = state.readingChoice === problem.answer;
         state.session.completed += 1;
@@ -4317,9 +4401,9 @@
           applyWrongAnswerPenalty("math");
         }
         render();
-        scheduleAnswerAdvance("math");
       },
       "next-math"() {
+        if (!["correct", "wrong"].includes(state.mathResult)) return;
         state.session.completed += 1;
         advanceAfterCompletedQuestion();
       },
@@ -4342,7 +4426,6 @@
         playWrongSound();
         applyWrongAnswerPenalty("flash");
         render();
-        scheduleAnswerAdvance("flash");
       },
       "submit-flash"() {
         if (
@@ -4363,9 +4446,9 @@
           applyWrongAnswerPenalty("flash");
         }
         render();
-        if (state.flashResult === "correct") scheduleAnswerAdvance("flash");
       },
       "next-flash"() {
+        if (!["correct", "given-up"].includes(state.flashResult)) return;
         state.session.completed += 1;
         advanceAfterCompletedQuestion();
       },
@@ -4376,6 +4459,11 @@
         if (state.memoryChecked) return;
         state.memorySelected.pop();
         render();
+      },
+      "next-memory"() {
+        if (!state.memoryChecked) return;
+        state.session.completed += 1;
+        advanceAfterCompletedQuestion();
       },
       "start-digits"() {
         startDigitsSequence();
@@ -4395,7 +4483,11 @@
           applyWrongAnswerPenalty("digits");
         }
         render();
-        scheduleAnswerAdvance("digits");
+      },
+      "next-digits"() {
+        if (!["correct", "wrong"].includes(state.digitsResult)) return;
+        state.session.completed += 1;
+        advanceAfterCompletedQuestion();
       },
       "continue-session"() {
         state.checkpointOpen = false;
@@ -4468,7 +4560,11 @@
       return;
     }
     if (event.target.id === "placementLevelRange") {
-      state.placementDraftLevel = clamp(event.target.value, 1, 100);
+      state.placementDraftLevel = clamp(
+        event.target.value,
+        1,
+        isMikkunLearner() ? MIKKUN_MAX_LEVEL : MAX_LEVEL,
+      );
       render();
       return;
     }
@@ -4574,6 +4670,7 @@
     state.kanjiImage = "";
     state.kanjiFeedback = null;
     state.kanjiDemoOpen = false;
+    state.strokeKanji = "";
     state.readingChoice = "";
     state.readingChecked = false;
     prepareReadingChoices();
@@ -4605,8 +4702,9 @@
     const previousMikkunStage = isMikkunLearner()
       ? mikkunStage(skill.level)
       : null;
+    const learnerMaxLevel = isMikkunLearner() ? MIKKUN_MAX_LEVEL : MAX_LEVEL;
     const total = skill.xp + amount;
-    if (total >= 100 && skill.level < 100) {
+    if (total >= 100 && skill.level < learnerMaxLevel) {
       skill.level += 1;
       skill.xp = total - 100;
       const nextMikkunStage = previousMikkunStage
