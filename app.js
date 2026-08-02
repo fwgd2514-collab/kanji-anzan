@@ -12,8 +12,8 @@
     write: { label: "漢字を選ぶ", short: "漢字・選択", xp: 18, penalty: 6 },
   };
   const MIKKUN_MODE_LABELS = {
-    write: "パンヒーローの おたから",
-    read: "だだんメカを なおそう",
+    write: "あんぱんのヒーロー",
+    read: "だんだんだん",
     math: "メカパーツを かぞえよう",
     memory: "メカの ひかり",
   };
@@ -358,6 +358,25 @@
     { id: "helicopter", symbol: "🚁", label: "へりこぷたー", artX: 100, artY: 100, sheet: "extra" },
   ];
 
+  const mikkunCards = [
+    { id: "anpan-hero", label: "あんぱんのヒーロー", artX: 0, artY: 0, sheet: "mikkun" },
+    { id: "dadandandan", label: "だんだんだん", artX: 33.333, artY: 0, sheet: "mikkun" },
+    { id: "anpan-bun", label: "あんぱん", artX: 66.667, artY: 0, sheet: "mikkun" },
+    { id: "bakery-town", label: "パンのまち", artX: 100, artY: 0, sheet: "mikkun" },
+    { id: "mech-bolt", label: "ねじ", artX: 0, artY: 33.333, sheet: "mikkun" },
+    { id: "mech-gear", label: "はぐるま", artX: 33.333, artY: 33.333, sheet: "mikkun" },
+    { id: "mech-wrench", label: "れんち", artX: 66.667, artY: 33.333, sheet: "mikkun" },
+    { id: "mech-battery", label: "でんち", artX: 100, artY: 33.333, sheet: "mikkun" },
+    { id: "red-light", label: "あかいランプ", artX: 0, artY: 66.667, sheet: "mikkun" },
+    { id: "blue-light", label: "あおいランプ", artX: 33.333, artY: 66.667, sheet: "mikkun" },
+    { id: "star-power", label: "きらきらパワー", artX: 66.667, artY: 66.667, sheet: "mikkun" },
+    { id: "delivery-bag", label: "おとどけバッグ", artX: 100, artY: 66.667, sheet: "mikkun" },
+    { id: "robot-arm", label: "メカのうで", artX: 0, artY: 100, sheet: "mikkun" },
+    { id: "robot-foot", label: "メカのあし", artX: 33.333, artY: 100, sheet: "mikkun" },
+    { id: "repair-cart", label: "しゅうりカート", artX: 66.667, artY: 100, sheet: "mikkun" },
+    { id: "power-crystal", label: "にじいろパワー", artX: 100, artY: 100, sheet: "mikkun" },
+  ];
+
   const mikkunTreasureProblems = [
     { prompt: "おだいと おなじ えは どれ？", displayCard: "dog", answer: "dog", answerLabel: "いぬ", choices: ["dog", "cat", "rabbit"] },
     { prompt: "おだいと おなじ えは どれ？", displayCard: "cat", answer: "cat", answerLabel: "ねこ", choices: ["cat", "lion", "monkey"] },
@@ -462,6 +481,85 @@
     { stage: 2, prompt: "パーツの ならび。つぎは？", patternItems: ["🔩", "⚙️", "🔩", "⚙️"], answer: "🔩", answerLabel: "ねじ", choices: ["🔩", "⚙️", "🔧"] },
     { stage: 3, prompt: "パンパワーの ならび。つぎは？", patternItems: ["🍞", "⭐", "⚡", "🍞", "⭐"], answer: "⚡", answerLabel: "でんき", choices: ["🍞", "⭐", "⚡"] },
     { stage: 4, prompt: "だだんメカの うごき。つぎは？", patternItems: ["🦾", "🦾", "🦿", "🦾", "🦾"], answer: "🦿", answerLabel: "メカの あし", choices: ["🦾", "🦿", "⚙️"] },
+  ];
+
+  // みっくん専用の絵だけで遊べる問題群。各段階に複数問を用意し、
+  // 以前の動物・果物問題が混ざらないように通常の問題群とは分けている。
+  const mikkunHeroTreasureProblems = [
+    { prompt: "あんぱんのヒーローと おなじ えは どれ？", displayCard: "anpan-hero", answer: "anpan-hero", answerLabel: "あんぱんのヒーロー", choices: ["anpan-hero", "dadandandan", "anpan-bun"] },
+    { prompt: "だんだんだんと おなじ えは どれ？", displayCard: "dadandandan", answer: "dadandandan", answerLabel: "だんだんだん", choices: ["dadandandan", "anpan-hero", "repair-cart"] },
+    { prompt: "あんぱんと おなじ えは どれ？", displayCard: "anpan-bun", answer: "anpan-bun", answerLabel: "あんぱん", choices: ["anpan-bun", "mech-gear", "delivery-bag"] },
+    { prompt: "パンのまちと おなじ えは どれ？", displayCard: "bakery-town", answer: "bakery-town", answerLabel: "パンのまち", choices: ["bakery-town", "delivery-bag", "mech-battery"] },
+    { prompt: "ねじと おなじ えは どれ？", displayCard: "mech-bolt", answer: "mech-bolt", answerLabel: "ねじ", choices: ["mech-bolt", "mech-gear", "mech-wrench"] },
+    { prompt: "はぐるまと おなじ えは どれ？", displayCard: "mech-gear", answer: "mech-gear", answerLabel: "はぐるま", choices: ["mech-gear", "mech-bolt", "mech-battery"] },
+    { prompt: "れんちと おなじ えは どれ？", displayCard: "mech-wrench", answer: "mech-wrench", answerLabel: "れんち", choices: ["mech-wrench", "robot-arm", "repair-cart"] },
+    { prompt: "でんちと おなじ えは どれ？", displayCard: "mech-battery", answer: "mech-battery", answerLabel: "でんち", choices: ["mech-battery", "red-light", "star-power"] },
+    { stage: 2, prompt: "あかいランプと おなじ えは どれ？", displayCard: "red-light", answer: "red-light", answerLabel: "あかいランプ", choices: ["red-light", "blue-light", "star-power"] },
+    { stage: 2, prompt: "あおいランプと おなじ えは どれ？", displayCard: "blue-light", answer: "blue-light", answerLabel: "あおいランプ", choices: ["blue-light", "red-light", "mech-battery"] },
+    { stage: 2, prompt: "きらきらパワーと おなじ えは どれ？", displayCard: "star-power", answer: "star-power", answerLabel: "きらきらパワー", choices: ["star-power", "power-crystal", "red-light"] },
+    { stage: 2, prompt: "おとどけバッグと おなじ えは どれ？", displayCard: "delivery-bag", answer: "delivery-bag", answerLabel: "おとどけバッグ", choices: ["delivery-bag", "anpan-bun", "repair-cart"] },
+    { stage: 3, prompt: "メカのうでと おなじ えは どれ？", displayCard: "robot-arm", answer: "robot-arm", answerLabel: "メカのうで", choices: ["robot-arm", "robot-foot", "mech-wrench"] },
+    { stage: 3, prompt: "メカのあしと おなじ えは どれ？", displayCard: "robot-foot", answer: "robot-foot", answerLabel: "メカのあし", choices: ["robot-foot", "robot-arm", "mech-bolt"] },
+    { stage: 4, prompt: "しゅうりカートと おなじ えは どれ？", displayCard: "repair-cart", answer: "repair-cart", answerLabel: "しゅうりカート", choices: ["repair-cart", "dadandandan", "bakery-town"] },
+    { stage: 4, prompt: "にじいろパワーと おなじ えは どれ？", displayCard: "power-crystal", answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["power-crystal", "star-power", "mech-battery"] },
+  ];
+
+  const mikkunMechGroupProblems = [
+    { prompt: "まちを まもる ヒーローは どれ？", displayCard: "bakery-town", answer: "anpan-hero", answerLabel: "あんぱんのヒーロー", choices: ["anpan-hero", "dadandandan", "repair-cart"] },
+    { prompt: "おおきな メカは どれ？", displayCard: "dadandandan", answer: "dadandandan", answerLabel: "だんだんだん", choices: ["dadandandan", "anpan-bun", "mech-gear"] },
+    { prompt: "ヒーローが とどけるものは どれ？", displayCard: "anpan-hero", answer: "anpan-bun", answerLabel: "あんぱん", choices: ["anpan-bun", "mech-battery", "robot-foot"] },
+    { prompt: "パンを やく まちは どれ？", displayCard: "anpan-bun", answer: "bakery-town", answerLabel: "パンのまち", choices: ["bakery-town", "repair-cart", "delivery-bag"] },
+    { prompt: "メカを とめる ねじは どれ？", displayCard: "dadandandan", answer: "mech-bolt", answerLabel: "ねじ", choices: ["mech-bolt", "mech-gear", "star-power"] },
+    { prompt: "くるくる まわる パーツは どれ？", displayCard: "dadandandan", answer: "mech-gear", answerLabel: "はぐるま", choices: ["mech-gear", "mech-wrench", "robot-arm"] },
+    { prompt: "なおす どうぐは どれ？", displayCard: "repair-cart", answer: "mech-wrench", answerLabel: "れんち", choices: ["mech-wrench", "mech-battery", "anpan-bun"] },
+    { prompt: "メカを うごかすものは どれ？", displayCard: "dadandandan", answer: "mech-battery", answerLabel: "でんち", choices: ["mech-battery", "delivery-bag", "mech-bolt"] },
+    { stage: 2, prompt: "あかく ひかるものは どれ？", displayCard: "dadandandan", answer: "red-light", answerLabel: "あかいランプ", choices: ["red-light", "blue-light", "mech-battery"] },
+    { stage: 2, prompt: "あおく ひかるものは どれ？", displayCard: "dadandandan", answer: "blue-light", answerLabel: "あおいランプ", choices: ["blue-light", "red-light", "star-power"] },
+    { stage: 2, prompt: "キラキラ ひかるものは どれ？", displayCard: "anpan-hero", answer: "star-power", answerLabel: "きらきらパワー", choices: ["star-power", "mech-bolt", "robot-foot"] },
+    { stage: 2, prompt: "あんぱんを はこぶものは どれ？", displayCard: "anpan-bun", answer: "delivery-bag", answerLabel: "おとどけバッグ", choices: ["delivery-bag", "mech-gear", "power-crystal"] },
+    { stage: 3, prompt: "ものを もつ パーツは どれ？", displayCard: "dadandandan", answer: "robot-arm", answerLabel: "メカのうで", choices: ["robot-arm", "robot-foot", "mech-battery"] },
+    { stage: 3, prompt: "あるく パーツは どれ？", displayCard: "dadandandan", answer: "robot-foot", answerLabel: "メカのあし", choices: ["robot-foot", "robot-arm", "mech-wrench"] },
+    { stage: 4, prompt: "メカを はこぶ のりものは どれ？", displayCard: "dadandandan", answer: "repair-cart", answerLabel: "しゅうりカート", choices: ["repair-cart", "bakery-town", "delivery-bag"] },
+    { stage: 4, prompt: "いちばん ふしぎな パワーは どれ？", displayCard: "anpan-hero", answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["power-crystal", "mech-gear", "red-light"] },
+  ];
+
+  const repeatedCards = (id, count) => Array.from({ length: count }, () => id);
+  const mikkunMechCountingProblems = [
+    { prompt: "あんぱんは いくつ？", displayCards: repeatedCards("anpan-bun", 1), answer: "1", answerLabel: "1こ", choices: ["1", "2", "3"] },
+    { prompt: "あんぱんは いくつ？", displayCards: repeatedCards("anpan-bun", 2), answer: "2", answerLabel: "2こ", choices: ["1", "2", "3"] },
+    { prompt: "ねじは いくつ？", displayCards: repeatedCards("mech-bolt", 3), answer: "3", answerLabel: "3こ", choices: ["2", "3", "4"] },
+    { prompt: "はぐるまは いくつ？", displayCards: repeatedCards("mech-gear", 4), answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { prompt: "きらきらパワーは いくつ？", displayCards: repeatedCards("star-power", 5), answer: "5", answerLabel: "5こ", choices: ["3", "4", "5"] },
+    { prompt: "でんちは いくつ？", displayCards: repeatedCards("mech-battery", 2), answer: "2", answerLabel: "2こ", choices: ["1", "2", "4"] },
+    { prompt: "ランプは いくつ？", displayCards: repeatedCards("red-light", 3), answer: "3", answerLabel: "3こ", choices: ["2", "3", "4"] },
+    { prompt: "れんちは いくつ？", displayCards: repeatedCards("mech-wrench", 4), answer: "4", answerLabel: "4こ", choices: ["3", "4", "5"] },
+    { stage: 2, prompt: "ねじは いくつ？", displayCards: repeatedCards("mech-bolt", 6), answer: "6", answerLabel: "6こ", choices: ["5", "6", "7"] },
+    { stage: 2, prompt: "はぐるまは いくつ？", displayCards: repeatedCards("mech-gear", 7), answer: "7", answerLabel: "7こ", choices: ["6", "7", "8"] },
+    { stage: 2, prompt: "バッグは いくつ？", displayCards: repeatedCards("delivery-bag", 6), answer: "6", answerLabel: "6こ", choices: ["4", "5", "6"] },
+    { stage: 2, prompt: "でんちは いくつ？", displayCards: repeatedCards("mech-battery", 7), answer: "7", answerLabel: "7こ", choices: ["6", "7", "8"] },
+    { stage: 3, prompt: "きらきらパワーは いくつ？", displayCards: repeatedCards("star-power", 8), answer: "8", answerLabel: "8こ", choices: ["7", "8", "9"] },
+    { stage: 3, prompt: "ねじは いくつ？", displayCards: repeatedCards("mech-bolt", 9), answer: "9", answerLabel: "9こ", choices: ["8", "9", "10"] },
+    { stage: 4, prompt: "はぐるまは いくつ？", displayCards: repeatedCards("mech-gear", 10), answer: "10", answerLabel: "10こ", choices: ["8", "9", "10"] },
+    { stage: 4, prompt: "あおいランプは いくつ？", displayCards: repeatedCards("blue-light", 8), answer: "8", answerLabel: "8こ", choices: ["7", "8", "9"] },
+  ];
+
+  const mikkunMechPatternProblems = [
+    { prompt: "つぎに くる えは どれ？", patternCards: ["anpan-hero", "dadandandan", "anpan-hero", "dadandandan"], answer: "anpan-hero", answerLabel: "あんぱんのヒーロー", choices: ["anpan-hero", "dadandandan", "anpan-bun"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["anpan-bun", "delivery-bag", "anpan-bun", "delivery-bag"], answer: "anpan-bun", answerLabel: "あんぱん", choices: ["anpan-bun", "delivery-bag", "mech-battery"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["mech-bolt", "mech-gear", "mech-bolt", "mech-gear"], answer: "mech-bolt", answerLabel: "ねじ", choices: ["mech-bolt", "mech-gear", "mech-wrench"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["red-light", "blue-light", "red-light", "blue-light"], answer: "red-light", answerLabel: "あかいランプ", choices: ["red-light", "blue-light", "star-power"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["mech-wrench", "mech-battery", "mech-wrench", "mech-battery"], answer: "mech-wrench", answerLabel: "れんち", choices: ["mech-wrench", "mech-battery", "mech-bolt"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["star-power", "anpan-bun", "star-power", "anpan-bun"], answer: "star-power", answerLabel: "きらきらパワー", choices: ["star-power", "anpan-bun", "power-crystal"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["robot-arm", "robot-foot", "robot-arm", "robot-foot"], answer: "robot-arm", answerLabel: "メカのうで", choices: ["robot-arm", "robot-foot", "mech-wrench"] },
+    { prompt: "つぎに くる えは どれ？", patternCards: ["bakery-town", "repair-cart", "bakery-town", "repair-cart"], answer: "bakery-town", answerLabel: "パンのまち", choices: ["bakery-town", "repair-cart", "dadandandan"] },
+    { stage: 2, prompt: "3つの ならび。つぎは どれ？", patternCards: ["mech-bolt", "mech-gear", "mech-battery", "mech-bolt", "mech-gear"], answer: "mech-battery", answerLabel: "でんち", choices: ["mech-bolt", "mech-gear", "mech-battery"] },
+    { stage: 2, prompt: "3つの ならび。つぎは どれ？", patternCards: ["red-light", "blue-light", "star-power", "red-light", "blue-light"], answer: "star-power", answerLabel: "きらきらパワー", choices: ["red-light", "blue-light", "star-power"] },
+    { stage: 2, prompt: "3つの ならび。つぎは どれ？", patternCards: ["anpan-hero", "anpan-bun", "delivery-bag", "anpan-hero", "anpan-bun"], answer: "delivery-bag", answerLabel: "おとどけバッグ", choices: ["anpan-hero", "anpan-bun", "delivery-bag"] },
+    { stage: 2, prompt: "3つの ならび。つぎは どれ？", patternCards: ["robot-arm", "robot-foot", "repair-cart", "robot-arm", "robot-foot"], answer: "repair-cart", answerLabel: "しゅうりカート", choices: ["robot-arm", "robot-foot", "repair-cart"] },
+    { stage: 3, prompt: "ならびを よくみて。つぎは どれ？", patternCards: ["mech-bolt", "mech-bolt", "mech-gear", "mech-bolt", "mech-bolt"], answer: "mech-gear", answerLabel: "はぐるま", choices: ["mech-bolt", "mech-gear", "mech-wrench"] },
+    { stage: 3, prompt: "ならびを よくみて。つぎは どれ？", patternCards: ["anpan-hero", "dadandandan", "dadandandan", "anpan-hero", "dadandandan"], answer: "dadandandan", answerLabel: "だんだんだん", choices: ["anpan-hero", "dadandandan", "repair-cart"] },
+    { stage: 4, prompt: "むずかしい ならび。つぎは どれ？", patternCards: ["red-light", "blue-light", "blue-light", "red-light", "blue-light"], answer: "blue-light", answerLabel: "あおいランプ", choices: ["red-light", "blue-light", "star-power"] },
+    { stage: 4, prompt: "むずかしい ならび。つぎは どれ？", patternCards: ["star-power", "star-power", "power-crystal", "star-power", "star-power"], answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["star-power", "power-crystal", "mech-battery"] },
   ];
 
   const levelGroups = [
@@ -1379,7 +1477,7 @@
             <div class="mikkun-intro">
               <span>🚀</span>
               <p>
-                <b>パンヒーローと だだんメカの まちを ぼうけん！</b>
+                <b>あんぱんのヒーローと だんだんだんの まちを ぼうけん！</b>
                 <small>つぎは「${currentMikkunStage.next}」</small>
                 <span class="mikkun-stage-meter"><i style="width:${currentMikkunProgress}%"></i></span>
               </p>
@@ -1388,8 +1486,8 @@
           <div class="subject-grid">
             ${mikkun
               ? `
-                ${mikkunSubjectCard("write", "🍞", "パンヒーローの おたから", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
-                ${mikkunSubjectCard("read", "🤖", "だだんメカを なおそう", "どうぐや パーツを えらぶ", "reading-subject-card", "reading-icon", "groups")}
+                ${mikkunSubjectCard("write", "🍞", "あんぱんのヒーロー", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
+                ${mikkunSubjectCard("read", "🤖", "だんだんだん", "どうぐや パーツを えらぶ", "reading-subject-card", "reading-icon", "groups")}
                 ${mikkunSubjectCard("math", "🔩", "メカパーツを かぞえよう", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
                 ${mikkunSubjectCard("memory", "⚙️", "メカの ひかり", "ランプと パーツの ならび", "memory-subject-card", "memory-icon", "patterns")}
               `
@@ -1491,7 +1589,11 @@
   }
 
   function learningCardById(id) {
-    return memoryCards.find((card) => card.id === id) || null;
+    return (
+      memoryCards.find((card) => card.id === id) ||
+      mikkunCards.find((card) => card.id === id) ||
+      null
+    );
   }
 
   function learningCardArt(id, className = "") {
@@ -1499,7 +1601,7 @@
     if (!card) return `<span class="learning-card-fallback ${className}">${escapeHtml(id)}</span>`;
     return `
       <span
-        class="learning-card-art ${card.sheet === "extra" ? "learning-card-art-extra" : ""} ${className}"
+        class="learning-card-art ${card.sheet === "extra" ? "learning-card-art-extra" : ""} ${card.sheet === "mikkun" ? "learning-card-art-mikkun" : ""} ${className}"
         data-card-id="${card.id}"
         role="img"
         aria-label="${card.label}"
@@ -1635,6 +1737,18 @@
         }
       </section>
     `;
+  }
+
+  function scrollToAnswerReview() {
+    window.setTimeout(() => {
+      const target = document.querySelector(".answer-study-card");
+      if (!target) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, 60);
   }
 
   function writeTemplate() {
@@ -2262,6 +2376,13 @@
         <div class="mikkun-pattern-row mikkun-emoji-pattern">
           ${problem.patternItems.map((item) => `<span>${item}</span>`).join("")}
           <span class="mikkun-pattern-question">？</span>
+        </div>
+      `;
+    }
+    if (problem.displayCards) {
+      return `
+        <div class="mikkun-counting-scene mikkun-picture-counting">
+          ${problem.displayCards.map((id) => learningCardArt(id, "mikkun-counting-card")).join("")}
         </div>
       `;
     }
@@ -2973,12 +3094,12 @@
     if (preschool) {
       const bank =
         preschoolType === "treasure"
-          ? mikkunTreasureProblems
+          ? mikkunHeroTreasureProblems
           : preschoolType === "groups"
-            ? mikkunGroupProblems
+            ? mikkunMechGroupProblems
             : preschoolType === "counting"
-              ? mikkunCountingProblems
-              : mikkunPatternProblems;
+              ? mikkunMechCountingProblems
+              : mikkunMechPatternProblems;
       const stageRank = mikkunStage(level).rank;
       const unlockedBank = bank.filter(
         (problem) => Number(problem.stage || 1) <= stageRank,
@@ -4152,6 +4273,9 @@
         applyWrongAnswerPenalty(mode);
       }
       render();
+      if (!state.session?.preschool && (mode === "write" || mode === "read")) {
+        scrollToAnswerReview();
+      }
       return;
     }
 
