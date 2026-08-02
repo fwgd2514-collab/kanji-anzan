@@ -1,5 +1,39 @@
 # 6分野・みっくん冒険メニュー版への更新手順
 
+## お気に入り・ホーム画面アイコン版（version 33）について
+
+灰色地に白い「の」だった標準アイコンを、濃紺・珊瑚色・金色を使った専用アイコンへ変更しました。本から成長の光が伸びるデザインで、学習とレベルアップを表しています。
+
+- Safari・Chromeなどのブラウザタブ用アイコン
+- iPhoneの「ホーム画面に追加」用180pxアイコン
+- Android・Webアプリ用192px／512pxアイコン
+- ホーム画面で表示されるアプリ名「のびる」
+- 濃紺のテーマカラー
+
+### GitHubへ反映するファイル
+
+次のファイルを同じ場所へ上書きまたは追加してください。
+
+1. `index.html`
+2. `version.json`
+3. `manifest.webmanifest`（新規追加）
+4. `README.md`
+5. `UPDATE_GUIDE.md`
+6. `assets/favicon-v1.ico`（新規追加）
+7. `assets/favicon-32-v1.png`（新規追加）
+8. `assets/favicon-48-v1.png`（新規追加）
+9. `assets/apple-touch-icon-v1.png`（新規追加）
+10. `assets/app-icon-192-v1.png`（新規追加）
+11. `assets/app-icon-512-v1.png`（新規追加）
+
+アップロード後、GitHub Pagesを次のように開きます。
+
+`https://ユーザー名.github.io/リポジトリ名/?update=33`
+
+iPhoneですでにホーム画面へ追加している場合は、古いアイコンを一度削除してから、Safariの共有メニューで「ホーム画面に追加」をやり直してください。Safariのお気に入りだけの場合も、古いキャッシュが残る時は一度削除して登録し直すと確実です。
+
+version 33ではFirebaseルールの変更はありません。
+
 ## みっくん専用64問・漢字回答後スクロール版（version 32）について
 
 今回の更新内容は次のとおりです。
