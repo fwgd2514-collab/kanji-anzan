@@ -577,6 +577,37 @@
     { start: 111, end: 120, label: "天才レベル", color: "#8A5A00" },
   ];
 
+  const curriculumKanji = (
+    Array.isArray(window.NOBIRU_KANJI_CURRICULUM)
+      ? window.NOBIRU_KANJI_CURRICULUM
+      : []
+  )
+    .map((row) => ({
+      grade: Number(row[0]),
+      character: String(row[1] || ""),
+      primaryReading: String(row[2] || ""),
+      readings: String(row[3] || "")
+        .split("|")
+        .filter(Boolean),
+      strokes: Number(row[4]) || 0,
+      frequency: Number(row[5]) || 0,
+      word: String(row[6] || ""),
+      wordReading: String(row[7] || ""),
+    }))
+    .filter((item) => item.character && item.primaryReading);
+  const middleSchoolKanji = curriculumKanji.filter((item) => item.grade === 8);
+  const KANJI_CURRICULUM_STAGES = [
+    { id: "e1", start: 1, end: 10, label: "小学1年", grade: 1, rows: curriculumKanji.filter((item) => item.grade === 1) },
+    { id: "e2", start: 11, end: 20, label: "小学2年", grade: 2, rows: curriculumKanji.filter((item) => item.grade === 2) },
+    { id: "e3", start: 21, end: 32, label: "小学3年", grade: 3, rows: curriculumKanji.filter((item) => item.grade === 3) },
+    { id: "e4", start: 33, end: 44, label: "小学4年", grade: 4, rows: curriculumKanji.filter((item) => item.grade === 4) },
+    { id: "e5", start: 45, end: 56, label: "小学5年", grade: 5, rows: curriculumKanji.filter((item) => item.grade === 5) },
+    { id: "e6", start: 57, end: 68, label: "小学6年", grade: 6, rows: curriculumKanji.filter((item) => item.grade === 6) },
+    { id: "j1", start: 69, end: 78, label: "中学1年", grade: 8, rows: middleSchoolKanji.slice(0, 400) },
+    { id: "j2", start: 79, end: 88, label: "中学2年", grade: 8, rows: middleSchoolKanji.slice(400, 800) },
+    { id: "j3", start: 89, end: 96, label: "中学3年", grade: 8, rows: middleSchoolKanji.slice(800) },
+  ];
+
   const state = {
     view: "home",
     level: 24,
@@ -1159,6 +1190,45 @@
     return 10;
   }
 
+  function curriculumStageForLevel(level) {
+    const safeLevel = clamp(Number(level), 1, MAX_LEVEL);
+    return (
+      KANJI_CURRICULUM_STAGES.find(
+        (stage) => safeLevel >= stage.start && safeLevel <= stage.end,
+      ) || null
+    );
+  }
+
+  function curriculumProgressForLevel(level, minimumPoolSize = 24) {
+    const stage = curriculumStageForLevel(level);
+    if (!stage) return null;
+    const span = Math.max(1, stage.end - stage.start + 1);
+    const step = clamp(Number(level), stage.start, stage.end) - stage.start + 1;
+    const ratio = clamp(step / span, 0, 1);
+    const unlockedCount = Math.min(
+      stage.rows.length,
+      Math.max(minimumPoolSize, Math.ceil(stage.rows.length * ratio)),
+    );
+    const stageIndex = KANJI_CURRICULUM_STAGES.indexOf(stage);
+    return {
+      stage,
+      stageIndex,
+      ratio,
+      unlockedCount,
+      unlockedRows: stage.rows.slice(0, unlockedCount),
+      previousRows: stageIndex > 0 ? KANJI_CURRICULUM_STAGES[stageIndex - 1].rows : [],
+      learnedRows: KANJI_CURRICULUM_STAGES.slice(0, stageIndex)
+        .flatMap((item) => item.rows)
+        .concat(stage.rows.slice(0, unlockedCount)),
+    };
+  }
+
+  function curriculumProgressText(level) {
+    const progress = curriculumProgressForLevel(level);
+    if (!progress?.stage.rows.length) return "漢字チャレンジ";
+    return `${progress.stage.label}配当 ${progress.unlockedCount}/${progress.stage.rows.length}字`;
+  }
+
   function displayName() {
     return state.learnerName || "ゲスト";
   }
@@ -1496,8 +1566,8 @@
                 ${subjectCard("memory", "絵", "フラッシュカード", "絵カードを記憶", "memory-subject-card", "memory-icon")}
                 ${subjectCard("flash", "瞬", "フラッシュ暗算", "数字を記憶", "flash-subject-card", "flash-icon")}
                 ${subjectCard("math", "12", "暗算する", "数字パッド", "math-card", "math-icon")}
-                ${subjectCard("read", "読", "漢字を読む", "熟語・四字熟語", "reading-subject-card", "reading-icon")}
-                ${subjectCard("write", "選", "漢字を選ぶ", "四字熟語の穴埋め", "kanji-card", "kanji-icon")}
+                ${subjectCard("read", "読", "漢字を読む", "学年別漢字・熟語", "reading-subject-card", "reading-icon")}
+                ${subjectCard("write", "選", "漢字を選ぶ", "学年別漢字・熟語", "kanji-card", "kanji-icon")}
               `}
           </div>
         </section>
@@ -1541,7 +1611,7 @@
               `;
             }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> ${mikkun ? "文字がまだ読めなくても、絵を見ながら遊べます" : "表示レベルより少しやさしい復習問題から出ます"}</p>
+          <p class="road-note"><span>◆</span> ${mikkun ? "文字がまだ読めなくても、絵を見ながら遊べます" : "漢字は学年別配当表に合わせ、習った範囲の復習も混ぜて出題します"}</p>
         </section>
 
         <div class="encouragement">
@@ -1554,13 +1624,16 @@
 
   function subjectCard(mode, icon, name, detail, cardClass, iconClass) {
     const skill = activeSkill(mode);
+    const subjectDetail = ["read", "write"].includes(mode) && skill.level <= 96
+      ? curriculumProgressText(skill.level)
+      : detail;
     return `
       <button type="button" class="subject-card ${cardClass}" data-start="${mode}">
         <span class="subject-icon ${iconClass}">${icon}</span>
         <span class="subject-time">約${mode === "flash" ? 2 : 3}分</span>
         <span class="subject-level-chip">Lv.${skill.level} ・ ${gradeForLevel(skill.level)}</span>
         <span class="subject-name">${name}</span>
-        <span class="subject-detail">${state.counts[mode]}問 ・ ${detail}</span>
+        <span class="subject-detail">${state.counts[mode]}問 ・ ${subjectDetail}</span>
         <span class="start-arrow" aria-hidden="true">→</span>
       </button>
     `;
@@ -1703,7 +1776,9 @@
   }
 
   function kanjiCharactersForProblem(problem) {
-    const source = String(problem?.idiom || problem?.kanji || "");
+    const source = String(
+      problem?.strokeCharacters || problem?.idiom || problem?.kanji || "",
+    );
     return [...new Set(Array.from(source).filter((character) => /\p{Script=Han}/u.test(character)))];
   }
 
@@ -1718,7 +1793,7 @@
     const characters = kanjiCharactersForProblem(problem);
     return `
       <section class="answer-study-card" aria-label="答えの解説">
-        <span class="answer-study-label">ことばの意味</span>
+        <span class="answer-study-label">${problem?.kind === "curriculum" ? "この漢字の学習ポイント" : "ことばの意味"}</span>
         <p>${escapeHtml(meaningForProblem(problem))}</p>
         ${characters.length
           ? `
@@ -1737,6 +1812,11 @@
         }
       </section>
     `;
+  }
+
+  function curriculumLessonBadge(problem) {
+    if (problem?.kind !== "curriculum") return "";
+    return `<span class="curriculum-progress-pill">${escapeHtml(problem.curriculumProgress)}</span>`;
   }
 
   function scrollToAnswerReview() {
@@ -1758,24 +1838,41 @@
     if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
     const correct = state.readingChecked && state.readingChoice === problem.answer;
+    const curriculum = problem.kind === "curriculum";
+    const curriculumWord = curriculum && problem.questionType === "word";
+    const answerLabel = curriculum
+      ? `${problem.idiom}（${problem.reading}）`
+      : `${problem.idiom}（${problem.reading}）`;
     const feedback = state.readingChecked
       ? correct
-        ? `<div class="reading-feedback correct"><b>正解！</b> ${problem.idiom}（${problem.reading}）</div>`
-        : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」。<br />${problem.idiom}（${problem.reading}）</div>`
+        ? `<div class="reading-feedback correct"><b>正解！</b> ${answerLabel}</div>`
+        : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」。<br />${answerLabel}</div>`
       : "";
     return `
       <div class="screen lesson-screen kanji-lesson idiom-choice-lesson">
         ${lessonHeader("漢字を選ぶ")}
-        ${lessonLevelRow()}
+        ${lessonLevelRow(curriculumLessonBadge(problem))}
         <section class="idiom-prompt">
-          <p class="eyebrow">□に入る漢字を選ぼう</p>
-          <h1>四字熟語を完成させよう</h1>
-          <div class="idiom-card" aria-label="${problem.masked}">
+          <p class="eyebrow">${curriculum ? `${problem.curriculumLabel}で習う漢字` : "□に入る漢字を選ぼう"}</p>
+          <h1>${curriculum
+            ? curriculumWord
+              ? "熟語を完成させよう"
+              : `「${problem.reading}」と読む漢字は？`
+            : "四字熟語を完成させよう"
+          }</h1>
+          <div class="idiom-card ${curriculum ? `curriculum-idiom-card kanji-count-${Math.min(4, Array.from(problem.masked).length)}` : ""}" aria-label="${problem.masked}">
             ${Array.from(problem.masked).map((character) => `
               <span class="${character === "□" ? "blank" : ""}">${character}</span>
             `).join("")}
           </div>
-          <p class="idiom-hint">${problem.hiddenCount > 1 ? `${problem.hiddenCount}文字を順番どおり選んでね` : "入る漢字はどれかな？"}</p>
+          <p class="idiom-hint">${curriculum
+            ? curriculumWord
+              ? `「${problem.reading}」になる漢字を選ぼう`
+              : "同じ学年で習う漢字から選ぼう"
+            : problem.hiddenCount > 1
+              ? `${problem.hiddenCount}文字を順番どおり選んでね`
+              : "入る漢字はどれかな？"
+          }</p>
         </section>
         <div class="reading-options idiom-options">
           ${choices.map((choice) => {
@@ -2324,17 +2421,23 @@
     if (preschool) return mikkunAdventureTemplate();
     if (state.kanjiDemoOpen) return kanjiStrokeReviewTemplate(problem);
     const choices = state.readingChoices.length ? state.readingChoices : problem.choices;
+    const curriculum = problem.kind === "curriculum";
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
-        ? `<div class="reading-feedback correct"><b>${preschool ? "はなまる！" : "正解！"}</b> よく読めました。</div>`
-        : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」です。</div>`
+        ? `<div class="reading-feedback correct"><b>${preschool ? "はなまる！" : "正解！"}</b> ${problem.kanji}（${problem.answer}）</div>`
+        : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」です。<br />${problem.kanji}（${problem.answer}）</div>`
       : "";
     return `
       <div class="screen lesson-screen reading-lesson">
         ${lessonHeader(preschool ? "どうぶつの なまえ" : "漢字を読む")}
-        ${lessonLevelRow()}
+        ${lessonLevelRow(curriculumLessonBadge(problem))}
         <section class="reading-prompt">
-          <p class="eyebrow">${preschool ? "この どうぶつは なあに？" : "この熟語、なんて読む？"}</p>
+          <p class="eyebrow">${preschool
+            ? "この どうぶつは なあに？"
+            : curriculum && problem.questionType === "character"
+              ? `${problem.curriculumLabel}で習う漢字・なんて読む？`
+              : "この熟語、なんて読む？"
+          }</p>
           <div class="reading-card compound-reading-card"><span>${problem.kanji}</span></div>
         </section>
         <div class="reading-options">
@@ -2997,7 +3100,223 @@
     return `${problem.question}:${problem.answer}`;
   }
 
+  function curriculumSourceStage(row) {
+    return (
+      KANJI_CURRICULUM_STAGES.find((stage) => stage.rows.includes(row)) || null
+    );
+  }
+
+  function curriculumChoiceValues(target, pool, mode, useWord, harder) {
+    const answer = mode === "write"
+      ? target.character
+      : useWord
+        ? target.wordReading
+        : target.primaryReading;
+    const valueFor = (row) =>
+      mode === "write"
+        ? row.character
+        : useWord
+          ? row.wordReading
+          : row.primaryReading;
+    const scored = shuffled(pool)
+      .filter((row) => row !== target && valueFor(row) && valueFor(row) !== answer)
+      .filter(
+        (row) =>
+          mode !== "read" ||
+          useWord ||
+          !target.readings.includes(valueFor(row)),
+      )
+      .filter((row, index, rows) =>
+        rows.findIndex((candidate) => valueFor(candidate) === valueFor(row)) === index,
+      )
+      .map((row) => {
+        const reading = useWord ? row.wordReading : row.primaryReading;
+        const targetReading = useWord ? target.wordReading : target.primaryReading;
+        const score = mode === "write"
+          ? Math.abs(row.strokes - target.strokes) * 2 +
+            (row.primaryReading.length === target.primaryReading.length ? 0 : 1)
+          : Math.abs(reading.length - targetReading.length) * 2 +
+            Math.abs(row.strokes - target.strokes) / 4;
+        return { row, score };
+      });
+    if (harder) scored.sort((left, right) => left.score - right.score);
+    return [answer, ...scored.slice(0, 3).map(({ row }) => valueFor(row))];
+  }
+
+  function takeCurriculumRows(pool, count, recentSet, usedCharacters) {
+    const fresh = shuffled(
+      pool.filter(
+        (row) =>
+          !recentSet.has(row.character) && !usedCharacters.has(row.character),
+      ),
+    );
+    const older = shuffled(
+      pool.filter(
+        (row) =>
+          recentSet.has(row.character) && !usedCharacters.has(row.character),
+      ),
+    );
+    return [...fresh, ...older].slice(0, count).filter((row) => {
+      if (usedCharacters.has(row.character)) return false;
+      usedCharacters.add(row.character);
+      return true;
+    });
+  }
+
+  function createCurriculumSessionProblems(mode, total, level) {
+    const progress = curriculumProgressForLevel(
+      level,
+      Math.max(24, Number(total)),
+    );
+    if (!progress?.stage.rows.length) return [];
+    const recentKey = `${state.learnerName}:curriculum:${mode}:${progress.stage.id}`;
+    const recent = Array.isArray(state.recentProblems[recentKey])
+      ? state.recentProblems[recentKey]
+      : [];
+    const recentSet = new Set(recent);
+    const usedCharacters = new Set();
+    const reviewCount = progress.previousRows.length
+      ? Math.max(1, Math.round(Number(total) * 0.2))
+      : 0;
+    const currentCount = Math.max(0, Number(total) - reviewCount);
+    const selectedRows = [
+      ...takeCurriculumRows(
+        progress.unlockedRows,
+        currentCount,
+        recentSet,
+        usedCharacters,
+      ),
+      ...takeCurriculumRows(
+        progress.previousRows,
+        reviewCount,
+        recentSet,
+        usedCharacters,
+      ),
+    ];
+    if (selectedRows.length < total) {
+      selectedRows.push(
+        ...takeCurriculumRows(
+          progress.learnedRows,
+          total - selectedRows.length,
+          recentSet,
+          usedCharacters,
+        ),
+      );
+    }
+
+    const learnedCharacterSet = new Set(
+      progress.learnedRows.map((row) => row.character),
+    );
+    const wordRows = progress.learnedRows.filter(
+      (row) =>
+        row.word &&
+        row.wordReading &&
+        Array.from(row.word).every((character) => learnedCharacterSet.has(character)),
+    );
+    const compoundRate = progress.stage.grade === 8
+      ? 0.25 + progress.ratio * 0.3
+      : progress.ratio < 0.45
+        ? 0
+        : 0.12 + (progress.ratio - 0.45) * 0.45;
+    const seenCompoundWords = new Set();
+    const compoundCandidates = shuffled(
+      selectedRows
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => wordRows.includes(row)),
+    ).filter(({ row }) => {
+      if (seenCompoundWords.has(row.word)) return false;
+      seenCompoundWords.add(row.word);
+      return true;
+    });
+    const compoundIndexes = new Set(
+      compoundCandidates
+        .slice(0, Math.round(selectedRows.length * compoundRate))
+        .map(({ index }) => index),
+    );
+    const choicePool = [...progress.unlockedRows, ...progress.previousRows];
+    const problems = selectedRows.map((row, index) => {
+      const useWord = compoundIndexes.has(index);
+      const sourceStage = curriculumSourceStage(row) || progress.stage;
+      const readings = row.readings.slice(0, 4).join("・") || row.primaryReading;
+      const learningPoint = useWord
+        ? `${sourceStage.label}で習う「${row.character}」を使う熟語です。「${row.word}」は「${row.wordReading}」と読みます。`
+        : `${sourceStage.label}で習う漢字「${row.character}」。主な読みは「${readings}」です。`;
+      const suitableChoicePool = useWord ? wordRows : choicePool;
+      const choices = curriculumChoiceValues(
+        row,
+        suitableChoicePool,
+        mode,
+        useWord,
+        progress.ratio >= 0.55,
+      );
+      if (mode === "write") {
+        return {
+          kind: "curriculum",
+          band: bandForLevel(level),
+          curriculumLabel: sourceStage.label,
+          curriculumProgress: `${progress.stage.label}配当 ${progress.unlockedCount}/${progress.stage.rows.length}字`,
+          questionType: useWord ? "word" : "character",
+          targetKanji: row.character,
+          strokeCharacters: row.character,
+          idiom: useWord ? row.word : row.character,
+          reading: useWord ? row.wordReading : row.primaryReading,
+          meaning: learningPoint,
+          masked: useWord ? row.word.replace(row.character, "□") : "□",
+          hiddenCount: 1,
+          answer: row.character,
+          choices,
+        };
+      }
+      return {
+        kind: "curriculum",
+        band: bandForLevel(level),
+        curriculumLabel: sourceStage.label,
+        curriculumProgress: `${progress.stage.label}配当 ${progress.unlockedCount}/${progress.stage.rows.length}字`,
+        questionType: useWord ? "word" : "character",
+        targetKanji: row.character,
+        strokeCharacters: row.character,
+        kanji: useWord ? row.word : row.character,
+        answer: useWord ? row.wordReading : row.primaryReading,
+        meaning: learningPoint,
+        choices,
+      };
+    });
+
+    if (
+      problems.length > 1 &&
+      problemSignature(mode, problems[0]) === state.lastFirstByMode[mode]
+    ) {
+      const swapIndex = problems.findIndex(
+        (problem, index) =>
+          index > 0 &&
+          problemSignature(mode, problem) !== state.lastFirstByMode[mode],
+      );
+      if (swapIndex > 0) {
+        [problems[0], problems[swapIndex]] = [problems[swapIndex], problems[0]];
+      }
+    }
+    if (problems.length) {
+      state.lastFirstByMode[mode] = problemSignature(mode, problems[0]);
+    }
+    const updatedRecent = [...recent];
+    selectedRows.forEach((row) => {
+      const previousIndex = updatedRecent.indexOf(row.character);
+      if (previousIndex >= 0) updatedRecent.splice(previousIndex, 1);
+      updatedRecent.push(row.character);
+    });
+    state.recentProblems[recentKey] = updatedRecent.slice(-160);
+    return problems;
+  }
+
   function createWriteSessionProblems(total, level) {
+    if (Number(level) <= 96 && curriculumKanji.length >= 2100) {
+      const curriculumProblems = createCurriculumSessionProblems(
+        "write",
+        total,
+        level,
+      );
+      if (curriculumProblems.length) return curriculumProblems;
+    }
     const band = bandForLevel(level);
     const variantsByIdiom = new Map();
     idiomProblems.forEach((problem) => {
@@ -3166,6 +3485,15 @@
       return result;
     }
 
+    if (mode === "read" && Number(level) <= 96 && curriculumKanji.length >= 2100) {
+      const curriculumProblems = createCurriculumSessionProblems(
+        "read",
+        total,
+        level,
+      );
+      if (curriculumProblems.length) return curriculumProblems;
+    }
+
     const band = bandForLevel(level);
     const bank = readingProblems;
     const pool = bank.filter((problem) => problem.band === band);
@@ -3243,9 +3571,15 @@
     const mode = session?.mode || "write";
     const level = session?.levelAtStart ?? activeSkill(mode).level;
     if (session?.mode === "write") {
+      if (Number(level) <= 96 && curriculumKanji.length >= 2100) {
+        return createCurriculumSessionProblems("write", 1, level)[0];
+      }
       return idiomProblems.find((problem) => problem.band === bandForLevel(level));
     }
     if (session?.mode === "read") {
+      if (Number(level) <= 96 && curriculumKanji.length >= 2100) {
+        return createCurriculumSessionProblems("read", 1, level)[0];
+      }
       return readingProblems.find((problem) => problem.band === bandForLevel(level));
     }
     if (session?.mode === "memory") return generateMemoryProblem(level);

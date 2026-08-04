@@ -30,7 +30,7 @@
     </main>
     <script>
       (() => {
-        const fallbackVersion = "20260802-premium-app-icon-33";
+        const fallbackVersion = "20260804-grade-curriculum-kanji-34";
         let loadedVersion = "";
         let checkingForUpdate = false;
 
@@ -60,6 +60,7 @@
             await appendScript(`./firebase-config.js?v=${versionQuery}`);
             await appendScript(`./firebase-sync.js?v=${versionQuery}`);
             const questionDataLoaded = await appendScript(`./question-data.js?v=${versionQuery}`);
+            const curriculumDataLoaded = await appendScript(`./kanji-curriculum-data.js?v=${versionQuery}`);
             if (
               !questionDataLoaded ||
               !Array.isArray(window.NOBIRU_ADDITIONAL_KANJI) ||
@@ -68,6 +69,13 @@
               window.NOBIRU_IDIOMS.length < 400
             ) {
               console.warn("追加問題ファイルを読み込めなかったため、近い難易度の問題で補います。");
+            }
+            if (
+              !curriculumDataLoaded ||
+              !Array.isArray(window.NOBIRU_KANJI_CURRICULUM) ||
+              window.NOBIRU_KANJI_CURRICULUM.length < 2100
+            ) {
+              console.warn("学年別漢字データを読み込めなかったため、従来問題で補います。");
             }
             await appendScript(`./app.js?v=${versionQuery}`);
           };

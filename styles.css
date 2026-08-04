@@ -848,6 +848,13 @@ canvas:focus-visible {
   color: #268b79;
 }
 
+.lesson-level-row .curriculum-progress-pill {
+  margin-left: auto;
+  background: #e8f4ff;
+  color: #356f9d;
+  white-space: nowrap;
+}
+
 .prompt-area {
   padding: 28px 3px 19px;
   text-align: center;
@@ -953,6 +960,25 @@ canvas:focus-visible {
   color: #d8764d;
   font-family: inherit;
   font-size: clamp(28px, 9vw, 40px);
+}
+
+.idiom-card.curriculum-idiom-card {
+  min-height: 132px;
+}
+
+.idiom-card.curriculum-idiom-card.kanji-count-1 {
+  width: 142px;
+  grid-template-columns: 1fr;
+}
+
+.idiom-card.curriculum-idiom-card.kanji-count-2 {
+  width: min(100%, 224px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.idiom-card.curriculum-idiom-card.kanji-count-3 {
+  width: min(100%, 292px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .idiom-hint {
