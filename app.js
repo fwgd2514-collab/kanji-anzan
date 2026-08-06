@@ -14,10 +14,10 @@
     write: { label: "漢字を選ぶ", short: "漢字・選択", xp: 18, penalty: 6 },
   };
   const MIKKUN_MODE_LABELS = {
-    write: "あんぱんのヒーロー",
-    read: "だんだんだん",
-    math: "メカパーツを かぞえよう",
-    memory: "メカの ひかり",
+    write: "メカを つくろう",
+    read: "だんだんだんを うごかそう",
+    math: "おたからを あつめよう",
+    memory: "ピカッと きおく",
   };
   const SKILL_MODES = Object.keys(MODE_INFO);
   const DEFAULT_COUNTS = {
@@ -562,6 +562,44 @@
     { stage: 3, prompt: "ならびを よくみて。つぎは どれ？", patternCards: ["anpan-hero", "dadandandan", "dadandandan", "anpan-hero", "dadandandan"], answer: "dadandandan", answerLabel: "だんだんだん", choices: ["anpan-hero", "dadandandan", "repair-cart"] },
     { stage: 4, prompt: "むずかしい ならび。つぎは どれ？", patternCards: ["red-light", "blue-light", "blue-light", "red-light", "blue-light"], answer: "blue-light", answerLabel: "あおいランプ", choices: ["red-light", "blue-light", "star-power"] },
     { stage: 4, prompt: "むずかしい ならび。つぎは どれ？", patternCards: ["star-power", "star-power", "power-crystal", "star-power", "star-power"], answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["star-power", "power-crystal", "mech-battery"] },
+  ];
+
+  const mikkunRouteProblems = [
+    { prompt: "おたからは みぎ！ どっちへ すすむ？", display: "route-right-1", route: "right", answer: "➡️", answerLabel: "みぎ", choices: ["⬅️", "➡️", "⬆️"] },
+    { prompt: "パンを とどけに ひだりへ すすもう", display: "route-left-1", route: "left", answer: "⬅️", answerLabel: "ひだり", choices: ["⬅️", "➡️", "⬇️"] },
+    { prompt: "きらきらパワーは うえ！", display: "route-up-1", route: "up", answer: "⬆️", answerLabel: "うえ", choices: ["⬅️", "⬆️", "⬇️"] },
+    { prompt: "しゅうりカートは したに いるよ", display: "route-down-1", route: "down", answer: "⬇️", answerLabel: "した", choices: ["➡️", "⬆️", "⬇️"] },
+    { prompt: "あおい おたからへ みぎ！", display: "route-right-2", route: "right", answer: "➡️", answerLabel: "みぎ", choices: ["⬅️", "➡️", "⬇️"] },
+    { prompt: "あんぱんは ひだりに あるよ", display: "route-left-2", route: "left", answer: "⬅️", answerLabel: "ひだり", choices: ["⬅️", "⬆️", "⬇️"] },
+    { prompt: "ほしの パワーへ うえ！", display: "route-up-2", route: "up", answer: "⬆️", answerLabel: "うえ", choices: ["➡️", "⬆️", "⬇️"] },
+    { prompt: "ねじを ひろいに したへ！", display: "route-down-2", route: "down", answer: "⬇️", answerLabel: "した", choices: ["⬅️", "➡️", "⬇️"] },
+    { stage: 2, prompt: "いわを よけて みぎへ すすもう", display: "route-right-3", route: "right", obstacle: true, answer: "➡️", answerLabel: "みぎ", choices: ["⬅️", "➡️", "⬆️"] },
+    { stage: 2, prompt: "でんちは ひだり。どの やじるし？", display: "route-left-3", route: "left", obstacle: true, answer: "⬅️", answerLabel: "ひだり", choices: ["⬅️", "➡️", "⬇️"] },
+    { stage: 2, prompt: "にじいろパワーへ うえ！", display: "route-up-3", route: "up", obstacle: true, answer: "⬆️", answerLabel: "うえ", choices: ["⬅️", "⬆️", "⬇️"] },
+    { stage: 2, prompt: "れんちは した。どっちへ すすむ？", display: "route-down-3", route: "down", obstacle: true, answer: "⬇️", answerLabel: "した", choices: ["➡️", "⬆️", "⬇️"] },
+    { stage: 3, prompt: "パンの まちは みぎだよ！", display: "route-right-4", route: "right", obstacle: true, answer: "➡️", answerLabel: "みぎ", choices: ["⬅️", "➡️", "⬆️"] },
+    { stage: 3, prompt: "ひみつの パーツは うえ！", display: "route-up-4", route: "up", obstacle: true, answer: "⬆️", answerLabel: "うえ", choices: ["➡️", "⬆️", "⬇️"] },
+    { stage: 4, prompt: "きんの おたからは ひだり！", display: "route-left-4", route: "left", obstacle: true, answer: "⬅️", answerLabel: "ひだり", choices: ["⬅️", "➡️", "⬇️"] },
+    { stage: 4, prompt: "さいごの パワーは しただよ！", display: "route-down-4", route: "down", obstacle: true, answer: "⬇️", answerLabel: "した", choices: ["⬅️", "⬆️", "⬇️"] },
+  ];
+
+  const mikkunLightProblems = [
+    { prompt: "さいごに ひかった えは どれ？", lightSequence: ["red-light", "blue-light"], answer: "blue-light", answerLabel: "あおいランプ", choices: ["red-light", "blue-light", "star-power"] },
+    { prompt: "さいごの えを おぼえてね", lightSequence: ["mech-bolt", "mech-gear"], answer: "mech-gear", answerLabel: "はぐるま", choices: ["mech-bolt", "mech-gear", "mech-wrench"] },
+    { prompt: "さいごに ピカッとしたのは？", lightSequence: ["anpan-bun", "star-power"], answer: "star-power", answerLabel: "きらきらパワー", choices: ["anpan-bun", "star-power", "delivery-bag"] },
+    { prompt: "さいごの パーツは どれ？", lightSequence: ["mech-wrench", "mech-battery"], answer: "mech-battery", answerLabel: "でんち", choices: ["mech-wrench", "mech-battery", "mech-bolt"] },
+    { prompt: "さいごに でた えは どれ？", lightSequence: ["dadandandan", "repair-cart"], answer: "repair-cart", answerLabel: "しゅうりカート", choices: ["dadandandan", "repair-cart", "robot-foot"] },
+    { prompt: "さいごの いろを おぼえてね", lightSequence: ["blue-light", "red-light"], answer: "red-light", answerLabel: "あかいランプ", choices: ["red-light", "blue-light", "star-power"] },
+    { prompt: "さいごに ピカッとした えは？", lightSequence: ["delivery-bag", "anpan-hero"], answer: "anpan-hero", answerLabel: "あんぱんのヒーロー", choices: ["delivery-bag", "anpan-hero", "dadandandan"] },
+    { prompt: "さいごの メカパーツは どれ？", lightSequence: ["robot-arm", "robot-foot"], answer: "robot-foot", answerLabel: "メカのあし", choices: ["robot-arm", "robot-foot", "mech-wrench"] },
+    { stage: 2, prompt: "3つめに ひかった えは？", lightSequence: ["red-light", "blue-light", "star-power"], answer: "star-power", answerLabel: "きらきらパワー", choices: ["red-light", "blue-light", "star-power"] },
+    { stage: 2, prompt: "さいごの パーツを おぼえてね", lightSequence: ["mech-bolt", "mech-gear", "mech-battery"], answer: "mech-battery", answerLabel: "でんち", choices: ["mech-bolt", "mech-gear", "mech-battery"] },
+    { stage: 2, prompt: "3つめに でた えは どれ？", lightSequence: ["anpan-bun", "delivery-bag", "bakery-town"], answer: "bakery-town", answerLabel: "パンのまち", choices: ["anpan-bun", "delivery-bag", "bakery-town"] },
+    { stage: 2, prompt: "さいごに ひかった メカは？", lightSequence: ["dadandandan", "repair-cart", "robot-arm"], answer: "robot-arm", answerLabel: "メカのうで", choices: ["dadandandan", "repair-cart", "robot-arm"] },
+    { stage: 3, prompt: "4つめの えを おぼえよう", lightSequence: ["red-light", "blue-light", "star-power", "power-crystal"], answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["blue-light", "star-power", "power-crystal"] },
+    { stage: 3, prompt: "さいごの どうぐは どれ？", lightSequence: ["mech-bolt", "mech-gear", "mech-battery", "mech-wrench"], answer: "mech-wrench", answerLabel: "れんち", choices: ["mech-gear", "mech-battery", "mech-wrench"] },
+    { stage: 4, prompt: "5つめの えを おぼえてね", lightSequence: ["anpan-hero", "anpan-bun", "delivery-bag", "bakery-town", "star-power"], answer: "star-power", answerLabel: "きらきらパワー", choices: ["delivery-bag", "bakery-town", "star-power"] },
+    { stage: 4, prompt: "さいごに でた メカパーツは？", lightSequence: ["robot-arm", "robot-foot", "mech-bolt", "mech-gear", "power-crystal"], answer: "power-crystal", answerLabel: "にじいろパワー", choices: ["mech-bolt", "mech-gear", "power-crystal"] },
   ];
 
   const levelGroups = [
@@ -1547,7 +1585,7 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">${mikkun ? currentMikkunStage.label : `おかえり、${escapeHtml(displayName())}`}</p>
-              <h1>${mikkun ? "みっくんメニュー" : "きょうのトレーニング"}</h1>
+              <h1>${mikkun ? "みっくん メカたんけん" : "きょうのトレーニング"}</h1>
             </div>
             <button class="daily-count settings-link" type="button" data-view="profile">${mikkun ? "5もんずつ" : "問題数を変更"}</button>
           </div>
@@ -1555,7 +1593,7 @@
             <div class="mikkun-intro">
               <span>🚀</span>
               <p>
-                <b>あんぱんのヒーローと だんだんだんの まちを ぼうけん！</b>
+                <b>だんだんだんと メカのしまを たんけん！</b>
                 <small>つぎは「${currentMikkunStage.next}」</small>
                 <span class="mikkun-stage-meter"><i style="width:${currentMikkunProgress}%"></i></span>
               </p>
@@ -1564,10 +1602,10 @@
           <div class="subject-grid">
             ${mikkun
               ? `
-                ${mikkunSubjectCard("write", "🍞", "あんぱんのヒーロー", "おなじ絵を みつける", "kanji-card", "kanji-icon", "treasure")}
-                ${mikkunSubjectCard("read", "🤖", "だんだんだん", "どうぐや パーツを えらぶ", "reading-subject-card", "reading-icon", "groups")}
-                ${mikkunSubjectCard("math", "🔩", "メカパーツを かぞえよう", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "counting")}
-                ${mikkunSubjectCard("memory", "⚙️", "メカの ひかり", "ランプと パーツの ならび", "memory-subject-card", "memory-icon", "patterns")}
+                ${mikkunSubjectCard("write", "🛠️", "メカを つくろう", "ぴったりの パーツを つける", "kanji-card", "kanji-icon", "build")}
+                ${mikkunSubjectCard("read", "🧭", "だんだんだんを うごかそう", "やじるしで おたからへ すすむ", "reading-subject-card", "reading-icon", "route")}
+                ${mikkunSubjectCard("math", "🎁", "おたからを あつめよう", currentMikkunStage.rank >= 3 ? "1から10まで かぞえる" : "1から5まで かぞえる", "math-card", "math-icon color-card-icon", "treasure")}
+                ${mikkunSubjectCard("memory", "💡", "ピカッと きおく", "ひかった えを おぼえる", "memory-subject-card", "memory-icon", "lights")}
               `
               : `
                 ${subjectCard("digits", "123", "数字記憶", "流れる数字を記憶", "digits-subject-card", "digits-icon")}
@@ -1619,7 +1657,7 @@
               `;
             }).join("")}
           </div>
-          <p class="road-note"><span>◆</span> ${mikkun ? "文字がまだ読めなくても、絵を見ながら遊べます" : "漢字は学年別配当表に合わせ、習った範囲の復習も混ぜて出題します"}</p>
+          <p class="road-note"><span>◆</span> ${mikkun ? "1回5つの短いミッション。絵・光・動きで遊べます" : "漢字は学年別配当表に合わせ、習った範囲の復習も混ぜて出題します"}</p>
         </section>
 
         <div class="encouragement">
@@ -1736,6 +1774,9 @@
     saveProgress();
     render();
     window.scrollTo({ top: 0, left: 0 });
+    if (usePreschoolMenu && safePreschoolType === "lights") {
+      window.setTimeout(startMikkunLightSequence, 320);
+    }
   }
 
   function lessonHeader(title) {
@@ -1829,7 +1870,9 @@
 
   function scrollToAnswerReview() {
     window.setTimeout(() => {
-      const target = document.querySelector(".answer-study-card");
+      const target =
+        document.querySelector(".reading-feedback-slot") ||
+        document.querySelector(".answer-study-card");
       if (!target) return;
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       target.scrollIntoView({
@@ -1837,6 +1880,34 @@
         block: "start",
       });
     }, 60);
+  }
+
+  function scrollToMemoryReview() {
+    window.setTimeout(() => {
+      const target =
+        document.querySelector(".memory-correct-review") ||
+        document.querySelector(".memory-answer-stage .reading-feedback-slot");
+      if (!target) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, 80);
+  }
+
+  function scrollToMikkunReview(showCelebration = false) {
+    window.setTimeout(() => {
+      const target = document.querySelector(
+        ".mikkun-adventure-lesson .reading-feedback-slot",
+      );
+      if (!target) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+    }, showCelebration ? 820 : 120);
   }
 
   function writeTemplate() {
@@ -2470,7 +2541,53 @@
     `;
   }
 
-  function mikkunAdventureDisplay(problem) {
+  function mikkunBuildDisplay(correct) {
+    const collected = clamp(
+      state.session.completed + (correct ? 1 : 0),
+      0,
+      state.session.total,
+    );
+    return `
+      <div class="mikkun-build-scene ${correct ? "is-powered" : ""}">
+        <div class="mikkun-build-robot">
+          ${learningCardArt("dadandandan", "mikkun-build-robot-art")}
+          <span class="mikkun-build-spark">★</span>
+        </div>
+        <div class="mikkun-build-parts" aria-label="集めたパーツ ${collected}個">
+          ${Array.from({ length: state.session.total }, (_, index) => `
+            <span class="${index < collected ? "filled" : ""}">${index < collected ? ["⚙️", "🔩", "🔋", "💡", "✨"][index % 5] : "？"}</span>
+          `).join("")}
+        </div>
+        <b>パーツ ${collected} / ${state.session.total}</b>
+      </div>
+    `;
+  }
+
+  function mikkunRouteDisplay(problem, correct) {
+    return `
+      <div class="mikkun-route-board route-${problem.route || "right"} ${correct ? "is-cleared" : ""}">
+        <span class="mikkun-route-grid-lines" aria-hidden="true"></span>
+        ${problem.obstacle ? '<span class="mikkun-route-obstacle" aria-hidden="true">🪨</span>' : ""}
+        <span class="mikkun-route-robot">${learningCardArt("dadandandan", "mikkun-route-robot-art")}</span>
+        <span class="mikkun-route-goal" aria-label="おたから">🎁</span>
+        <small>${correct ? "おたからに とうちゃく！" : "どの やじるしで すすむ？"}</small>
+      </div>
+    `;
+  }
+
+  function mikkunLightRecallDisplay() {
+    return `
+      <div class="mikkun-light-recall">
+        <span>？</span>
+        <b>さいごに ひかった えは？</b>
+      </div>
+    `;
+  }
+
+  function mikkunAdventureDisplay(problem, correct = false) {
+    if (problem.missionType === "build") return mikkunBuildDisplay(correct);
+    if (problem.missionType === "route") return mikkunRouteDisplay(problem, correct);
+    if (problem.missionType === "lights") return mikkunLightRecallDisplay();
     if (problem.displayCard) {
       return learningCardArt(problem.displayCard, "mikkun-target-card");
     }
@@ -2521,10 +2638,42 @@
     const correct = state.readingChecked && state.readingChoice === problem.answer;
     const hasPictureChoices = choices.some((choice) => learningCardById(choice));
     const theme = MIKKUN_MODE_LABELS[state.session.mode] || "みっくんの ぼうけん";
+    const lightMission = problem.missionType === "lights";
+    if (lightMission && !state.readingChecked && state.memoryPhase !== "answer") {
+      const visibleCard = state.memoryVisible?.id
+        ? learningCardArt(state.memoryVisible.id, "mikkun-light-card-art")
+        : '<span class="mikkun-light-off">●</span>';
+      return `
+        <div class="screen lesson-screen mikkun-adventure-lesson mikkun-light-lesson">
+          ${lessonHeader(theme)}
+          ${lessonLevelRow()}
+          <section class="mikkun-light-mission" aria-live="polite">
+            <p class="eyebrow">ピカッと ひかるよ！</p>
+            <h1>さいごの えを<br />おぼえてね</h1>
+            <div class="mikkun-light-machine">
+              <span class="mikkun-light-glow" aria-hidden="true"></span>
+              <div id="mikkunLightSlot">${visibleCard}</div>
+            </div>
+            <div class="mikkun-light-progress" id="mikkunLightProgress">
+              ${problem.lightSequence.map((_, index) => `<i class="${index === 0 && state.memoryPhase === "showing" ? "active" : ""}"></i>`).join("")}
+            </div>
+            <small>${state.memoryPhase === "showing" ? "よく みてね" : "まもなく ひかるよ"}</small>
+          </section>
+        </div>
+      `;
+    }
+    const rewardLabel =
+      problem.missionType === "build"
+        ? "メカパーツ ゲット！"
+        : problem.missionType === "route"
+          ? "おたからに とうちゃく！"
+          : problem.missionType === "treasure"
+            ? "おたから ゲット！"
+            : "ひかりパワー ゲット！";
     const feedback = state.readingChecked
       ? correct
-        ? '<div class="reading-feedback correct mikkun-win"><b>ほし ゲット！</b> やったね！</div>'
-        : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answerLabel || problem.answer}」です。</div>`
+        ? `<div class="reading-feedback correct mikkun-win"><b>せいかい！</b> ${rewardLabel}</div>`
+        : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answerLabel || problem.answer}」。つぎは できるよ！</div>`
       : "";
     return `
       <div class="screen lesson-screen mikkun-choice-lesson mikkun-adventure-lesson">
@@ -2533,7 +2682,7 @@
         <section class="reading-prompt mikkun-choice-prompt">
           <p class="eyebrow">${problem.prompt || "どれかな？"}</p>
           <div class="reading-card mikkun-choice-display">
-            ${mikkunAdventureDisplay(problem)}
+            ${mikkunAdventureDisplay(problem, correct)}
           </div>
         </section>
         <div class="reading-options mikkun-options ${hasPictureChoices ? "mikkun-picture-options" : "mikkun-number-options"}">
@@ -2551,7 +2700,7 @@
         </div>
         <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
-          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">みたら つぎへ →</button>'
+          ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">つぎの ミッションへ →</button>'
           : '<p class="choice-note">こたえを ひとつ タップしてね</p>'
         }
       </div>
@@ -3043,6 +3192,67 @@
     step();
   }
 
+  function startMikkunLightSequence() {
+    if (
+      state.session?.preschoolType !== "lights" ||
+      state.view !== "memory" ||
+      state.readingChecked
+    ) {
+      return;
+    }
+    stopMemory();
+    const token = ++state.memoryRunToken;
+    state.memoryPhase = "showing";
+    state.memoryVisible = null;
+    render();
+    state.memoryTimer = window.setTimeout(
+      () => runMikkunLightCards(token),
+      420,
+    );
+  }
+
+  function runMikkunLightCards(token) {
+    const problem = currentSessionProblem();
+    const sequence = problem?.lightSequence || [];
+    let index = 0;
+    const showNext = () => {
+      if (
+        token !== state.memoryRunToken ||
+        state.view !== "memory" ||
+        state.session?.preschoolType !== "lights"
+      ) {
+        return;
+      }
+      if (index >= sequence.length) {
+        state.memoryVisible = null;
+        state.memoryPhase = "answer";
+        render();
+        return;
+      }
+      const card = learningCardById(sequence[index]);
+      state.memoryVisible = card;
+      const slot = document.querySelector("#mikkunLightSlot");
+      const dots = [...document.querySelectorAll("#mikkunLightProgress i")];
+      if (slot && card) {
+        slot.innerHTML = learningCardArt(
+          card.id,
+          "mikkun-light-card-art mikkun-light-pop",
+        );
+      } else {
+        render();
+      }
+      dots.forEach((dot, dotIndex) => dot.classList.toggle("active", dotIndex === index));
+      index += 1;
+      state.memoryTimer = window.setTimeout(() => {
+        if (token !== state.memoryRunToken || state.view !== "memory") return;
+        const currentSlot = document.querySelector("#mikkunLightSlot");
+        if (currentSlot) currentSlot.innerHTML = '<span class="mikkun-light-off">●</span>';
+        state.memoryTimer = window.setTimeout(showNext, 180);
+      }, 690);
+    };
+    showNext();
+  }
+
   function stopMemory() {
     window.clearTimeout(state.memoryTimer);
     state.memoryTimer = 0;
@@ -3098,6 +3308,9 @@
 
   function problemSignature(mode, problem) {
     if (!problem) return "";
+    if (problem.lightSequence) {
+      return `${problem.lightSequence.join("-")}:${problem.answer}`;
+    }
     if (problem.displayCard) return `${problem.displayCard}:${problem.answer}`;
     if (problem.patternCards) {
       return `${problem.patternCards.join("-")}:${problem.answer}`;
@@ -3434,14 +3647,19 @@
   ) {
     if (mode === "flash") return [];
     if (preschool) {
+      const missionType = ["build", "route", "treasure", "lights"].includes(
+        preschoolType,
+      )
+        ? preschoolType
+        : "build";
       const bank =
-        preschoolType === "treasure"
-          ? mikkunHeroTreasureProblems
-          : preschoolType === "groups"
-            ? mikkunMechGroupProblems
-            : preschoolType === "counting"
+        missionType === "build"
+          ? mikkunMechGroupProblems
+          : missionType === "route"
+            ? mikkunRouteProblems
+            : missionType === "treasure"
               ? mikkunMechCountingProblems
-              : mikkunMechPatternProblems;
+              : mikkunLightProblems;
       const stageRank = mikkunStage(level).rank;
       const unlockedBank = bank.filter(
         (problem) => Number(problem.stage || 1) <= stageRank,
@@ -3449,7 +3667,11 @@
       const result = [];
       while (result.length < total) {
         const cycle = shuffled(unlockedBank);
-        result.push(...cycle.slice(0, total - result.length));
+        result.push(
+          ...cycle
+            .slice(0, total - result.length)
+            .map((problem) => ({ ...problem, missionType })),
+        );
       }
       if (
         result.length > 1 &&
@@ -4654,11 +4876,17 @@
         playCorrectSound();
         earnXp(MODE_INFO[mode].xp);
       } else {
-        playWrongSound();
-        applyWrongAnswerPenalty(mode);
+        if (state.session?.preschool) {
+          playTapSound();
+        } else {
+          playWrongSound();
+          applyWrongAnswerPenalty(mode);
+        }
       }
       render();
-      if (!state.session?.preschool && (mode === "write" || mode === "read")) {
+      if (state.session?.preschool) {
+        scrollToMikkunReview(correct);
+      } else if (mode === "write" || mode === "read") {
         scrollToAnswerReview();
       }
       return;
@@ -4691,6 +4919,7 @@
         playTapSound();
       }
       render();
+      if (state.memoryChecked) scrollToMemoryReview();
       return;
     }
 
@@ -4730,7 +4959,7 @@
     if (
       action === "close-level-password" &&
       event.target.closest(".level-password-sheet") &&
-      !event.target.closest("[data-action='close-level-password']")
+      !event.target.closest("button[data-action='close-level-password']")
     ) {
       return;
     }
@@ -4785,6 +5014,9 @@
       "continue-learning"() {
         state.exitConfirmOpen = false;
         render();
+        if (state.session?.preschoolType === "lights") {
+          window.setTimeout(startMikkunLightSequence, 240);
+        }
       },
       "discard-session"() {
         discardCurrentSession();
@@ -4904,6 +5136,7 @@
         if (!state.readingChecked) return;
         const problem = currentSessionProblem();
         const wasCorrect = state.readingChoice === problem.answer;
+        const autoStartMikkunLights = state.session?.preschoolType === "lights";
         state.session.completed += 1;
         if (state.session.completed >= state.session.total) {
           finishSession(false);
@@ -4915,6 +5148,9 @@
         }
         if (!wasCorrect) showToast("次で取り返そう！");
         render();
+        if (autoStartMikkunLights && !state.checkpointOpen) {
+          window.setTimeout(startMikkunLightSequence, 260);
+        }
       },
       "delete-number"() {
         const target = actionButton.dataset.numberTarget;
@@ -5037,6 +5273,9 @@
         render();
         if (state.session?.mode === "flash") startFlashSequence();
         if (state.session?.mode === "digits") startDigitsSequence();
+        if (state.session?.preschoolType === "lights") {
+          window.setTimeout(startMikkunLightSequence, 220);
+        }
       },
       "end-session"() {
         finishSession(true);
