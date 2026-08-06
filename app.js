@@ -1764,6 +1764,7 @@
       correct: 0,
       attempts: 0,
       endedEarly: false,
+      mikkunRewards: [],
     };
     state.exitConfirmOpen = false;
     state.view = mode;
@@ -2542,35 +2543,103 @@
   }
 
   function mikkunBuildDisplay(correct) {
-    const collected = clamp(
-      state.session.completed + (correct ? 1 : 0),
-      0,
-      state.session.total,
-    );
+    const collectedParts = Array.isArray(state.session?.mikkunRewards)
+      ? state.session.mikkunRewards.slice(0, state.session.total)
+      : [];
+    const latestPart = learningCardById(collectedParts.at(-1));
     return `
       <div class="mikkun-build-scene ${correct ? "is-powered" : ""}">
         <div class="mikkun-build-robot">
           ${learningCardArt("dadandandan", "mikkun-build-robot-art")}
           <span class="mikkun-build-spark">★</span>
         </div>
-        <div class="mikkun-build-parts" aria-label="集めたパーツ ${collected}個">
+        <div class="mikkun-build-parts" aria-label="集めたパーツ ${collectedParts.length}個">
           ${Array.from({ length: state.session.total }, (_, index) => `
-            <span class="${index < collected ? "filled" : ""}">${index < collected ? ["⚙️", "🔩", "🔋", "💡", "✨"][index % 5] : "？"}</span>
+            <span class="${collectedParts[index] ? "filled" : ""}">
+              ${collectedParts[index]
+                ? learningCardArt(collectedParts[index], "mikkun-collected-part-art")
+                : '<i aria-hidden="true">＋</i>'
+              }
+            </span>
           `).join("")}
         </div>
-        <b>パーツ ${collected} / ${state.session.total}</b>
+        <b>ゲットした え ${collectedParts.length} / ${state.session.total}</b>
+        <small>${latestPart ? `「${latestPart.label}」を つけたよ！` : "ぴったりの えを えらぼう"}</small>
       </div>
     `;
   }
 
+  function mikkunRouteLayout(problem) {
+    const stageRank = mikkunStage(state.session?.levelAtStart || 1).rank;
+    const columns = stageRank >= 2 ? 5 : 4;
+    const rows = 4;
+    const path = [];
+    const add = (x, y) => path.push(y * columns + x);
+    if (problem.route === "left") {
+      for (let x = columns - 1; x >= 0; x -= 1) add(x, rows - 1);
+      for (let y = rows - 2; y >= 0; y -= 1) add(0, y);
+    } else if (problem.route === "up") {
+      for (let y = rows - 1; y >= 0; y -= 1) add(0, y);
+      for (let x = 1; x < columns; x += 1) add(x, 0);
+    } else if (problem.route === "down") {
+      for (let y = 0; y < rows; y += 1) add(0, y);
+      for (let x = 1; x < columns; x += 1) add(x, rows - 1);
+    } else {
+      for (let x = 0; x < columns; x += 1) add(x, rows - 1);
+      for (let y = rows - 2; y >= 0; y -= 1) add(columns - 1, y);
+    }
+    const pathSet = new Set(path);
+    const candidates = Array.from({ length: columns * rows }, (_, index) => index)
+      .filter((index) => !pathSet.has(index));
+    const seed = Array.from(String(problem.display || problem.prompt || ""))
+      .reduce((total, character) => total + character.codePointAt(0), 0);
+    const orderedCandidates = [...candidates].sort(
+      (left, right) => ((left * 17 + seed) % 101) - ((right * 17 + seed) % 101),
+    );
+    const obstacleCount = columns === 4 ? 3 : 5;
+    const obstacleSymbols = ["🪨", "🌲", "🌊", "🪵", "🌳"];
+    const obstacles = new Map(
+      orderedCandidates
+        .slice(0, obstacleCount)
+        .map((cell, index) => [cell, obstacleSymbols[(seed + index) % obstacleSymbols.length]]),
+    );
+    return { columns, rows, path, pathSet, obstacles };
+  }
+
   function mikkunRouteDisplay(problem, correct) {
+    const layout = mikkunRouteLayout(problem);
+    const startCell = layout.path[0];
+    const goalCell = layout.path.at(-1);
     return `
-      <div class="mikkun-route-board route-${problem.route || "right"} ${correct ? "is-cleared" : ""}">
-        <span class="mikkun-route-grid-lines" aria-hidden="true"></span>
-        ${problem.obstacle ? '<span class="mikkun-route-obstacle" aria-hidden="true">🪨</span>' : ""}
-        <span class="mikkun-route-robot">${learningCardArt("dadandandan", "mikkun-route-robot-art")}</span>
-        <span class="mikkun-route-goal" aria-label="おたから">🎁</span>
-        <small>${correct ? "おたからに とうちゃく！" : "どの やじるしで すすむ？"}</small>
+      <div class="mikkun-route-game">
+        <div
+          class="mikkun-route-board mikkun-route-map-${layout.columns}"
+          style="--route-columns:${layout.columns}"
+          aria-label="${layout.columns * layout.rows}マスの障害物マップ"
+        >
+          ${Array.from({ length: layout.columns * layout.rows }, (_, cell) => {
+            const isPath = layout.pathSet.has(cell);
+            const obstacle = layout.obstacles.get(cell);
+            return `
+              <span class="mikkun-map-cell ${isPath ? "is-path" : ""} ${obstacle ? "has-obstacle" : ""}">
+                ${cell === startCell
+                  ? `<span class="mikkun-map-robot route-${problem.route || "right"} ${correct ? "is-moving" : ""}">${learningCardArt("dadandandan", "mikkun-map-robot-art")}</span>`
+                  : cell === goalCell
+                    ? '<span class="mikkun-map-goal" aria-label="おたから">🎁</span>'
+                    : obstacle
+                      ? `<span class="mikkun-map-obstacle" aria-hidden="true">${obstacle}</span>`
+                      : isPath
+                        ? '<i aria-hidden="true">•</i>'
+                        : ""
+                }
+              </span>
+            `;
+          }).join("")}
+        </div>
+        <div class="mikkun-route-caption">
+          <b>${layout.columns * layout.rows}マスの メカマップ</b>
+          <span>${correct ? "1マス すすんだよ！" : "いわ・き・みずを よけよう"}</span>
+        </div>
       </div>
     `;
   }
@@ -2680,7 +2749,8 @@
         ${lessonHeader(theme)}
         ${lessonLevelRow()}
         <section class="reading-prompt mikkun-choice-prompt">
-          <p class="eyebrow">${problem.prompt || "どれかな？"}</p>
+          <p class="eyebrow">ミッション ${currentNumber()}</p>
+          <h1 class="mikkun-mission-question">${problem.prompt || "どれかな？"}</h1>
           <div class="reading-card mikkun-choice-display">
             ${mikkunAdventureDisplay(problem, correct)}
           </div>
@@ -4873,6 +4943,12 @@
       const correct = state.readingChoice === problem.answer;
       if (correct) {
         state.session.correct += 1;
+        if (state.session?.preschool) {
+          if (!Array.isArray(state.session.mikkunRewards)) {
+            state.session.mikkunRewards = [];
+          }
+          state.session.mikkunRewards.push(problem.answer);
+        }
         playCorrectSound();
         earnXp(MODE_INFO[mode].xp);
       } else {
