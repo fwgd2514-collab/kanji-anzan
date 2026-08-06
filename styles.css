@@ -5899,6 +5899,7 @@ html.is-writing body {
   justify-content: center;
   gap: 6px;
   margin: 13px auto 6px;
+  scroll-margin-block: calc(18px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom));
 }
 
 .mikkun-route-controls button {

@@ -1514,6 +1514,16 @@
     } else if (state.view === "write") {
       setupWritingCanvas();
     }
+    if (
+      state.session?.preschool &&
+      state.view === state.session.mode &&
+      !state.readingChecked &&
+      !state.checkpointOpen &&
+      !state.exitConfirmOpen &&
+      currentSessionProblem()?.missionType === "route"
+    ) {
+      scrollToMikkunRouteControls();
+    }
   }
 
   function learnerGateTemplate() {
@@ -1913,6 +1923,27 @@
         block: showNextButton ? "end" : "center",
       });
     }, showCelebration ? 820 : 120);
+  }
+
+  function scrollToMikkunRouteControls() {
+    window.setTimeout(() => {
+      const target = document.querySelector(".mikkun-route-controls");
+      if (!target) return;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop || 0;
+      const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
+      const rect = target.getBoundingClientRect();
+      const safeMargin = 18;
+      const fullyVisible =
+        rect.top >= viewportTop + safeMargin &&
+        rect.bottom <= viewportBottom - safeMargin;
+      if (fullyVisible) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+    }, 100);
   }
 
   function writeTemplate() {
