@@ -3,6 +3,8 @@
 
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
+  const APP_LAST_UPDATED = "2026年8月6日";
+  const LEVEL_ADJUSTMENT_PASSWORD = "1234";
   const MODE_INFO = {
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
     memory: { label: "フラッシュカード", short: "カード", xp: 13, penalty: 4 },
@@ -634,6 +636,9 @@
     placementMode: "write",
     placementDraftLevel: 1,
     placementOpen: false,
+    levelPasswordOpen: false,
+    levelPasswordError: "",
+    pendingPlacementMode: "write",
     checkpointOpen: false,
     exitConfirmOpen: false,
     toast: "",
@@ -706,6 +711,7 @@
   app.addEventListener("pointerdown", unlockTapAudio, { passive: true });
   app.addEventListener("click", handleClick);
   app.addEventListener("change", handleChange);
+  app.addEventListener("keydown", handleKeydown);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       flushPendingCloudSaves();
@@ -1455,6 +1461,7 @@
     app.innerHTML = `
       ${views[state.view]()}
       ${showNav ? bottomNavTemplate() : ""}
+      ${state.levelPasswordOpen ? levelPasswordTemplate() : ""}
       ${state.placementOpen ? placementTemplate() : ""}
       ${state.checkpointOpen ? checkpointTemplate() : ""}
       ${state.exitConfirmOpen ? exitConfirmTemplate() : ""}
@@ -1498,6 +1505,7 @@
           </button>
           <small>間違った人のレベルへ記録しないため、開くたびに確認します。</small>
         </section>
+        <p class="app-update-date">最終更新：${APP_LAST_UPDATED}</p>
       </div>
     `;
   }
@@ -1792,7 +1800,7 @@
     if (!state.readingChecked || state.session?.preschool) return "";
     const characters = kanjiCharactersForProblem(problem);
     return `
-      <section class="answer-study-card" aria-label="答えの解説">
+      <section class="answer-study-card ${problem?.kind === "curriculum" ? "curriculum-study-card" : ""}" aria-label="答えの解説">
         <span class="answer-study-label">${problem?.kind === "curriculum" ? "この漢字の学習ポイント" : "ことばの意味"}</span>
         <p>${escapeHtml(meaningForProblem(problem))}</p>
         ${characters.length
@@ -2706,10 +2714,12 @@
         <div class="memory-showing" aria-live="assertive">
           <p>よく見て おぼえてね</p>
           <div class="memory-flash-card">
-            ${state.memoryVisible
-              ? learningCardArt(state.memoryVisible.id, "memory-main-card-art")
-              : '<strong class="memory-card-placeholder">★</strong>'
-            }
+            <div class="memory-card-visual" id="memoryFlashCardVisual">
+              ${state.memoryVisible
+                ? learningCardArt(state.memoryVisible.id, "memory-main-card-art memory-card-pop")
+                : '<strong class="memory-card-placeholder">★</strong>'
+              }
+            </div>
             <small>絵だけをおぼえよう</small>
           </div>
         </div>
@@ -3004,13 +3014,26 @@
   function runMemoryCards(token) {
     const problem = currentSessionProblem();
     let index = 0;
+    let nextFrameAt = performance.now();
     const step = () => {
       if (token !== state.memoryRunToken || state.view !== "memory") return;
       if (index < problem.sequence.length) {
         state.memoryVisible = problem.sequence[index];
         index += 1;
-        render();
-        state.memoryTimer = window.setTimeout(step, problem.delay);
+        const cardSlot = document.querySelector("#memoryFlashCardVisual");
+        if (cardSlot) {
+          cardSlot.innerHTML = learningCardArt(
+            state.memoryVisible.id,
+            "memory-main-card-art memory-card-pop",
+          );
+        } else {
+          render();
+        }
+        nextFrameAt += problem.delay;
+        state.memoryTimer = window.setTimeout(
+          step,
+          Math.max(16, nextFrameAt - performance.now()),
+        );
         return;
       }
       state.memoryVisible = null;
@@ -4456,6 +4479,34 @@
     `;
   }
 
+  function levelPasswordTemplate() {
+    return `
+      <div class="sheet-backdrop" data-action="close-level-password">
+        <section class="level-password-sheet" role="dialog" aria-modal="true" aria-labelledby="level-password-title">
+          <span class="level-password-mark" aria-hidden="true">鍵</span>
+          <p class="eyebrow">PARENT CHECK</p>
+          <h2 id="level-password-title">レベル調整を開く</h2>
+          <p>レベルを変更するには、保護者用パスワードを入力してください。</p>
+          <label for="levelAdjustmentPassword">
+            <span>パスワード</span>
+            <input
+              id="levelAdjustmentPassword"
+              type="password"
+              inputmode="numeric"
+              autocomplete="off"
+              enterkeyhint="done"
+              aria-describedby="level-password-error"
+            />
+          </label>
+          <p class="level-password-error" id="level-password-error" role="alert">${escapeHtml(state.levelPasswordError)}</p>
+          <button type="button" class="primary-button wide" data-action="confirm-level-password">確認して開く</button>
+          <button type="button" class="secondary-button wide" data-action="close-level-password">キャンセル</button>
+          <small>この確認は、レベルの誤操作を防ぐための簡易ロックです。</small>
+        </section>
+      </div>
+    `;
+  }
+
   function bottomNavTemplate() {
     const items = [
       { id: "home", icon: "⌂", label: "ホーム" },
@@ -4676,6 +4727,13 @@
     ) {
       return;
     }
+    if (
+      action === "close-level-password" &&
+      event.target.closest(".level-password-sheet") &&
+      !event.target.closest("[data-action='close-level-password']")
+    ) {
+      return;
+    }
 
     const actions = {
       "back-home"() {
@@ -4732,11 +4790,38 @@
         discardCurrentSession();
       },
       "open-placement"() {
-        state.placementMode = SKILL_MODES.includes(actionButton.dataset.mode)
+        state.pendingPlacementMode = SKILL_MODES.includes(actionButton.dataset.mode)
           ? actionButton.dataset.mode
           : state.placementMode;
+        state.levelPasswordError = "";
+        state.levelPasswordOpen = true;
+        render();
+        window.setTimeout(() => {
+          document.querySelector("#levelAdjustmentPassword")?.focus();
+        }, 60);
+      },
+      "confirm-level-password"() {
+        const input = document.querySelector("#levelAdjustmentPassword");
+        if (String(input?.value || "") !== LEVEL_ADJUSTMENT_PASSWORD) {
+          state.levelPasswordError = "パスワードが違います。もう一度入力してください。";
+          render();
+          window.setTimeout(() => {
+            const passwordInput = document.querySelector("#levelAdjustmentPassword");
+            passwordInput?.focus();
+            passwordInput?.select();
+          }, 40);
+          return;
+        }
+        state.placementMode = state.pendingPlacementMode;
         state.placementDraftLevel = activeSkill(state.placementMode).level;
+        state.levelPasswordOpen = false;
+        state.levelPasswordError = "";
         state.placementOpen = true;
+        render();
+      },
+      "close-level-password"() {
+        state.levelPasswordOpen = false;
+        state.levelPasswordError = "";
         render();
       },
       "placement-step"() {
@@ -4951,6 +5036,7 @@
         state.checkpointOpen = false;
         render();
         if (state.session?.mode === "flash") startFlashSequence();
+        if (state.session?.mode === "digits") startDigitsSequence();
       },
       "end-session"() {
         finishSession(true);
@@ -5053,6 +5139,12 @@
     render();
   }
 
+  function handleKeydown(event) {
+    if (event.key !== "Enter" || event.target.id !== "levelAdjustmentPassword") return;
+    event.preventDefault();
+    document.querySelector("[data-action='confirm-level-password']")?.click();
+  }
+
   function advanceAfterCompletedQuestion() {
     stopAutoAdvance();
     if (state.session.completed >= state.session.total) {
@@ -5060,6 +5152,7 @@
       return;
     }
     const autoStartFlash = state.session.mode === "flash";
+    const autoStartDigits = state.session.mode === "digits";
     resetQuestionState();
     state.exitConfirmOpen = false;
     if (autoStartFlash) prepareFlashQuestion();
@@ -5072,6 +5165,7 @@
     }
     render();
     if (autoStartFlash && !state.checkpointOpen) startFlashSequence();
+    if (autoStartDigits && !state.checkpointOpen) startDigitsSequence();
   }
 
   function saveSettingsFromForm() {
