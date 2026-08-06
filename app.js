@@ -695,6 +695,10 @@
     readingChecked: false,
     readingChoices: [],
     lastReadingAnswerIndex: -1,
+    mikkunRouteStep: 0,
+    mikkunRouteMessage: "",
+    mikkunRouteLastMove: "",
+    mikkunRouteBumped: false,
     mathAnswer: "",
     mathResult: "idle",
     flashSequence: [],
@@ -1897,16 +1901,16 @@
     }, 80);
   }
 
-  function scrollToMikkunReview(showCelebration = false) {
+  function scrollToMikkunReview(showCelebration = false, showNextButton = false) {
     window.setTimeout(() => {
-      const target = document.querySelector(
-        ".mikkun-adventure-lesson .reading-feedback-slot",
-      );
+      const target = showNextButton
+        ? document.querySelector(".mikkun-adventure-lesson .answer-next-button")
+        : document.querySelector(".mikkun-adventure-lesson .reading-feedback-slot");
       if (!target) return;
       const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       target.scrollIntoView({
         behavior: reduceMotion ? "auto" : "smooth",
-        block: "center",
+        block: showNextButton ? "end" : "center",
       });
     }, showCelebration ? 820 : 120);
   }
@@ -2606,10 +2610,46 @@
     return { columns, rows, path, pathSet, obstacles };
   }
 
-  function mikkunRouteDisplay(problem, correct) {
+  const MIKKUN_ROUTE_DIRECTIONS = {
+    up: { symbol: "↑", label: "うえ" },
+    left: { symbol: "←", label: "ひだり" },
+    right: { symbol: "→", label: "みぎ" },
+    down: { symbol: "↓", label: "した" },
+  };
+
+  function mikkunRouteDirection(layout, step) {
+    const currentCell = layout.path[step];
+    const nextCell = layout.path[step + 1];
+    if (!Number.isInteger(currentCell) || !Number.isInteger(nextCell)) return "";
+    const difference = nextCell - currentCell;
+    if (difference === 1) return "right";
+    if (difference === -1) return "left";
+    if (difference === layout.columns) return "down";
+    if (difference === -layout.columns) return "up";
+    return "";
+  }
+
+  function mikkunRouteControlsTemplate() {
+    return `
+      <div class="mikkun-route-controls" aria-label="だんだんだんを動かす矢印">
+        ${Object.entries(MIKKUN_ROUTE_DIRECTIONS).map(([direction, item]) => `
+          <button type="button" class="route-${direction}" data-route-move="${direction}" aria-label="${item.label}へ進む">
+            <b aria-hidden="true">${item.symbol}</b>
+            <small>${item.label}</small>
+          </button>
+        `).join("")}
+        <span class="mikkun-route-control-center" aria-hidden="true">★</span>
+      </div>
+    `;
+  }
+
+  function mikkunRouteDisplay(problem) {
     const layout = mikkunRouteLayout(problem);
-    const startCell = layout.path[0];
+    const finalStep = layout.path.length - 1;
+    const currentStep = Math.max(0, Math.min(finalStep, state.mikkunRouteStep));
+    const currentCell = layout.path[currentStep];
     const goalCell = layout.path.at(-1);
+    const reachedGoal = currentStep >= finalStep;
     return `
       <div class="mikkun-route-game">
         <div
@@ -2620,10 +2660,12 @@
           ${Array.from({ length: layout.columns * layout.rows }, (_, cell) => {
             const isPath = layout.pathSet.has(cell);
             const obstacle = layout.obstacles.get(cell);
+            const pathPosition = layout.path.indexOf(cell);
+            const traveled = pathPosition >= 0 && pathPosition < currentStep;
             return `
-              <span class="mikkun-map-cell ${isPath ? "is-path" : ""} ${obstacle ? "has-obstacle" : ""}">
-                ${cell === startCell
-                  ? `<span class="mikkun-map-robot route-${problem.route || "right"} ${correct ? "is-moving" : ""}">${learningCardArt("dadandandan", "mikkun-map-robot-art")}</span>`
+              <span class="mikkun-map-cell ${isPath ? "is-path" : ""} ${traveled ? "is-traveled" : ""} ${cell === currentCell ? "is-current" : ""} ${obstacle ? "has-obstacle" : ""}">
+                ${cell === currentCell
+                  ? `<span class="mikkun-map-robot route-${state.mikkunRouteLastMove || problem.route || "right"} ${state.mikkunRouteLastMove ? "is-stepping" : ""} ${state.mikkunRouteBumped ? "is-bumped" : ""}">${learningCardArt("dadandandan", "mikkun-map-robot-art")}</span>${reachedGoal ? '<span class="mikkun-map-arrival-star" aria-hidden="true">★</span>' : ""}`
                   : cell === goalCell
                     ? '<span class="mikkun-map-goal" aria-label="おたから">🎁</span>'
                     : obstacle
@@ -2638,10 +2680,60 @@
         </div>
         <div class="mikkun-route-caption">
           <b>${layout.columns * layout.rows}マスの メカマップ</b>
-          <span>${correct ? "1マス すすんだよ！" : "いわ・き・みずを よけよう"}</span>
+          <span>${reachedGoal ? "おたからに とうちゃく！" : `すすんだ ${currentStep} / ${finalStep}マス`}</span>
+        </div>
+        <div class="mikkun-route-progress" aria-label="${finalStep}マス中${currentStep}マス進みました">
+          <i style="--route-progress:${finalStep ? currentStep / finalStep : 1}"></i>
         </div>
       </div>
     `;
+  }
+
+  function handleMikkunRouteMove(direction) {
+    const session = state.session;
+    const problem = currentSessionProblem();
+    if (
+      !session?.preschool ||
+      problem?.missionType !== "route" ||
+      state.readingChecked ||
+      !MIKKUN_ROUTE_DIRECTIONS[direction]
+    ) return;
+
+    const layout = mikkunRouteLayout(problem);
+    const finalStep = layout.path.length - 1;
+    const currentStep = Math.max(0, Math.min(finalStep, state.mikkunRouteStep));
+    const neededDirection = mikkunRouteDirection(layout, currentStep);
+    if (direction !== neededDirection) {
+      state.mikkunRouteLastMove = "";
+      state.mikkunRouteBumped = true;
+      state.mikkunRouteMessage = "そっちは とおれないよ。きいろい みちを みてね！";
+      playTapSound();
+      render();
+      return;
+    }
+
+    state.mikkunRouteStep = currentStep + 1;
+    state.mikkunRouteLastMove = direction;
+    state.mikkunRouteBumped = false;
+    const remaining = finalStep - state.mikkunRouteStep;
+    if (remaining > 0) {
+      state.mikkunRouteMessage = `すすんだ！ おたからまで あと ${remaining}マス`;
+      playTapSound();
+      render();
+      return;
+    }
+
+    state.mikkunRouteMessage = "おたからに とうちゃく！";
+    state.readingChoice = problem.answer;
+    state.readingChecked = true;
+    session.attempts += 1;
+    session.correct += 1;
+    if (!Array.isArray(session.mikkunRewards)) session.mikkunRewards = [];
+    session.mikkunRewards.push("dadandandan");
+    playCorrectSound();
+    earnXp(MODE_INFO[session.mode].xp);
+    render();
+    scrollToMikkunReview(true, true);
   }
 
   function mikkunLightRecallDisplay() {
@@ -2708,6 +2800,7 @@
     const hasPictureChoices = choices.some((choice) => learningCardById(choice));
     const theme = MIKKUN_MODE_LABELS[state.session.mode] || "みっくんの ぼうけん";
     const lightMission = problem.missionType === "lights";
+    const routeMission = problem.missionType === "route";
     if (lightMission && !state.readingChecked && state.memoryPhase !== "answer") {
       const visibleCard = state.memoryVisible?.id
         ? learningCardArt(state.memoryVisible.id, "mikkun-light-card-art")
@@ -2747,31 +2840,40 @@
     return `
       <div class="screen lesson-screen mikkun-choice-lesson mikkun-adventure-lesson">
         ${lessonHeader(theme)}
-        ${lessonLevelRow()}
-        <section class="reading-prompt mikkun-choice-prompt">
-          <p class="eyebrow">ミッション ${currentNumber()}</p>
-          <h1 class="mikkun-mission-question">${problem.prompt || "どれかな？"}</h1>
-          <div class="reading-card mikkun-choice-display">
-            ${mikkunAdventureDisplay(problem, correct)}
-          </div>
-        </section>
-        <div class="reading-options mikkun-options ${hasPictureChoices ? "mikkun-picture-options" : "mikkun-number-options"}">
-          ${choices.map((choice) => {
-            const selected = state.readingChoice === choice;
-            const rightChoice = state.readingChecked && choice === problem.answer;
-            const wrongChoice =
-              state.readingChecked && selected && choice !== problem.answer;
-            return `
-              <button type="button" data-reading="${choice}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.readingChecked ? "disabled" : ""}>
-                ${mikkunAdventureChoice(choice)}<i>${rightChoice ? "✓" : wrongChoice ? "×" : ""}</i>
-              </button>
-            `;
-          }).join("")}
-        </div>
+          ${lessonLevelRow()}
+          <section class="reading-prompt mikkun-choice-prompt">
+            <p class="eyebrow">ミッション ${currentNumber()}</p>
+            <h1 class="mikkun-mission-question">${routeMission ? "やじるしで おたからまで すすめよう！" : problem.prompt || "どれかな？"}</h1>
+            <div class="reading-card mikkun-choice-display">
+              ${mikkunAdventureDisplay(problem, correct)}
+            </div>
+          </section>
+        ${routeMission
+          ? state.readingChecked ? "" : mikkunRouteControlsTemplate()
+          : `
+            <div class="reading-options mikkun-options ${hasPictureChoices ? "mikkun-picture-options" : "mikkun-number-options"}">
+              ${choices.map((choice) => {
+                const selected = state.readingChoice === choice;
+                const rightChoice = state.readingChecked && choice === problem.answer;
+                const wrongChoice =
+                  state.readingChecked && selected && choice !== problem.answer;
+                return `
+                  <button type="button" data-reading="${choice}" class="${selected ? "selected" : ""} ${rightChoice ? "correct" : ""} ${wrongChoice ? "wrong" : ""}" ${state.readingChecked ? "disabled" : ""}>
+                    ${mikkunAdventureChoice(choice)}<i>${rightChoice ? "✓" : wrongChoice ? "×" : ""}</i>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          `
+        }
+        ${routeMission && !state.readingChecked
+          ? `<p class="mikkun-route-message ${state.mikkunRouteBumped ? "is-warning" : ""}" aria-live="polite">${state.mikkunRouteMessage || "やじるしは なんどでも おせるよ"}</p>`
+          : ""
+        }
         <div class="reading-feedback-slot">${feedback}</div>
         ${state.readingChecked
           ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-reading">つぎの ミッションへ →</button>'
-          : '<p class="choice-note">こたえを ひとつ タップしてね</p>'
+          : routeMission ? "" : '<p class="choice-note">こたえを ひとつ タップしてね</p>'
         }
       </div>
     `;
@@ -4933,6 +5035,12 @@
       return;
     }
 
+    const routeMoveButton = event.target.closest("[data-route-move]");
+    if (routeMoveButton) {
+      handleMikkunRouteMove(routeMoveButton.dataset.routeMove);
+      return;
+    }
+
     const readingButton = event.target.closest("[data-reading]");
     if (readingButton && !state.readingChecked) {
       const problem = currentSessionProblem();
@@ -5540,6 +5648,10 @@
     state.strokeKanji = "";
     state.readingChoice = "";
     state.readingChecked = false;
+    state.mikkunRouteStep = 0;
+    state.mikkunRouteMessage = "";
+    state.mikkunRouteLastMove = "";
+    state.mikkunRouteBumped = false;
     prepareReadingChoices();
     state.mathAnswer = "";
     state.mathResult = "idle";

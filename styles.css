@@ -5836,3 +5836,212 @@ html.is-writing body {
     border-radius: 8px;
   }
 }
+
+/* v38: multi-step route game and unobstructed mission completion controls */
+.mikkun-map-cell.is-traveled {
+  border-color: #7dbd76;
+  background: #dff2bd;
+}
+
+.mikkun-map-cell.is-traveled::after {
+  content: "✓";
+  color: #65a45e;
+  font-size: clamp(14px, 4vw, 20px);
+  font-weight: 950;
+}
+
+.mikkun-map-cell.is-current {
+  z-index: 2;
+  border-color: #f09b3b;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.65),
+    0 0 0 3px rgba(240, 155, 59, 0.2);
+}
+
+.mikkun-map-arrival-star {
+  position: absolute;
+  z-index: 5;
+  top: -5px;
+  right: -2px;
+  color: #f8bd27;
+  font-size: 23px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(112, 77, 22, 0.18));
+  animation: mikkun-map-arrival-star 620ms ease-in-out infinite alternate;
+}
+
+.mikkun-route-progress {
+  width: min(100%, 318px);
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid #b6d5ad;
+  border-radius: 999px;
+  background: #e8f1e3;
+}
+
+.mikkun-route-progress i {
+  width: calc(var(--route-progress, 0) * 100%);
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7bcf71, #f3c64e);
+  transition: width 280ms ease;
+}
+
+.mikkun-route-controls {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 70px);
+  grid-template-areas:
+    ". up ."
+    "left center right"
+    ". down .";
+  justify-content: center;
+  gap: 6px;
+  margin: 13px auto 6px;
+}
+
+.mikkun-route-controls button {
+  width: 70px;
+  height: 59px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+  border: 2px solid #d6b451;
+  border-radius: 17px;
+  background: linear-gradient(180deg, #fff8cf, #ffe17b);
+  color: #594a2a;
+  box-shadow: 0 5px 0 #c59b36, 0 8px 14px rgba(91, 69, 24, 0.12);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mikkun-route-controls button:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #c59b36;
+}
+
+.mikkun-route-controls button b {
+  font-size: 27px;
+  line-height: 1;
+}
+
+.mikkun-route-controls button small {
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.mikkun-route-controls .route-up { grid-area: up; }
+.mikkun-route-controls .route-left { grid-area: left; }
+.mikkun-route-controls .route-right { grid-area: right; }
+.mikkun-route-controls .route-down { grid-area: down; }
+
+.mikkun-route-control-center {
+  grid-area: center;
+  width: 52px;
+  height: 52px;
+  place-self: center;
+  display: grid;
+  place-items: center;
+  border: 3px solid #d7e6ed;
+  border-radius: 50%;
+  background: #f4fbff;
+  color: #f1b93c;
+  font-size: 23px;
+}
+
+.mikkun-route-message {
+  min-height: 28px;
+  margin: 7px 0 2px;
+  color: #53745b;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.mikkun-route-message.is-warning {
+  color: #b65a3f;
+}
+
+.mikkun-map-robot.is-stepping.route-right {
+  animation: mikkun-map-arrive-right 330ms ease-out;
+}
+
+.mikkun-map-robot.is-stepping.route-left {
+  animation: mikkun-map-arrive-left 330ms ease-out;
+}
+
+.mikkun-map-robot.is-stepping.route-up {
+  animation: mikkun-map-arrive-up 330ms ease-out;
+}
+
+.mikkun-map-robot.is-stepping.route-down {
+  animation: mikkun-map-arrive-down 330ms ease-out;
+}
+
+.mikkun-map-robot.is-bumped {
+  animation: mikkun-map-bump 280ms ease-in-out;
+}
+
+.mikkun-adventure-lesson .answer-next-button {
+  position: static;
+  margin-bottom: calc(72px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom));
+  scroll-margin-bottom: calc(72px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom));
+}
+
+.mikkun-adventure-lesson .reading-feedback-slot {
+  scroll-margin-top: 20px;
+}
+
+@keyframes mikkun-map-arrive-right {
+  from { transform: translateX(calc(-100% - 7px)) scale(0.88); }
+  to { transform: translateX(0) scale(1); }
+}
+
+@keyframes mikkun-map-arrive-left {
+  from { transform: translateX(calc(100% + 7px)) scale(0.88); }
+  to { transform: translateX(0) scale(1); }
+}
+
+@keyframes mikkun-map-arrive-up {
+  from { transform: translateY(calc(100% + 7px)) scale(0.88); }
+  to { transform: translateY(0) scale(1); }
+}
+
+@keyframes mikkun-map-arrive-down {
+  from { transform: translateY(calc(-100% - 7px)) scale(0.88); }
+  to { transform: translateY(0) scale(1); }
+}
+
+@keyframes mikkun-map-bump {
+  25% { transform: translateX(-5px) rotate(-3deg); }
+  60% { transform: translateX(5px) rotate(3deg); }
+}
+
+@keyframes mikkun-map-arrival-star {
+  to { transform: translateY(-3px) rotate(10deg) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mikkun-map-robot.is-stepping,
+  .mikkun-map-robot.is-bumped,
+  .mikkun-map-arrival-star,
+  .mikkun-route-progress i {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 370px) {
+  .mikkun-route-controls {
+    grid-template-columns: repeat(3, 64px);
+  }
+
+  .mikkun-route-controls button {
+    width: 64px;
+    height: 55px;
+  }
+}
