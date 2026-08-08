@@ -6142,36 +6142,36 @@ html.is-writing body {
 }
 
 .memory-review-row > div {
-  display: flex;
-  justify-content: flex-start;
-  gap: 5px;
-  overflow-x: auto;
-  padding: 2px 2px 5px;
-  scrollbar-width: thin;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--memory-review-count, 4), minmax(0, 1fr));
+  gap: clamp(2px, 1.2vw, 5px);
+  padding: 2px 0 3px;
 }
 
-.memory-review-row span {
+.memory-review-row > div > span {
   position: relative;
-  min-width: 51px;
+  min-width: 0;
+  width: 100%;
   display: grid;
   place-items: center;
   gap: 2px;
-  padding: 5px 3px 4px;
+  padding: 5px 1px 4px;
   border: 2px solid #dce4e2;
   border-radius: 11px;
   background: white;
 }
 
-.memory-review-row span.is-match {
+.memory-review-row > div > span.is-match {
   border-color: #72c9b6;
 }
 
-.memory-review-row span.is-mismatch {
+.memory-review-row > div > span.is-mismatch {
   border-color: #e77960;
   background: #fff8f5;
 }
 
-.memory-review-row span > small {
+.memory-review-row > div > span > small {
   position: absolute;
   top: 2px;
   left: 4px;
@@ -6180,8 +6180,8 @@ html.is-writing body {
   font-weight: 950;
 }
 
-.memory-review-row span > em {
-  max-width: 46px;
+.memory-review-row > div > span > em {
+  max-width: 100%;
   overflow: hidden;
   color: #5f6976;
   font-size: 7px;
@@ -6190,6 +6190,11 @@ html.is-writing body {
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.memory-review-row .memory-order-card-art {
+  width: min(100%, 40px);
+  min-width: 28px;
 }
 
 .kanji-list-link {
@@ -6427,5 +6432,104 @@ html.is-writing body {
 
   .kanji-index-item {
     min-height: 65px;
+  }
+}
+
+/* v42: user-triggered cache-busting update control */
+.home-screen {
+  padding-top: env(safe-area-inset-top);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.app-update-button,
+.gate-update-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #cbd8ed;
+  background: #f2f7ff;
+  color: #45638f;
+  font-weight: 950;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(69, 99, 143, 0.12);
+}
+
+.app-update-button {
+  min-width: 66px;
+  min-height: 42px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  box-shadow: 0 5px 15px rgba(58, 83, 120, 0.07);
+}
+
+.app-update-button span,
+.gate-update-button span {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app-update-button b {
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.gate-update-button {
+  min-height: 42px;
+  margin: 9px auto 0;
+  padding: 8px 15px;
+  border-radius: 999px;
+}
+
+.gate-update-button b {
+  font-size: 10px;
+}
+
+.app-update-button:active,
+.gate-update-button:active {
+  transform: translateY(1px);
+  background: #e7f0ff;
+}
+
+.app-update-button:disabled,
+.gate-update-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.app-update-button.is-updating span,
+.gate-update-button.is-updating span {
+  animation: app-update-spin 750ms linear infinite;
+}
+
+@keyframes app-update-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 370px) {
+  .topbar-actions {
+    gap: 4px;
+  }
+
+  .app-update-button {
+    min-width: 58px;
+    padding-inline: 7px;
+  }
+
+  .streak-pill {
+    padding-inline: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-update-button.is-updating span,
+  .gate-update-button.is-updating span {
+    animation: none;
   }
 }

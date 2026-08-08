@@ -1561,6 +1561,9 @@
           <small>間違った人のレベルへ記録しないため、開くたびに確認します。</small>
         </section>
         <p class="app-update-date">最終更新：${APP_LAST_UPDATED}</p>
+        <button type="button" class="gate-update-button" data-action="refresh-app" aria-label="最新版に更新する">
+          <span aria-hidden="true">↻</span><b>最新版に更新</b>
+        </button>
       </div>
     `;
   }
@@ -1593,8 +1596,13 @@
           <button class="brand" type="button" data-view="home" aria-label="ホーム">
             <span class="brand-mark">の</span><span>のびる</span>
           </button>
-          <div class="streak-pill" aria-label="${state.streak}日連続">
-            <span class="flame">●</span><b>${state.streak}</b>日連続
+          <div class="topbar-actions">
+            <button type="button" class="app-update-button" data-action="refresh-app" aria-label="最新版に更新する">
+              <span aria-hidden="true">↻</span><b>最新版</b>
+            </button>
+            <div class="streak-pill" aria-label="${state.streak}日連続">
+              <span class="flame">●</span><b>${state.streak}</b>日連続
+            </div>
           </div>
         </header>
 
@@ -3089,7 +3097,7 @@
     } else {
       const message =
         state.flashResult === "wrong"
-          ? `<p class="result-message">おしい！ ${state.flashReplayUsed ? "もう一度こたえるか、降参できます。" : "1回だけ、もう一度見られます。"}</p>`
+          ? `<p class="result-message">おしい！ 正解は ${total} です。出題された数字を確認しよう。</p>`
           : state.flashResult === "correct"
             ? `<p class="result-message success">正解！ 合計は ${total} です。</p>`
             : state.flashResult === "given-up"
@@ -3113,11 +3121,11 @@
           ` : ""}
         </div>
         ${numberPad("flash")}
-        ${["correct", "given-up"].includes(state.flashResult)
+        ${["correct", "wrong", "given-up"].includes(state.flashResult)
           ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-flash">結果を確認したら次へ →</button>'
           : `<button type="button" class="primary-button wide" data-action="submit-flash" ${state.flashAnswer ? "" : "disabled"}>こたえる</button>`
         }
-        ${["correct", "given-up"].includes(state.flashResult)
+        ${["correct", "wrong", "given-up"].includes(state.flashResult)
           ? ""
           : state.flashReplayUsed
             ? '<button type="button" class="replay-button give-up-button" data-action="give-up-flash">降参する</button>'
@@ -3199,20 +3207,22 @@
           ${state.memoryChecked
             ? correct
               ? `
-                <div class="memory-correct-review" aria-label="正解した順番">
-                  <b>あなたの順番（正解）</b>
-                  <div>${reviewCards(selectedCards)}</div>
+                <div class="memory-answer-comparison" aria-label="正解した順番">
+                  <section class="memory-review-row correct-answer">
+                    <b>あなたの順番（正解）</b>
+                    <div style="--memory-review-count:${selectedCards.length}">${reviewCards(selectedCards)}</div>
+                  </section>
                 </div>
               `
               : `
                 <div class="memory-answer-comparison" aria-label="あなたの順番と正しい順番">
                   <section class="memory-review-row user-answer">
                     <b>あなたが入れた順番</b>
-                    <div>${reviewCards(selectedCards, true)}</div>
+                    <div style="--memory-review-count:${selectedCards.length}">${reviewCards(selectedCards, true)}</div>
                   </section>
                   <section class="memory-review-row correct-answer">
                     <b>正しい順番</b>
-                    <div>${reviewCards(problem.sequence)}</div>
+                    <div style="--memory-review-count:${problem.sequence.length}">${reviewCards(problem.sequence)}</div>
                   </section>
                 </div>
               `
@@ -3327,7 +3337,7 @@
   function numberPad(target) {
     const locked =
       (target === "math" && state.mathResult !== "idle") ||
-      (target === "flash" && ["correct", "given-up"].includes(state.flashResult)) ||
+      (target === "flash" && ["correct", "wrong", "given-up"].includes(state.flashResult)) ||
       (target === "digits" && state.digitsResult !== "idle");
     const disabled = locked ? "disabled" : "";
     return `
@@ -5065,6 +5075,50 @@
     `;
   }
 
+  async function refreshApplication(button) {
+    if (button?.disabled) return;
+    if (button) {
+      button.disabled = true;
+      button.classList.add("is-updating");
+      button.setAttribute("aria-busy", "true");
+      const label = button.querySelector("b");
+      if (label) label.textContent = "確認中…";
+    }
+    saveProgress();
+    if (location.protocol === "file:") {
+      location.reload();
+      return;
+    }
+
+    const refreshToken = Date.now().toString();
+    let latestVersion = window.__NOBIRU_APP_VERSION__ || refreshToken;
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 4500);
+      try {
+        const response = await fetch(`./version.json?refresh=${refreshToken}`, {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store" },
+          signal: controller.signal,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          latestVersion = String(data.version || latestVersion);
+        }
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    } catch {
+      // version.jsonを取得できなくても、一意なURLで再読込して古い表示を避けます。
+    }
+
+    const freshUrl = new URL(location.href);
+    freshUrl.searchParams.delete("updated");
+    freshUrl.searchParams.set("update", latestVersion);
+    freshUrl.searchParams.set("refresh", refreshToken);
+    location.replace(freshUrl.toString());
+  }
+
   function applyPlacementLevel(mode, level, closeAfter = false) {
     const safeMode = SKILL_MODES.includes(mode) ? mode : "write";
     const profile = ensureProfile(state.learnerName);
@@ -5276,7 +5330,7 @@
     if (numberButton) {
       const target = numberButton.dataset.numberTarget;
       if (target === "flash") {
-        if (["correct", "given-up"].includes(state.flashResult)) return;
+        if (["correct", "wrong", "given-up"].includes(state.flashResult)) return;
         if (state.flashAnswer.length < 4) state.flashAnswer += numberButton.dataset.number;
         state.flashResult = "idle";
       } else if (target === "digits") {
@@ -5314,6 +5368,9 @@
     }
 
     const actions = {
+      "refresh-app"() {
+        refreshApplication(actionButton);
+      },
       "back-home"() {
         stopFlash();
         stopMemory();
@@ -5504,6 +5561,7 @@
       "delete-number"() {
         const target = actionButton.dataset.numberTarget;
         if (target === "flash") {
+          if (["correct", "wrong", "given-up"].includes(state.flashResult)) return;
           state.flashAnswer = state.flashAnswer.slice(0, -1);
           state.flashResult = "idle";
         } else if (target === "digits") {
@@ -5539,7 +5597,7 @@
         startFlashSequence();
       },
       "replay-flash"() {
-        if (state.flashReplayUsed) return;
+        if (state.flashReplayUsed || state.flashResult !== "idle") return;
         state.flashReplayUsed = true;
         state.flashSequenceRevealed = false;
         state.flashAnswer = "";
@@ -5547,7 +5605,10 @@
         startFlashSequence();
       },
       "give-up-flash"() {
-        if (!state.flashReplayUsed || ["correct", "given-up"].includes(state.flashResult)) {
+        if (
+          !state.flashReplayUsed ||
+          ["correct", "wrong", "given-up"].includes(state.flashResult)
+        ) {
           return;
         }
         state.session.attempts += 1;
@@ -5561,7 +5622,7 @@
       "submit-flash"() {
         if (
           !state.flashAnswer ||
-          ["correct", "given-up"].includes(state.flashResult)
+          state.flashResult !== "idle"
         ) {
           return;
         }
@@ -5581,7 +5642,7 @@
         if (state.flashResult === "wrong") scrollToFlashReview();
       },
       "next-flash"() {
-        if (!["correct", "given-up"].includes(state.flashResult)) return;
+        if (!["correct", "wrong", "given-up"].includes(state.flashResult)) return;
         state.session.completed += 1;
         advanceAfterCompletedQuestion();
       },
