@@ -3,7 +3,7 @@
 
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
-  const APP_LAST_UPDATED = "2026年8月6日";
+  const APP_LAST_UPDATED = "2026年8月8日";
   const LEVEL_ADJUSTMENT_PASSWORD = "1234";
   const MODE_INFO = {
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
@@ -671,6 +671,7 @@
     counts: { ...DEFAULT_COUNTS },
     checkpointEvery: 5,
     levelViewMode: "write",
+    kanjiListStageId: "e1",
     placementMode: "write",
     placementDraftLevel: 1,
     placementOpen: false,
@@ -707,6 +708,7 @@
     flashPhase: "ready",
     flashCue: "3",
     flashReplayUsed: false,
+    flashSequenceRevealed: false,
     flashTimer: 0,
     flashRunToken: 0,
     memoryPhase: "ready",
@@ -1496,10 +1498,11 @@
       memory: memoryTemplate,
       digits: digitsTemplate,
       levels: levelsTemplate,
+      "kanji-list": kanjiListTemplate,
       profile: profileTemplate,
       result: resultTemplate,
     };
-    const showNav = ["home", "levels", "profile"].includes(state.view);
+    const showNav = ["home", "levels", "kanji-list", "profile"].includes(state.view);
     app.innerHTML = `
       ${views[state.view]()}
       ${showNav ? bottomNavTemplate() : ""}
@@ -1638,6 +1641,14 @@
           <i>›</i>
         </button>
 
+        ${mikkun ? "" : `
+          <button type="button" class="kanji-list-link" data-view="kanji-list">
+            <span class="kanji-list-link-icon">字</span>
+            <span><b>学年別漢字一覧</b><small>小学1年から中学3年まで、学年を選んで確認</small></span>
+            <i aria-hidden="true">›</i>
+          </button>
+        `}
+
         <section class="level-card" aria-label="${mikkun ? "みっくんのがんばり" : "6分野の総合"}レベル${homeLevel}">
           <div class="level-copy">
             <span class="level-kicker">${mikkun ? "みっくんの がんばりレベル" : "6分野の総合レベル"}</span>
@@ -1678,6 +1689,68 @@
           <span class="mini-face">☺</span>
           <p><b>毎日5分でも、ちゃんとのびる。</b><br />${state.checkpointEvery}問ごとに、続けるか休むか選べます。</p>
         </div>
+      </div>
+    `;
+  }
+
+  function kanjiListTemplate() {
+    const stage =
+      KANJI_CURRICULUM_STAGES.find((item) => item.id === state.kanjiListStageId) ||
+      KANJI_CURRICULUM_STAGES[0];
+    const middleSchoolStage = stage.id.startsWith("j");
+    return `
+      <div class="screen sub-screen kanji-list-screen">
+        <header class="sub-header kanji-list-header">
+          <button class="round-button" type="button" data-view="home" aria-label="ホームへ戻る">‹</button>
+          <div>
+            <p class="eyebrow">KANJI BY GRADE</p>
+            <h1>学年別漢字一覧</h1>
+          </div>
+        </header>
+
+        <section class="kanji-list-intro">
+          <span aria-hidden="true">字</span>
+          <div>
+            <b>学年を選んで、習う漢字を確認</b>
+            <p>漢字の下には代表的な読み方を表示しています。</p>
+          </div>
+        </section>
+
+        <div class="kanji-grade-tabs" role="tablist" aria-label="表示する学年">
+          ${KANJI_CURRICULUM_STAGES.map((item) => `
+            <button
+              type="button"
+              role="tab"
+              aria-selected="${item.id === stage.id}"
+              class="${item.id === stage.id ? "active" : ""}"
+              data-kanji-list-stage="${item.id}"
+            >${item.label}${item.id.startsWith("j") ? "目安" : ""}<small>${item.rows.length}字</small></button>
+          `).join("")}
+        </div>
+
+        <section class="kanji-list-panel" aria-labelledby="kanji-list-title">
+          <div class="kanji-list-panel-heading" id="kanji-list-heading">
+            <div>
+              <p class="eyebrow">${middleSchoolStage ? "中学校で学ぶ常用漢字" : "学年別漢字配当表"}</p>
+              <h2 id="kanji-list-title">${stage.label}${middleSchoolStage ? "目安" : "で習う漢字"}</h2>
+            </div>
+            <strong>${stage.rows.length}<small>字</small></strong>
+          </div>
+          <p class="kanji-list-source-note">
+            ${middleSchoolStage
+              ? "中学校では学年別の公的な配当がないため、小学校配当外の常用漢字を、このアプリの学習順に3段階へ分けています。"
+              : "文部科学省の学年別漢字配当表に沿った一覧です。"
+            }
+          </p>
+          <div class="kanji-index-grid">
+            ${stage.rows.map((row) => `
+              <article class="kanji-index-item" aria-label="${row.character}、${escapeHtml(row.primaryReading)}">
+                <b>${row.character}</b>
+                <span>${escapeHtml(row.primaryReading)}</span>
+              </article>
+            `).join("")}
+          </div>
+        </section>
       </div>
     `;
   }
@@ -1900,6 +1973,7 @@
   function scrollToMemoryReview() {
     window.setTimeout(() => {
       const target =
+        document.querySelector(".memory-answer-comparison") ||
         document.querySelector(".memory-correct-review") ||
         document.querySelector(".memory-answer-stage .reading-feedback-slot");
       if (!target) return;
@@ -1907,6 +1981,18 @@
       target.scrollIntoView({
         behavior: reduceMotion ? "auto" : "smooth",
         block: "start",
+      });
+    }, 80);
+  }
+
+  function scrollToFlashReview() {
+    window.setTimeout(() => {
+      const target = document.querySelector(".flash-sequence-review");
+      if (!target) return;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
       });
     }, 80);
   }
@@ -3015,6 +3101,16 @@
           <h1>合計を答えよう</h1>
           <div class="answer-box ${state.flashResult}">${state.flashAnswer || "<span>?</span>"}</div>
           ${message}
+          ${state.flashSequenceRevealed ? `
+            <div class="flash-sequence-review" aria-label="出題された数字 ${state.flashSequence.join("、")}">
+              <b>出題された数字</b>
+              <div>
+                ${state.flashSequence.map((number, index) => `
+                  <span>${number}</span>${index < state.flashSequence.length - 1 ? '<i aria-hidden="true">＋</i>' : ""}
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
         </div>
         ${numberPad("flash")}
         ${["correct", "given-up"].includes(state.flashResult)
@@ -3078,58 +3174,76 @@
       `;
     } else {
       const correct = state.memoryChecked && state.memoryResult === "correct";
-      const answerSequence = problem.sequence
-        .map((card) => `${card.symbol} ${card.label}`)
-        .join(" → ");
+      const selectedCards = state.memorySelected
+        .map((id) => learningCardById(id))
+        .filter(Boolean);
+      const reviewCards = (cards, compareWithAnswer = false) => cards.map((card, index) => {
+        const matches = !compareWithAnswer || card.id === problem.sequence[index]?.id;
+        return `
+          <span class="${matches ? "is-match" : "is-mismatch"}">
+            <small>${index + 1}</small>
+            ${learningCardArt(card.id, "memory-order-card-art")}
+            <em>${card.label}</em>
+          </span>
+        `;
+      }).join("");
       const feedback = state.memoryChecked
         ? correct
           ? '<div class="reading-feedback correct"><b>正解！</b> 順番まで覚えられました。</div>'
-          : `<div class="reading-feedback wrong"><b>おしい！</b> 正しい順番は「${answerSequence}」です。</div>`
+          : '<div class="reading-feedback wrong"><b>おしい！</b> 2段のカードを見比べて確認しよう。</div>'
         : "";
       stage = `
         <div class="memory-answer-stage">
           <p class="eyebrow">どの順番だった？</p>
           <h1>出てきた順にタップしよう</h1>
-          <div class="memory-order-strip" aria-label="選んだ順番">
-            ${problem.sequence.map((_, index) => {
-              const selectedId = state.memorySelected[index];
-              const card = memoryCards.find((item) => item.id === selectedId);
-              const resultClass = state.memoryChecked
-                ? selectedId === problem.sequence[index]?.id
-                  ? "answer-correct"
-                  : "answer-wrong"
-                : "";
-              return `
-                 <span class="${card ? "filled" : ""} ${resultClass}">
-                   <small>${index + 1}</small>${card ? learningCardArt(card.id, "memory-order-card-art") : "？"}
-                 </span>
-              `;
-            }).join("")}
-          </div>
-          <div class="memory-choice-grid">
-            ${state.memoryChoices.map((card) => {
-              const selected = state.memorySelected.includes(card.id);
-              return `
-                <button type="button" data-memory-order="${card.id}" class="${selected ? "selected" : ""}" ${state.memoryChecked || selected ? "disabled" : ""}>
-                  ${learningCardArt(card.id, "memory-choice-card-art")}<span class="visually-hidden">${card.label}</span>
-                </button>
-              `;
-            }).join("")}
-          </div>
-          ${!state.memoryChecked && state.memorySelected.length
-            ? '<button type="button" class="memory-undo-button" data-action="undo-memory">ひとつ戻す</button>'
-            : ""
-          }
-          ${state.memoryChecked ? `
-            <div class="memory-correct-review" aria-label="正しい順番">
-              <b>正しい順番</b>
-              <div>
-                ${problem.sequence.map((card, index) => `
-                  <span><small>${index + 1}</small>${learningCardArt(card.id, "memory-order-card-art")}<em>${card.label}</em></span>
-                `).join("")}
+          ${state.memoryChecked
+            ? correct
+              ? `
+                <div class="memory-correct-review" aria-label="正解した順番">
+                  <b>あなたの順番（正解）</b>
+                  <div>${reviewCards(selectedCards)}</div>
+                </div>
+              `
+              : `
+                <div class="memory-answer-comparison" aria-label="あなたの順番と正しい順番">
+                  <section class="memory-review-row user-answer">
+                    <b>あなたが入れた順番</b>
+                    <div>${reviewCards(selectedCards, true)}</div>
+                  </section>
+                  <section class="memory-review-row correct-answer">
+                    <b>正しい順番</b>
+                    <div>${reviewCards(problem.sequence)}</div>
+                  </section>
+                </div>
+              `
+            : `
+              <div class="memory-order-strip" aria-label="選んだ順番">
+                ${problem.sequence.map((_, index) => {
+                  const selectedId = state.memorySelected[index];
+                  const card = memoryCards.find((item) => item.id === selectedId);
+                  return `
+                    <span class="${card ? "filled" : ""}">
+                      <small>${index + 1}</small>${card ? learningCardArt(card.id, "memory-order-card-art") : "？"}
+                    </span>
+                  `;
+                }).join("")}
               </div>
-            </div>
-          ` : ""}
+              <div class="memory-choice-grid">
+                ${state.memoryChoices.map((card) => {
+                  const selected = state.memorySelected.includes(card.id);
+                  return `
+                    <button type="button" data-memory-order="${card.id}" class="${selected ? "selected" : ""}" ${selected ? "disabled" : ""}>
+                      ${learningCardArt(card.id, "memory-choice-card-art")}<span class="visually-hidden">${card.label}</span>
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+              ${state.memorySelected.length
+                ? '<button type="button" class="memory-undo-button" data-action="undo-memory">ひとつ戻す</button>'
+                : ""
+              }
+            `
+          }
           <div class="reading-feedback-slot">${feedback}</div>
           ${state.memoryChecked
             ? '<button type="button" class="primary-button wide answer-next-button" data-action="next-memory">答え合わせを見たら次へ →</button>'
@@ -3249,6 +3363,7 @@
       state.flashAnswer = "";
       state.flashResult = "idle";
       state.flashReplayUsed = false;
+      state.flashSequenceRevealed = false;
       return;
     }
     const band = bandForLevel(
@@ -3277,6 +3392,7 @@
     state.flashAnswer = "";
     state.flashResult = "idle";
     state.flashReplayUsed = false;
+    state.flashSequenceRevealed = false;
   }
 
   function startFlashSequence() {
@@ -4998,6 +5114,24 @@
       playTapSound();
     }
 
+    const kanjiListStageButton = event.target.closest("[data-kanji-list-stage]");
+    if (kanjiListStageButton) {
+      const stageId = kanjiListStageButton.dataset.kanjiListStage;
+      if (KANJI_CURRICULUM_STAGES.some((stage) => stage.id === stageId)) {
+        state.kanjiListStageId = stageId;
+        render();
+        window.setTimeout(() => {
+          document.querySelector("#kanji-list-heading")?.scrollIntoView({
+            behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+              ? "auto"
+              : "smooth",
+            block: "start",
+          });
+        }, 60);
+      }
+      return;
+    }
+
     const startButton = event.target.closest("[data-start]");
     if (startButton) {
       startSession(
@@ -5407,6 +5541,7 @@
       "replay-flash"() {
         if (state.flashReplayUsed) return;
         state.flashReplayUsed = true;
+        state.flashSequenceRevealed = false;
         state.flashAnswer = "";
         state.flashResult = "idle";
         startFlashSequence();
@@ -5417,9 +5552,11 @@
         }
         state.session.attempts += 1;
         state.flashResult = "given-up";
+        state.flashSequenceRevealed = true;
         playWrongSound();
         applyWrongAnswerPenalty("flash");
         render();
+        scrollToFlashReview();
       },
       "submit-flash"() {
         if (
@@ -5436,10 +5573,12 @@
           playCorrectSound();
           if (!state.questionPenaltyApplied) earnXp(MODE_INFO.flash.xp);
         } else {
+          state.flashSequenceRevealed = true;
           playWrongSound();
           applyWrongAnswerPenalty("flash");
         }
         render();
+        if (state.flashResult === "wrong") scrollToFlashReview();
       },
       "next-flash"() {
         if (!["correct", "given-up"].includes(state.flashResult)) return;
@@ -5690,6 +5829,7 @@
     state.flashResult = "idle";
     state.flashCue = "3";
     state.flashReplayUsed = false;
+    state.flashSequenceRevealed = false;
     if (state.session?.mode !== "flash") state.flashPhase = "ready";
     state.memoryPhase = "ready";
     state.memoryVisible = null;

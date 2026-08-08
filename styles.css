@@ -6046,3 +6046,386 @@ html.is-writing body {
     height: 55px;
   }
 }
+
+/* v40: answer reviews, iPhone top safe area and grade-by-grade kanji index */
+.lesson-screen {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+.flash-sequence-review {
+  width: 100%;
+  margin: 13px 0 2px;
+  padding: 13px 10px;
+  border: 2px solid #eac77b;
+  border-radius: 17px;
+  background: #fff8df;
+  scroll-margin-block: 18px;
+}
+
+.flash-sequence-review > b {
+  display: block;
+  margin-bottom: 9px;
+  color: #876526;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.flash-sequence-review > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.flash-sequence-review span {
+  min-width: 43px;
+  min-height: 43px;
+  display: grid;
+  place-items: center;
+  padding: 5px 8px;
+  border: 1px solid #dfc685;
+  border-radius: 12px;
+  background: white;
+  color: var(--navy);
+  font-size: 21px;
+  font-weight: 950;
+  box-shadow: 0 4px 9px rgba(104, 78, 27, 0.08);
+}
+
+.flash-sequence-review i {
+  color: #b38a35;
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.memory-answer-comparison {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  scroll-margin-top: 18px;
+}
+
+.memory-review-row {
+  padding: 11px 8px 9px;
+  border: 2px solid #e6ded0;
+  border-radius: 17px;
+  background: #faf8f2;
+}
+
+.memory-review-row.user-answer {
+  border-color: #efb8a8;
+  background: #fff3ee;
+}
+
+.memory-review-row.correct-answer {
+  border-color: #8bd7c7;
+  background: #eefbf7;
+}
+
+.memory-review-row > b {
+  display: block;
+  margin: 0 4px 8px;
+  color: #5c6675;
+  font-size: 11px;
+  font-weight: 950;
+  text-align: left;
+}
+
+.memory-review-row.user-answer > b {
+  color: #a3513e;
+}
+
+.memory-review-row.correct-answer > b {
+  color: #237f6c;
+}
+
+.memory-review-row > div {
+  display: flex;
+  justify-content: flex-start;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 2px 2px 5px;
+  scrollbar-width: thin;
+}
+
+.memory-review-row span {
+  position: relative;
+  min-width: 51px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 5px 3px 4px;
+  border: 2px solid #dce4e2;
+  border-radius: 11px;
+  background: white;
+}
+
+.memory-review-row span.is-match {
+  border-color: #72c9b6;
+}
+
+.memory-review-row span.is-mismatch {
+  border-color: #e77960;
+  background: #fff8f5;
+}
+
+.memory-review-row span > small {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  color: #747d88;
+  font-size: 7px;
+  font-weight: 950;
+}
+
+.memory-review-row span > em {
+  max-width: 46px;
+  overflow: hidden;
+  color: #5f6976;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanji-list-link {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 43px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 15px;
+  padding: 12px 14px;
+  border: 1px solid #cfdcf3;
+  border-radius: 17px;
+  background: #f1f6ff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kanji-list-link > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kanji-list-link b {
+  font-size: 12px;
+}
+
+.kanji-list-link small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #71809a;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanji-list-link > i {
+  color: #7085aa;
+  font-size: 20px;
+  font-style: normal;
+}
+
+.kanji-list-link-icon {
+  width: 41px;
+  height: 41px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #dce9ff;
+  color: #405f96;
+  font-size: 21px;
+  font-weight: 950;
+}
+
+.kanji-list-screen {
+  background:
+    radial-gradient(circle at 92% 8%, rgba(85, 167, 232, 0.1) 0 11%, transparent 11.5%),
+    var(--paper);
+}
+
+.kanji-list-intro {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 15px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--navy);
+  color: white;
+  box-shadow: 0 10px 23px rgba(35, 53, 83, 0.14);
+}
+
+.kanji-list-intro > span {
+  width: 49px;
+  height: 49px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #ffdb71;
+  color: #59471b;
+  font-size: 25px;
+  font-weight: 950;
+}
+
+.kanji-list-intro b {
+  font-size: 13px;
+}
+
+.kanji-list-intro p {
+  margin: 4px 0 0;
+  color: #d0d9e9;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.kanji-grade-tabs {
+  position: sticky;
+  z-index: 15;
+  top: env(safe-area-inset-top);
+  display: flex;
+  gap: 7px;
+  margin: 0 -22px;
+  padding: 10px 22px;
+  overflow-x: auto;
+  background: rgba(251, 250, 245, 0.96);
+  box-shadow: 0 8px 14px rgba(44, 55, 72, 0.06);
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kanji-grade-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.kanji-grade-tabs button {
+  min-width: 89px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid #dfe3ea;
+  border-radius: 13px;
+  background: white;
+  color: #667287;
+  font-size: 10px;
+  font-weight: 950;
+  scroll-snap-align: center;
+  cursor: pointer;
+}
+
+.kanji-grade-tabs button small {
+  color: #929aa8;
+  font-size: 7px;
+}
+
+.kanji-grade-tabs button.active {
+  border-color: #ff9d83;
+  background: #fff0ea;
+  color: #b7533c;
+  box-shadow: inset 0 0 0 1px rgba(255, 122, 89, 0.12);
+}
+
+.kanji-list-panel {
+  margin-top: 17px;
+  padding: 17px 13px 20px;
+  border: 1px solid #e4e0d7;
+  border-radius: 22px;
+  background: white;
+  box-shadow: 0 9px 23px rgba(44, 55, 72, 0.06);
+}
+
+.kanji-list-panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  scroll-margin-top: calc(78px + env(safe-area-inset-top));
+}
+
+.kanji-list-panel-heading h2 {
+  margin: 2px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.kanji-list-panel-heading > strong {
+  color: var(--coral);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.kanji-list-panel-heading > strong small {
+  margin-left: 2px;
+  font-size: 9px;
+}
+
+.kanji-list-source-note {
+  margin: 11px 0 14px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: #f5f6f8;
+  color: #737d8c;
+  font-size: 9px;
+  line-height: 1.65;
+}
+
+.kanji-index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+  gap: 7px;
+}
+
+.kanji-index-item {
+  min-width: 0;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 3px 5px;
+  border: 1px solid #e3e5e9;
+  border-radius: 12px;
+  background: #fcfcfb;
+}
+
+.kanji-index-item b {
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.kanji-index-item span {
+  width: 100%;
+  overflow: hidden;
+  color: #737d8d;
+  font-size: 8px;
+  font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 370px) {
+  .kanji-index-grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 6px;
+  }
+
+  .kanji-index-item {
+    min-height: 65px;
+  }
+}
