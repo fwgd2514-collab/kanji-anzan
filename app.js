@@ -3,7 +3,7 @@
 
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
-  const APP_LAST_UPDATED = "2026年8月8日";
+  const APP_LAST_UPDATED = "2026年8月10日";
   const LEVEL_ADJUSTMENT_PASSWORD = "1234";
   const MODE_INFO = {
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
@@ -636,6 +636,23 @@
     }))
     .filter((item) => item.character && item.primaryReading);
   const middleSchoolKanji = curriculumKanji.filter((item) => item.grade === 8);
+  const examKanjiUsage = idiomEntries
+    .filter(([band]) => Number(band) >= 8)
+    .reduce((counts, [, idiom]) => {
+      Array.from(String(idiom || "")).forEach((character) => {
+        counts.set(character, (counts.get(character) || 0) + 1);
+      });
+      return counts;
+    }, new Map());
+  const examKanji = curriculumKanji
+    .filter((item) => examKanjiUsage.has(item.character))
+    .sort(
+      (left, right) =>
+        (examKanjiUsage.get(right.character) || 0) -
+          (examKanjiUsage.get(left.character) || 0) ||
+        right.strokes - left.strokes ||
+        left.frequency - right.frequency,
+    );
   const KANJI_CURRICULUM_STAGES = [
     { id: "e1", start: 1, end: 10, label: "小学1年", grade: 1, rows: curriculumKanji.filter((item) => item.grade === 1) },
     { id: "e2", start: 11, end: 20, label: "小学2年", grade: 2, rows: curriculumKanji.filter((item) => item.grade === 2) },
@@ -646,6 +663,7 @@
     { id: "j1", start: 69, end: 78, label: "中学1年", grade: 8, rows: middleSchoolKanji.slice(0, 400) },
     { id: "j2", start: 79, end: 88, label: "中学2年", grade: 8, rows: middleSchoolKanji.slice(400, 800) },
     { id: "j3", start: 89, end: 96, label: "中学3年", grade: 8, rows: middleSchoolKanji.slice(800) },
+    { id: "exam", start: 97, end: 120, label: "お受験", grade: 9, rows: examKanji },
   ];
 
   const state = {
@@ -658,6 +676,7 @@
     namesSource: "初期名簿",
     learnerGateReady: false,
     learnerConfirmed: false,
+    hasPreviousLearner: false,
     profiles: {},
     lastFirstByMode: {
       write: "",
@@ -672,6 +691,7 @@
     checkpointEvery: 5,
     levelViewMode: "write",
     kanjiListStageId: "e1",
+    kanjiListSelectedCharacter: "",
     placementMode: "write",
     placementDraftLevel: 1,
     placementOpen: false,
@@ -776,6 +796,7 @@
       if (Number.isFinite(saved.streak)) state.streak = Math.max(0, Number(saved.streak));
       if (typeof saved.learnerName === "string" && saved.learnerName.trim()) {
         state.learnerName = saved.learnerName.trim().slice(0, 20);
+        state.hasPreviousLearner = saved.learnerWasConfirmed !== false;
       }
       if (Array.isArray(saved.learnerNames)) {
         const savedNames = parseLearnerNames(saved.learnerNames.join("\n"));
@@ -880,6 +901,7 @@
     state.namesSource = source;
     state.learnerNames.forEach((name) => ensureProfile(name));
     if (!state.learnerNames.includes(state.learnerName)) {
+      state.hasPreviousLearner = false;
       activateLearner(state.learnerNames[0], false);
     }
     saveProgress();
@@ -999,6 +1021,7 @@
           xp: state.xp,
           streak: state.streak,
           learnerName: state.learnerName,
+          learnerWasConfirmed: state.hasPreviousLearner,
           learnerNames: state.learnerNames,
           profiles: state.profiles,
           lastFirstByMode: state.lastFirstByMode,
@@ -1512,7 +1535,10 @@
       ${state.exitConfirmOpen ? exitConfirmTemplate() : ""}
       ${state.toast ? `<div class="toast" role="status"><span>★</span> ${state.toast}</div>` : ""}
     `;
-    if (["write", "read"].includes(state.view) && state.kanjiDemoOpen) {
+    if (
+      (["write", "read"].includes(state.view) && state.kanjiDemoOpen) ||
+      (state.view === "kanji-list" && state.kanjiListSelectedCharacter)
+    ) {
       setupKanjiStrokeDemo();
     } else if (state.view === "write") {
       setupWritingCanvas();
@@ -1538,14 +1564,30 @@
         </div>
       `;
     }
+    const previousLearnerAvailable =
+      state.hasPreviousLearner && state.learnerNames.includes(state.learnerName);
     return `
       <div class="screen learner-gate-screen">
         <div class="learner-gate-brand"><span class="brand-mark">の</span><b>のびる</b></div>
         <section class="learner-gate-card" aria-labelledby="learner-gate-title">
           <span class="learner-gate-icon" aria-hidden="true">人</span>
           <p class="eyebrow">WHO IS LEARNING?</p>
-          <h1 id="learner-gate-title">自分の名前を<br />選んでください</h1>
-          <p>選んだ名前に、今日のレベルと学習記録が保存されます。</p>
+          <h1 id="learner-gate-title">
+            ${previousLearnerAvailable
+              ? `前回の「${escapeHtml(state.learnerName)}」で<br />続けますか？`
+              : "自分の名前を<br />選んでください"
+            }
+          </h1>
+          <p>${previousLearnerAvailable
+            ? "同じ人なら、名前を選び直さずに始められます。"
+            : "選んだ名前に、今日のレベルと学習記録が保存されます。"
+          }</p>
+          ${previousLearnerAvailable ? `
+            <button type="button" class="primary-button wide learner-continue-button" data-action="continue-last-learner">
+              <span>前回の学習者</span><b>${escapeHtml(state.learnerName)}</b><i>この人で続ける →</i>
+            </button>
+            <div class="learner-gate-divider"><span>別の人に変える</span></div>
+          ` : ""}
           <label class="learner-gate-field" for="startupLearnerName">
             <span>学習する人</span>
             <select id="startupLearnerName" aria-label="自分の名前を選ぶ" required>
@@ -1558,7 +1600,10 @@
           <button type="button" class="primary-button wide learner-gate-confirm" data-action="confirm-startup-learner" disabled>
             この名前で始める
           </button>
-          <small>間違った人のレベルへ記録しないため、開くたびに確認します。</small>
+          <small>${previousLearnerAvailable
+            ? "違う人が使う場合だけ、上の一覧から名前を選び直してください。"
+            : "間違った人のレベルへ記録しないため、最初に名前を確認します。"
+          }</small>
         </section>
         <p class="app-update-date">最終更新：${APP_LAST_UPDATED}</p>
         <button type="button" class="gate-update-button" data-action="refresh-app" aria-label="最新版に更新する">
@@ -1652,7 +1697,7 @@
         ${mikkun ? "" : `
           <button type="button" class="kanji-list-link" data-view="kanji-list">
             <span class="kanji-list-link-icon">字</span>
-            <span><b>学年別漢字一覧</b><small>小学1年から中学3年まで、学年を選んで確認</small></span>
+            <span><b>学年別漢字一覧</b><small>小学1年からお受験まで、書き順と使い方を学習</small></span>
             <i aria-hidden="true">›</i>
           </button>
         `}
@@ -1701,11 +1746,136 @@
     `;
   }
 
+  function kanjiUsageExamples(row) {
+    const examples = [];
+    const usedWords = new Set();
+    const addExample = (word, reading = "", meaning = "") => {
+      const cleanWord = String(word || "").trim();
+      if (!cleanWord || usedWords.has(cleanWord)) return;
+      usedWords.add(cleanWord);
+      examples.push({
+        word: cleanWord,
+        reading: String(reading || "").trim(),
+        meaning:
+          String(meaning || "").trim() ||
+          basicWordMeanings[cleanWord] ||
+          `「${cleanWord}」のような言葉で使います。`,
+      });
+    };
+
+    addExample(row.word, row.wordReading);
+    readingProblems.forEach((problem) => {
+      if (String(problem.kanji || "").includes(row.character)) {
+        addExample(problem.kanji, problem.answer, problem.meaning);
+      }
+    });
+    additionalKanjiProblems.forEach(([, character, reading, word]) => {
+      if (String(word || "").includes(row.character) || character === row.character) {
+        addExample(word || character, reading);
+      }
+    });
+    idiomEntries.forEach(([, idiom, reading, meaning]) => {
+      if (String(idiom || "").includes(row.character)) {
+        addExample(idiom, reading, meaning || window.NOBIRU_IDIOM_MEANINGS?.[idiom]);
+      }
+    });
+    return examples.slice(0, 5);
+  }
+
+  function kanjiListDetailTemplate(row, stage) {
+    const readings = [...new Set([row.primaryReading, ...row.readings].filter(Boolean))];
+    const examples = kanjiUsageExamples(row);
+    return `
+      <div class="screen sub-screen kanji-list-screen kanji-detail-screen">
+        <header class="sub-header kanji-list-header">
+          <button class="round-button" type="button" data-action="close-kanji-list-detail" aria-label="漢字一覧へ戻る">‹</button>
+          <div>
+            <p class="eyebrow">KANJI STUDY</p>
+            <h1>漢字をくわしく学ぶ</h1>
+          </div>
+        </header>
+
+        <section class="kanji-detail-hero" aria-labelledby="kanji-detail-title">
+          <span class="kanji-detail-character" aria-hidden="true">${row.character}</span>
+          <div>
+            <p class="eyebrow">${stage.label}${stage.id === "exam" ? "・発展" : ""}</p>
+            <h2 id="kanji-detail-title">「${row.character}」を学ぼう</h2>
+            <p>${row.strokes ? `${row.strokes}画` : "画数を確認中"} ・ 主な読み「${escapeHtml(row.primaryReading)}」</p>
+          </div>
+        </section>
+
+        <section class="kanji-detail-card" aria-labelledby="kanji-readings-title">
+          <div class="kanji-detail-section-heading">
+            <span aria-hidden="true">読</span>
+            <div><p class="eyebrow">READINGS</p><h2 id="kanji-readings-title">読み方</h2></div>
+          </div>
+          <div class="kanji-detail-reading-chips">
+            ${readings.map((reading, index) => `
+              <span class="${index === 0 ? "primary" : ""}">${escapeHtml(reading)}</span>
+            `).join("")}
+          </div>
+          <p class="kanji-detail-help">最初の色付き表示は、このアプリで最初に覚える代表的な読み方です。</p>
+        </section>
+
+        <section class="kanji-detail-card" aria-labelledby="kanji-examples-title">
+          <div class="kanji-detail-section-heading">
+            <span aria-hidden="true">例</span>
+            <div><p class="eyebrow">WORDS &amp; USAGE</p><h2 id="kanji-examples-title">ことば・活用事例</h2></div>
+          </div>
+          <div class="kanji-usage-list">
+            ${examples.length ? examples.map((example) => `
+              <article>
+                <div><b>${escapeHtml(example.word)}</b>${example.reading ? `<span>${escapeHtml(example.reading)}</span>` : ""}</div>
+                <p>${escapeHtml(example.meaning)}</p>
+              </article>
+            `).join("") : `
+              <article><div><b>${row.character}</b><span>${escapeHtml(row.primaryReading)}</span></div><p>この漢字を使う言葉を学習問題の中でも探してみましょう。</p></article>
+            `}
+          </div>
+        </section>
+
+        <section class="kanji-detail-card kanji-detail-strokes" aria-labelledby="kanji-strokes-title">
+          <div class="kanji-detail-section-heading">
+            <span aria-hidden="true">書</span>
+            <div><p class="eyebrow">STROKE ORDER</p><h2 id="kanji-strokes-title">書き順</h2></div>
+          </div>
+          <p class="kanji-detail-help">一画ずつゆっくり動きます。止まったら「もう一度」で繰り返せます。</p>
+          <section class="kanji-stroke-stage" id="kanjiStrokeStage" aria-live="polite">
+            <div class="kanji-stroke-loading" id="kanjiStrokeLoading">
+              <span aria-hidden="true">${row.character}</span>
+              <p id="kanjiStrokeLoadingText">書き順を準備しています…</p>
+            </div>
+            <svg
+              id="kanjiStrokeSvg"
+              viewBox="0 0 109 109"
+              role="img"
+              aria-label="${row.character}の書き順アニメーション"
+              hidden
+            ></svg>
+            <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
+          </section>
+          <div class="kanji-stroke-actions kanji-detail-stroke-actions">
+            <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>↺ もう一度</button>
+            <button type="button" class="primary-button" data-action="close-kanji-list-detail">一覧に戻る</button>
+          </div>
+          <p class="kanji-stroke-source">
+            書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">KanjiVG</a>（CC BY-SA 3.0）
+          </p>
+        </section>
+      </div>
+    `;
+  }
+
   function kanjiListTemplate() {
     const stage =
       KANJI_CURRICULUM_STAGES.find((item) => item.id === state.kanjiListStageId) ||
       KANJI_CURRICULUM_STAGES[0];
+    const selectedRow = stage.rows.find(
+      (row) => row.character === state.kanjiListSelectedCharacter,
+    );
+    if (selectedRow) return kanjiListDetailTemplate(selectedRow, stage);
     const middleSchoolStage = stage.id.startsWith("j");
+    const examStage = stage.id === "exam";
     return `
       <div class="screen sub-screen kanji-list-screen">
         <header class="sub-header kanji-list-header">
@@ -1719,8 +1889,8 @@
         <section class="kanji-list-intro">
           <span aria-hidden="true">字</span>
           <div>
-            <b>学年を選んで、習う漢字を確認</b>
-            <p>漢字の下には代表的な読み方を表示しています。</p>
+            <b>漢字を押して、読み方・使い方・書き順を学習</b>
+            <p>学年を選び、気になる漢字をタップしてください。</p>
           </div>
         </section>
 
@@ -1739,23 +1909,26 @@
         <section class="kanji-list-panel" aria-labelledby="kanji-list-title">
           <div class="kanji-list-panel-heading" id="kanji-list-heading">
             <div>
-              <p class="eyebrow">${middleSchoolStage ? "中学校で学ぶ常用漢字" : "学年別漢字配当表"}</p>
-              <h2 id="kanji-list-title">${stage.label}${middleSchoolStage ? "目安" : "で習う漢字"}</h2>
+              <p class="eyebrow">${examStage ? "難関熟語から選んだ発展漢字" : middleSchoolStage ? "中学校で学ぶ常用漢字" : "学年別漢字配当表"}</p>
+              <h2 id="kanji-list-title">${examStage ? "お受験・発展漢字" : `${stage.label}${middleSchoolStage ? "目安" : "で習う漢字"}`}</h2>
             </div>
             <strong>${stage.rows.length}<small>字</small></strong>
           </div>
           <p class="kanji-list-source-note">
-            ${middleSchoolStage
+            ${examStage
+              ? "中学3年までの範囲を終えた人向けに、難関入試レベルの四字熟語で使われる漢字を集めたアプリ独自の発展一覧です。"
+              : middleSchoolStage
               ? "中学校では学年別の公的な配当がないため、小学校配当外の常用漢字を、このアプリの学習順に3段階へ分けています。"
               : "文部科学省の学年別漢字配当表に沿った一覧です。"
             }
           </p>
           <div class="kanji-index-grid">
             ${stage.rows.map((row) => `
-              <article class="kanji-index-item" aria-label="${row.character}、${escapeHtml(row.primaryReading)}">
+              <button type="button" class="kanji-index-item" data-kanji-detail="${escapeHtml(row.character)}" aria-label="${row.character}、${escapeHtml(row.primaryReading)}。詳しく学ぶ">
                 <b>${row.character}</b>
                 <span>${escapeHtml(row.primaryReading)}</span>
-              </article>
+                <i aria-hidden="true">›</i>
+              </button>
             `).join("")}
           </div>
         </section>
@@ -2243,7 +2416,7 @@
       if (
         requestToken !== kanjiStrokeRunToken ||
         !state.kanjiDemoOpen ||
-        !["write", "read"].includes(state.view)
+        !["write", "read", "kanji-list"].includes(state.view)
       ) {
         return;
       }
@@ -2252,7 +2425,7 @@
       if (
         requestToken !== kanjiStrokeRunToken ||
         !state.kanjiDemoOpen ||
-        !["write", "read"].includes(state.view)
+        !["write", "read", "kanji-list"].includes(state.view)
       ) {
         return;
       }
@@ -2263,7 +2436,11 @@
         loadingText.textContent =
           "書き順を読み込めませんでした。通信を確認してください。";
       }
-      if (status) status.textContent = "「結果に戻る」はそのまま押せます";
+      if (status) {
+        status.textContent = state.view === "kanji-list"
+          ? "一覧へ戻ることはできます"
+          : "「結果に戻る」はそのまま押せます";
+      }
     }
   }
 
@@ -5168,11 +5345,32 @@
       playTapSound();
     }
 
+    const kanjiDetailButton = event.target.closest("[data-kanji-detail]");
+    if (kanjiDetailButton) {
+      const stage =
+        KANJI_CURRICULUM_STAGES.find(
+          (item) => item.id === state.kanjiListStageId,
+        ) || KANJI_CURRICULUM_STAGES[0];
+      const character = String(kanjiDetailButton.dataset.kanjiDetail || "").trim();
+      if (stage.rows.some((row) => row.character === character)) {
+        state.kanjiListSelectedCharacter = character;
+        state.strokeKanji = character;
+        state.kanjiDemoOpen = true;
+        render();
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
+      return;
+    }
+
     const kanjiListStageButton = event.target.closest("[data-kanji-list-stage]");
     if (kanjiListStageButton) {
       const stageId = kanjiListStageButton.dataset.kanjiListStage;
       if (KANJI_CURRICULUM_STAGES.some((stage) => stage.id === stageId)) {
+        stopKanjiStrokeAnimation();
         state.kanjiListStageId = stageId;
+        state.kanjiListSelectedCharacter = "";
+        state.kanjiDemoOpen = false;
+        state.strokeKanji = "";
         render();
         window.setTimeout(() => {
           document.querySelector("#kanji-list-heading")?.scrollIntoView({
@@ -5206,6 +5404,9 @@
       state.exitConfirmOpen = false;
       if (SKILL_MODES.includes(viewButton.dataset.levelMode)) {
         state.levelViewMode = viewButton.dataset.levelMode;
+      }
+      if (viewButton.dataset.view !== "kanji-list") {
+        state.kanjiListSelectedCharacter = "";
       }
       state.view = viewButton.dataset.view;
       state.session = null;
@@ -5383,6 +5584,19 @@
         state.exitConfirmOpen = false;
         resetQuestionState();
         render();
+      },
+      "close-kanji-list-detail"() {
+        stopKanjiStrokeAnimation();
+        state.kanjiListSelectedCharacter = "";
+        state.kanjiDemoOpen = false;
+        state.strokeKanji = "";
+        render();
+        window.setTimeout(() => {
+          document.querySelector("#kanji-list-heading")?.scrollIntoView({
+            behavior: "auto",
+            block: "start",
+          });
+        }, 40);
       },
       "ask-exit"() {
         stopFlash();
@@ -5710,6 +5924,9 @@
       "confirm-startup-learner"() {
         confirmStartupLearner();
       },
+      "continue-last-learner"() {
+        finishStartupLearner(state.learnerName);
+      },
       "reload-names"() {
         loadLearnerNames(true);
       },
@@ -5856,8 +6073,14 @@
   function confirmStartupLearner() {
     const nameField = document.querySelector("#startupLearnerName");
     const selectedName = String(nameField?.value || "").trim();
-    if (!selectedName || !state.learnerNames.includes(selectedName)) return;
-    activateLearner(selectedName, false);
+    finishStartupLearner(selectedName);
+  }
+
+  function finishStartupLearner(selectedName) {
+    const cleanName = String(selectedName || "").trim();
+    if (!cleanName || !state.learnerNames.includes(cleanName)) return;
+    state.hasPreviousLearner = true;
+    activateLearner(cleanName, false);
     state.learnerConfirmed = true;
     state.view = "home";
     saveProgress();
