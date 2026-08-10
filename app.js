@@ -644,7 +644,7 @@
       });
       return counts;
     }, new Map());
-  const examKanji = curriculumKanji
+  const middleExamKanji = curriculumKanji
     .filter((item) => examKanjiUsage.has(item.character))
     .sort(
       (left, right) =>
@@ -663,7 +663,38 @@
     { id: "j1", start: 69, end: 78, label: "中学1年", grade: 8, rows: middleSchoolKanji.slice(0, 400) },
     { id: "j2", start: 79, end: 88, label: "中学2年", grade: 8, rows: middleSchoolKanji.slice(400, 800) },
     { id: "j3", start: 89, end: 96, label: "中学3年", grade: 8, rows: middleSchoolKanji.slice(800) },
-    { id: "exam", start: 97, end: 120, label: "お受験", grade: 9, rows: examKanji },
+  ];
+  const quizMasterKanji = [...middleSchoolKanji]
+    .filter(
+      (item) =>
+        item.strokes >= 12 || item.frequency === 0 || item.frequency >= 1800,
+    )
+    .sort((left, right) => {
+      const leftRarity = left.frequency > 0 ? left.frequency : 2600;
+      const rightRarity = right.frequency > 0 ? right.frequency : 2600;
+      return (
+        rightRarity + right.strokes * 55 -
+          (leftRarity + left.strokes * 55) ||
+        right.strokes - left.strokes ||
+        left.character.localeCompare(right.character, "ja")
+      );
+    })
+    .slice(0, 180);
+  const KANJI_LIST_STAGES = [
+    ...KANJI_CURRICULUM_STAGES.slice(0, 6),
+    {
+      id: "exam",
+      label: "お受験",
+      grade: 7,
+      rows: middleExamKanji,
+    },
+    ...KANJI_CURRICULUM_STAGES.slice(6),
+    {
+      id: "quiz-master",
+      label: "漢字王",
+      grade: 10,
+      rows: quizMasterKanji,
+    },
   ];
 
   const state = {
@@ -1697,7 +1728,7 @@
         ${mikkun ? "" : `
           <button type="button" class="kanji-list-link" data-view="kanji-list">
             <span class="kanji-list-link-icon">字</span>
-            <span><b>学年別漢字一覧</b><small>小学1年からお受験まで、書き順と使い方を学習</small></span>
+            <span><b>学年別漢字一覧</b><small>小学1年からお受験・漢字王まで、書き順と使い方を学習</small></span>
             <i aria-hidden="true">›</i>
           </button>
         `}
@@ -1795,10 +1826,39 @@
           </div>
         </header>
 
+        <section class="kanji-detail-card kanji-detail-strokes kanji-detail-strokes-first" aria-labelledby="kanji-strokes-title">
+          <div class="kanji-detail-section-heading">
+            <span aria-hidden="true">書</span>
+            <div><p class="eyebrow">STROKE ORDER</p><h2 id="kanji-strokes-title">「${row.character}」の書き順</h2></div>
+          </div>
+          <p class="kanji-detail-help">一画ずつゆっくり動きます。止まったら「もう一度」で繰り返せます。</p>
+          <section class="kanji-stroke-stage" id="kanjiStrokeStage" aria-live="polite">
+            <div class="kanji-stroke-loading" id="kanjiStrokeLoading">
+              <span aria-hidden="true">${row.character}</span>
+              <p id="kanjiStrokeLoadingText">書き順を準備しています…</p>
+            </div>
+            <svg
+              id="kanjiStrokeSvg"
+              viewBox="0 0 109 109"
+              role="img"
+              aria-label="${row.character}の書き順アニメーション"
+              hidden
+            ></svg>
+            <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
+          </section>
+          <div class="kanji-stroke-actions kanji-detail-stroke-actions">
+            <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>↺ もう一度</button>
+            <button type="button" class="primary-button" data-action="close-kanji-list-detail">一覧に戻る</button>
+          </div>
+          <p class="kanji-stroke-source">
+            書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">KanjiVG</a>（CC BY-SA 3.0）
+          </p>
+        </section>
+
         <section class="kanji-detail-hero" aria-labelledby="kanji-detail-title">
           <span class="kanji-detail-character" aria-hidden="true">${row.character}</span>
           <div>
-            <p class="eyebrow">${stage.label}${stage.id === "exam" ? "・発展" : ""}</p>
+            <p class="eyebrow">${stage.label}${["exam", "quiz-master"].includes(stage.id) ? "・発展" : ""}</p>
             <h2 id="kanji-detail-title">「${row.character}」を学ぼう</h2>
             <p>${row.strokes ? `${row.strokes}画` : "画数を確認中"} ・ 主な読み「${escapeHtml(row.primaryReading)}」</p>
           </div>
@@ -1833,49 +1893,21 @@
             `}
           </div>
         </section>
-
-        <section class="kanji-detail-card kanji-detail-strokes" aria-labelledby="kanji-strokes-title">
-          <div class="kanji-detail-section-heading">
-            <span aria-hidden="true">書</span>
-            <div><p class="eyebrow">STROKE ORDER</p><h2 id="kanji-strokes-title">書き順</h2></div>
-          </div>
-          <p class="kanji-detail-help">一画ずつゆっくり動きます。止まったら「もう一度」で繰り返せます。</p>
-          <section class="kanji-stroke-stage" id="kanjiStrokeStage" aria-live="polite">
-            <div class="kanji-stroke-loading" id="kanjiStrokeLoading">
-              <span aria-hidden="true">${row.character}</span>
-              <p id="kanjiStrokeLoadingText">書き順を準備しています…</p>
-            </div>
-            <svg
-              id="kanjiStrokeSvg"
-              viewBox="0 0 109 109"
-              role="img"
-              aria-label="${row.character}の書き順アニメーション"
-              hidden
-            ></svg>
-            <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
-          </section>
-          <div class="kanji-stroke-actions kanji-detail-stroke-actions">
-            <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>↺ もう一度</button>
-            <button type="button" class="primary-button" data-action="close-kanji-list-detail">一覧に戻る</button>
-          </div>
-          <p class="kanji-stroke-source">
-            書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener noreferrer">KanjiVG</a>（CC BY-SA 3.0）
-          </p>
-        </section>
       </div>
     `;
   }
 
   function kanjiListTemplate() {
     const stage =
-      KANJI_CURRICULUM_STAGES.find((item) => item.id === state.kanjiListStageId) ||
-      KANJI_CURRICULUM_STAGES[0];
+      KANJI_LIST_STAGES.find((item) => item.id === state.kanjiListStageId) ||
+      KANJI_LIST_STAGES[0];
     const selectedRow = stage.rows.find(
       (row) => row.character === state.kanjiListSelectedCharacter,
     );
     if (selectedRow) return kanjiListDetailTemplate(selectedRow, stage);
     const middleSchoolStage = stage.id.startsWith("j");
     const examStage = stage.id === "exam";
+    const quizMasterStage = stage.id === "quiz-master";
     return `
       <div class="screen sub-screen kanji-list-screen">
         <header class="sub-header kanji-list-header">
@@ -1895,7 +1927,7 @@
         </section>
 
         <div class="kanji-grade-tabs" role="tablist" aria-label="表示する学年">
-          ${KANJI_CURRICULUM_STAGES.map((item) => `
+          ${KANJI_LIST_STAGES.map((item) => `
             <button
               type="button"
               role="tab"
@@ -1909,14 +1941,16 @@
         <section class="kanji-list-panel" aria-labelledby="kanji-list-title">
           <div class="kanji-list-panel-heading" id="kanji-list-heading">
             <div>
-              <p class="eyebrow">${examStage ? "難関熟語から選んだ発展漢字" : middleSchoolStage ? "中学校で学ぶ常用漢字" : "学年別漢字配当表"}</p>
-              <h2 id="kanji-list-title">${examStage ? "お受験・発展漢字" : `${stage.label}${middleSchoolStage ? "目安" : "で習う漢字"}`}</h2>
+              <p class="eyebrow">${quizMasterStage ? "高校卒業後のクイズ番組級" : examStage ? "中学受験で差がつく発展漢字" : middleSchoolStage ? "中学校で学ぶ常用漢字" : "学年別漢字配当表"}</p>
+              <h2 id="kanji-list-title">${quizMasterStage ? "漢字王・難問漢字" : examStage ? "お受験・発展漢字" : `${stage.label}${middleSchoolStage ? "目安" : "で習う漢字"}`}</h2>
             </div>
             <strong>${stage.rows.length}<small>字</small></strong>
           </div>
           <p class="kanji-list-source-note">
-            ${examStage
-              ? "中学3年までの範囲を終えた人向けに、難関入試レベルの四字熟語で使われる漢字を集めたアプリ独自の発展一覧です。"
+            ${quizMasterStage
+              ? "高校までの漢字学習を終えた人向けに、画数の多さと使用頻度の低さを基準として選んだ、クイズ番組級の難漢字一覧です。"
+              : examStage
+              ? "小学6年までの範囲を終えた人向けに、中学受験レベルの四字熟語で使われる漢字を集めたアプリ独自の発展一覧です。"
               : middleSchoolStage
               ? "中学校では学年別の公的な配当がないため、小学校配当外の常用漢字を、このアプリの学習順に3段階へ分けています。"
               : "文部科学省の学年別漢字配当表に沿った一覧です。"
@@ -5348,9 +5382,9 @@
     const kanjiDetailButton = event.target.closest("[data-kanji-detail]");
     if (kanjiDetailButton) {
       const stage =
-        KANJI_CURRICULUM_STAGES.find(
+        KANJI_LIST_STAGES.find(
           (item) => item.id === state.kanjiListStageId,
-        ) || KANJI_CURRICULUM_STAGES[0];
+        ) || KANJI_LIST_STAGES[0];
       const character = String(kanjiDetailButton.dataset.kanjiDetail || "").trim();
       if (stage.rows.some((row) => row.character === character)) {
         state.kanjiListSelectedCharacter = character;
@@ -5365,7 +5399,7 @@
     const kanjiListStageButton = event.target.closest("[data-kanji-list-stage]");
     if (kanjiListStageButton) {
       const stageId = kanjiListStageButton.dataset.kanjiListStage;
-      if (KANJI_CURRICULUM_STAGES.some((stage) => stage.id === stageId)) {
+      if (KANJI_LIST_STAGES.some((stage) => stage.id === stageId)) {
         stopKanjiStrokeAnimation();
         state.kanjiListStageId = stageId;
         state.kanjiListSelectedCharacter = "";

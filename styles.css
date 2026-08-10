@@ -2034,6 +2034,19 @@ html.is-writing body {
   box-shadow: inset 0 0 0 1px rgba(85, 43, 123, 0.12);
 }
 
+.kanji-grade-tabs button[data-kanji-list-stage="quiz-master"] {
+  border-color: #d7b860;
+  background: linear-gradient(145deg, #fff9dc, #fff0ad);
+  color: #735411;
+}
+
+.kanji-grade-tabs button[data-kanji-list-stage="quiz-master"].active {
+  border-color: #bd8617;
+  background: linear-gradient(145deg, #ffe884, #ffc94d);
+  color: #553700;
+  box-shadow: inset 0 0 0 1px rgba(114, 76, 5, 0.14);
+}
+
 .kanji-detail-screen {
   padding-bottom: calc(108px + env(safe-area-inset-bottom) + var(--visual-viewport-bottom));
 }
@@ -2049,6 +2062,14 @@ html.is-writing body {
   background: linear-gradient(145deg, #1e3156, #344f80);
   color: white;
   box-shadow: 0 12px 25px rgba(31, 49, 83, 0.18);
+}
+
+.kanji-detail-strokes-first {
+  margin-top: 0;
+}
+
+.kanji-detail-strokes-first + .kanji-detail-hero {
+  margin-top: 14px;
 }
 
 .kanji-detail-character {
