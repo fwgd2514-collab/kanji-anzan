@@ -5464,6 +5464,10 @@ html.is-writing body {
   background-image: url("./assets/learning-card-atlas-extra.png");
 }
 
+.learning-card-art.learning-card-art-adventure {
+  background-image: url("./assets/learning-card-atlas-adventure-v1.png");
+}
+
 .learning-card-art.learning-card-art-mikkun {
   background-image: url("./assets/mikkun-adventure-atlas-v1.png");
   background-size: 400% 400%;
@@ -5920,6 +5924,144 @@ html.is-writing body {
 @media (max-width: 370px) {
   .mikkun-subject-card {
     min-height: 190px;
+  }
+}
+
+/* v45: unobstructed stroke order, more cards, and playful daily challenges */
+.kanji-stroke-status.kanji-stroke-status-below {
+  position: static;
+  width: fit-content;
+  min-width: 150px;
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  margin: 9px auto 0;
+  padding: 6px 14px;
+  border: 1px solid #d9e5df;
+  background: #f4faf7;
+  color: #397d6b;
+  font-size: 10px;
+  transform: none;
+  box-shadow: none;
+}
+
+.daily-quest-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 14px;
+  padding: 12px 13px;
+  border: 1px solid #e0c36d;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 94% 7%, rgba(255, 255, 255, 0.75) 0 8%, transparent 8.5%),
+    linear-gradient(145deg, #fff9d8, #ffedaa);
+  color: #4d422b;
+  text-align: left;
+  box-shadow: 0 8px 18px rgba(121, 88, 24, 0.11);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.daily-quest-card:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(121, 88, 24, 0.1);
+}
+
+.daily-quest-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ff9f6f, #ff765c);
+  font-size: 25px;
+  box-shadow: 0 6px 12px rgba(180, 80, 48, 0.18);
+}
+
+.daily-quest-card > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.daily-quest-card small {
+  color: #a06a16;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: 0.11em;
+}
+
+.daily-quest-card b {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.daily-quest-card i {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #7c6d4e;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-quest-card strong {
+  color: #a15a27;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.reading-feedback.correct,
+.result-message.success {
+  position: relative;
+  overflow: visible;
+}
+
+.reading-feedback.correct::after,
+.result-message.success::after {
+  content: "✦";
+  position: absolute;
+  top: -10px;
+  right: 9px;
+  color: #f2b93e;
+  font-size: 20px;
+  line-height: 1;
+  text-shadow: -18px 13px 0 #ff8f70;
+  animation: answer-sparkle 650ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes answer-sparkle {
+  from { opacity: 0; transform: translateY(8px) scale(0.4) rotate(-20deg); }
+  55% { opacity: 1; transform: translateY(-2px) scale(1.18) rotate(8deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@media (max-width: 370px) {
+  .daily-quest-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .daily-quest-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .daily-quest-card strong {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-feedback.correct::after,
+  .result-message.success::after {
+    animation: none;
   }
 }
 

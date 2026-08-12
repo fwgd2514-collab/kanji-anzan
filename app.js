@@ -3,7 +3,7 @@
 
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
-  const APP_LAST_UPDATED = "2026年8月10日";
+  const APP_LAST_UPDATED = "2026年8月12日";
   const LEVEL_ADJUSTMENT_PASSWORD = "1234";
   const MODE_INFO = {
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
@@ -198,6 +198,7 @@
     媒体: "情報を伝える仲立ちとなるもの。", 謙虚: "自分を偉いと思わず、素直に学ぶ態度。", 養う: "食べ物を与えて育てる。また、力を身につける。",
     抽象: "共通する特徴を取り出し、一般的に考えたもの。", 論理: "考えや説明を組み立てる筋道。", 俯瞰: "高い所から見下ろすように、全体を見ること。",
     踏襲: "以前のやり方を、そのまま受け継ぐこと。", 漸進: "少しずつ、順を追って進むこと。", 帰納: "いくつもの具体例から、共通する結論を導くこと。",
+    安泰: "危険や心配がなく、安心できる状態が続くこと。「家族の暮らしは安泰だ」のように、先のことまで安心できる場面で使います。",
   };
   readingProblems.forEach((problem) => {
     problem.meaning = basicWordMeanings[problem.kanji] || "";
@@ -358,6 +359,22 @@
     { id: "bicycle", symbol: "🚲", label: "じてんしゃ", artX: 33.333, artY: 100, sheet: "extra" },
     { id: "ship", symbol: "🚢", label: "ふね", artX: 66.667, artY: 100, sheet: "extra" },
     { id: "helicopter", symbol: "🚁", label: "へりこぷたー", artX: 100, artY: 100, sheet: "extra" },
+    { id: "owl", symbol: "🦉", label: "ふくろう", artX: 0, artY: 0, sheet: "adventure" },
+    { id: "squirrel", symbol: "🐿️", label: "りす", artX: 33.333, artY: 0, sheet: "adventure" },
+    { id: "hedgehog", symbol: "🦔", label: "はりねずみ", artX: 66.667, artY: 0, sheet: "adventure" },
+    { id: "frog", symbol: "🐸", label: "かえる", artX: 100, artY: 0, sheet: "adventure" },
+    { id: "tiger", symbol: "🐯", label: "とら", artX: 0, artY: 33.333, sheet: "adventure" },
+    { id: "cow", symbol: "🐮", label: "うし", artX: 33.333, artY: 33.333, sheet: "adventure" },
+    { id: "sheep", symbol: "🐑", label: "ひつじ", artX: 66.667, artY: 33.333, sheet: "adventure" },
+    { id: "horse", symbol: "🐴", label: "うま", artX: 100, artY: 33.333, sheet: "adventure" },
+    { id: "cake", symbol: "🎂", label: "けーき", artX: 0, artY: 66.667, sheet: "adventure" },
+    { id: "rainbow", symbol: "🌈", label: "にじ", artX: 33.333, artY: 66.667, sheet: "adventure" },
+    { id: "clock", symbol: "⏰", label: "とけい", artX: 66.667, artY: 66.667, sheet: "adventure" },
+    { id: "rocket", symbol: "🚀", label: "ろけっと", artX: 100, artY: 66.667, sheet: "adventure" },
+    { id: "book", symbol: "📘", label: "ほん", artX: 0, artY: 100, sheet: "adventure" },
+    { id: "drum", symbol: "🥁", label: "たいこ", artX: 33.333, artY: 100, sheet: "adventure" },
+    { id: "treasure-chest", symbol: "🧰", label: "たからばこ", artX: 66.667, artY: 100, sheet: "adventure" },
+    { id: "crown", symbol: "👑", label: "おうかん", artX: 100, artY: 100, sheet: "adventure" },
   ];
 
   const mikkunCards = [
@@ -1337,6 +1354,44 @@
     return state.learnerName || "ゲスト";
   }
 
+  function dailyQuestForLearner() {
+    const quests = [
+      { mode: "digits", icon: "🔐", title: "数字の暗号を解こう", detail: "流れる数字を見破れるかな？" },
+      { mode: "memory", icon: "🃏", title: "絵カード探検", detail: "新しい絵との出会いを楽しもう！" },
+      { mode: "flash", icon: "⚡", title: "ひらめき暗算", detail: "数字の流れをつかんで一発回答！" },
+      { mode: "math", icon: "🎯", title: "暗算ターゲット", detail: "自分の記録にチャレンジしよう！" },
+      { mode: "read", icon: "🔎", title: "ことば博士", detail: "熟語の読みと意味を発見しよう！" },
+      { mode: "write", icon: "🏆", title: "漢字王への一歩", detail: "ぴったりの漢字を選び抜こう！" },
+    ];
+    const today = new Date();
+    const seedText = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}-${displayName()}`;
+    const seed = Array.from(seedText).reduce(
+      (sum, character) => sum + character.codePointAt(0),
+      0,
+    );
+    return quests[seed % quests.length];
+  }
+
+  function praiseForCurrentQuestion() {
+    const praises = [
+      "いいひらめき！",
+      "その調子、さえてる！",
+      "見事にクリア！",
+      "集中力ばっちり！",
+      "やったね、レベルアップに前進！",
+      "すばらしい一答！",
+    ];
+    const session = state.session;
+    const seed =
+      (session?.completed || 0) +
+      (session?.attempts || 0) +
+      Array.from(displayName()).reduce(
+        (sum, character) => sum + character.codePointAt(0),
+        0,
+      );
+    return praises[seed % praises.length];
+  }
+
   function isMikkunLearner(name = state.learnerName) {
     return String(name || "").trim() === MIKKUN_NAME;
   }
@@ -1666,6 +1721,7 @@
       : state.xp;
     const currentMikkunStage = mikkunStage(homeLevel);
     const currentMikkunProgress = mikkunStageProgress(homeLevel, homeXp);
+    const dailyQuest = dailyQuestForLearner();
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -1700,6 +1756,13 @@
               </p>
             </div>
               ` : ""}
+          ${mikkun ? "" : `
+            <button type="button" class="daily-quest-card" data-start="${dailyQuest.mode}" aria-label="今日のおすすめ、${dailyQuest.title}を始める">
+              <span class="daily-quest-icon" aria-hidden="true">${dailyQuest.icon}</span>
+              <span><small>TODAY'S QUEST</small><b>${dailyQuest.title}</b><i>${dailyQuest.detail}</i></span>
+              <strong>挑戦する →</strong>
+            </button>
+          `}
           <div class="subject-grid">
             ${mikkun
               ? `
@@ -1790,7 +1853,7 @@
         meaning:
           String(meaning || "").trim() ||
           basicWordMeanings[cleanWord] ||
-          `「${cleanWord}」のような言葉で使います。`,
+          `「${cleanWord}」と読みます。「${row.character}」が言葉のどこで、どんな意味を添えているか想像してみよう。声に出すと覚えやすくなります。`,
       });
     };
 
@@ -1844,8 +1907,8 @@
               aria-label="${row.character}の書き順アニメーション"
               hidden
             ></svg>
-            <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
           </section>
+          <div class="kanji-stroke-status kanji-stroke-status-below" id="kanjiStrokeStatus" role="status" aria-live="polite">準備中</div>
           <div class="kanji-stroke-actions kanji-detail-stroke-actions">
             <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>↺ もう一度</button>
             <button type="button" class="primary-button" data-action="close-kanji-list-detail">一覧に戻る</button>
@@ -2022,7 +2085,7 @@
     if (!card) return `<span class="learning-card-fallback ${className}">${escapeHtml(id)}</span>`;
     return `
       <span
-        class="learning-card-art ${card.sheet === "extra" ? "learning-card-art-extra" : ""} ${card.sheet === "mikkun" ? "learning-card-art-mikkun" : ""} ${className}"
+        class="learning-card-art ${card.sheet === "extra" ? "learning-card-art-extra" : ""} ${card.sheet === "adventure" ? "learning-card-art-adventure" : ""} ${card.sheet === "mikkun" ? "learning-card-art-mikkun" : ""} ${className}"
         data-card-id="${card.id}"
         role="img"
         aria-label="${card.label}"
@@ -2261,7 +2324,7 @@
       : `${problem.idiom}（${problem.reading}）`;
     const feedback = state.readingChecked
       ? correct
-        ? `<div class="reading-feedback correct"><b>正解！</b> ${answerLabel}</div>`
+        ? `<div class="reading-feedback correct"><b>正解！</b> ${praiseForCurrentQuestion()} ${answerLabel}</div>`
         : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」。<br />${answerLabel}</div>`
       : "";
     return `
@@ -2335,8 +2398,8 @@
             aria-label="${character}の書き順アニメーション"
             hidden
           ></svg>
-          <div class="kanji-stroke-status" id="kanjiStrokeStatus">準備中</div>
         </section>
+        <div class="kanji-stroke-status kanji-stroke-status-below" id="kanjiStrokeStatus" role="status" aria-live="polite">準備中</div>
         <div class="kanji-stroke-actions">
           <button type="button" class="secondary-button" id="kanjiStrokeReplay" data-action="replay-kanji-strokes" disabled>
             ↺ もう一度
@@ -2844,7 +2907,7 @@
     const curriculum = problem.kind === "curriculum";
     const feedback = state.readingChecked
       ? state.readingChoice === problem.answer
-        ? `<div class="reading-feedback correct"><b>${preschool ? "はなまる！" : "正解！"}</b> ${problem.kanji}（${problem.answer}）</div>`
+        ? `<div class="reading-feedback correct"><b>${preschool ? "はなまる！" : "正解！"}</b> ${preschool ? "" : praiseForCurrentQuestion()} ${problem.kanji}（${problem.answer}）</div>`
         : `<div class="reading-feedback wrong"><b>おしい！</b> 正解は「${problem.answer}」です。<br />${problem.kanji}（${problem.answer}）</div>`
       : "";
     return `
@@ -3224,7 +3287,7 @@
       state.mathResult === "wrong"
         ? `<p class="result-message">おしい！ 正解は ${problem.answer} です。</p>`
         : state.mathResult === "correct"
-          ? '<p class="result-message success">正解！ いいテンポ！</p>'
+          ? `<p class="result-message success">正解！ ${praiseForCurrentQuestion()}</p>`
           : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
     return `
       <div class="screen lesson-screen math-lesson">
@@ -3310,7 +3373,7 @@
         state.flashResult === "wrong"
           ? `<p class="result-message">おしい！ 正解は ${total} です。出題された数字を確認しよう。</p>`
           : state.flashResult === "correct"
-            ? `<p class="result-message success">正解！ 合計は ${total} です。</p>`
+            ? `<p class="result-message success">正解！ ${praiseForCurrentQuestion()} 合計は ${total} です。</p>`
             : state.flashResult === "given-up"
               ? `<p class="result-message">答えは ${total} でした。</p>`
             : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
@@ -3408,7 +3471,7 @@
       }).join("");
       const feedback = state.memoryChecked
         ? correct
-          ? '<div class="reading-feedback correct"><b>正解！</b> 順番まで覚えられました。</div>'
+          ? `<div class="reading-feedback correct"><b>正解！</b> ${praiseForCurrentQuestion()} 順番まで覚えられました。</div>`
           : '<div class="reading-feedback wrong"><b>おしい！</b> 2段のカードを見比べて確認しよう。</div>'
         : "";
       stage = `
@@ -3518,7 +3581,7 @@
         state.digitsResult === "wrong"
           ? `<p class="result-message">おしい！ 正解は ${problem.digits} です。</p>`
           : state.digitsResult === "correct"
-            ? '<p class="result-message success">正解！ 順番まで覚えられました。</p>'
+            ? `<p class="result-message success">正解！ ${praiseForCurrentQuestion()} 順番まで覚えられました。</p>`
             : '<p class="result-message placeholder" aria-hidden="true">&nbsp;</p>';
       stage = `
         <div class="digits-answer-stage">
