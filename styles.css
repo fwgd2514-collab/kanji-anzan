@@ -467,11 +467,18 @@ canvas:focus-visible {
 
 .home-training-primary .section-heading {
   align-items: center;
+  gap: 8px;
+}
+
+.home-training-primary .section-heading > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .home-training-primary .section-heading h1 {
   margin: 0;
-  font-size: 24px;
+  white-space: nowrap;
+  font-size: clamp(20px, 5.4vw, 24px);
   letter-spacing: -0.04em;
 }
 
@@ -490,12 +497,14 @@ canvas:focus-visible {
 }
 
 .daily-count {
+  flex: 0 0 auto;
   padding: 6px 10px;
   border-radius: 8px;
   background: #efede6;
   color: #888d96;
   font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .subject-grid {
@@ -3573,12 +3582,14 @@ html.is-writing body {
 
 .mikkun-training .section-heading h1 {
   color: #e9634b;
-  font-size: 26px;
+  font-size: clamp(17px, 4.3vw, 21px);
 }
 
 .mikkun-training .daily-count {
+  padding: 5px 8px;
   background: #ffe49c;
   color: #705728;
+  font-size: 10px;
 }
 
 .mikkun-intro {
@@ -3638,6 +3649,70 @@ html.is-writing body {
   border-radius: inherit;
   background: linear-gradient(90deg, #ffca45, #ff7e5a);
   transition: width 240ms ease;
+}
+
+.mikkun-surprise-quest {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 11px 12px;
+  border: 2px solid #7d6be3;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 87% 15%, rgba(255, 235, 116, 0.38), transparent 22%),
+    linear-gradient(135deg, #695dcc, #8a72e6);
+  color: white;
+  text-align: left;
+  box-shadow: 0 8px 18px rgba(83, 69, 168, 0.2);
+}
+
+.mikkun-surprise-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #fff2a6;
+  font-size: 25px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.mikkun-surprise-quest > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mikkun-surprise-quest small {
+  color: #fff1a8;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.mikkun-surprise-quest b {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mikkun-surprise-quest i {
+  margin-top: 2px;
+  color: #eae4ff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.mikkun-surprise-quest strong {
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: white;
+  color: #5e50bd;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .mikkun-subject-card {
@@ -5584,6 +5659,70 @@ html.is-writing body {
   text-align: right;
 }
 
+.mikkun-session-mission {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  padding: 7px 9px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6d61c9, #8d78e4);
+  color: white;
+  box-shadow: 0 6px 14px rgba(76, 63, 157, 0.16);
+}
+
+.mikkun-session-mission > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #fff2a5;
+  font-size: 19px;
+}
+
+.mikkun-session-mission p {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.mikkun-session-mission small {
+  color: #fff0a5;
+  font-size: 8px;
+  font-weight: 950;
+}
+
+.mikkun-session-mission b {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.mikkun-session-mission em,
+.mikkun-combo-pop {
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: #fff0a5;
+  color: #725b0c;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.mikkun-combo-pop {
+  display: inline-block;
+  margin-left: 6px;
+  animation: mikkun-combo-pop 420ms cubic-bezier(0.2, 0.9, 0.25, 1.35);
+}
+
+@keyframes mikkun-combo-pop {
+  from { opacity: 0; transform: scale(0.55) rotate(-8deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
 @keyframes mikkun-star-pulse {
   to {
     transform: scale(1.2) rotate(8deg);
@@ -5782,6 +5921,90 @@ html.is-writing body {
   background:
     radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.35) 0 5%, transparent 5.5%),
     linear-gradient(145deg, #68b9d5, #438db6);
+}
+
+.mikkun-prize-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+  padding: 14px;
+  overflow: hidden;
+  border: 2px solid #f2c54f;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.74), transparent 26%),
+    linear-gradient(135deg, #fff8ca, #ffe08a);
+  color: #6e5011;
+  box-shadow: 0 10px 24px rgba(164, 113, 22, 0.14);
+}
+
+.mikkun-prize-card > span {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: white;
+  font-size: 34px;
+  box-shadow: 0 6px 14px rgba(127, 85, 9, 0.12);
+}
+
+.mikkun-prize-card small {
+  color: #aa7917;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.mikkun-prize-card h2 {
+  margin: 2px 0 3px;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.mikkun-prize-card p {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.mikkun-prize-card > i {
+  font-size: 24px;
+  font-style: normal;
+  animation: mikkun-prize-sparkle 900ms ease-in-out infinite alternate;
+}
+
+@keyframes mikkun-prize-sparkle {
+  to { transform: scale(1.18) rotate(12deg); }
+}
+
+@media (max-width: 390px) {
+  .mikkun-surprise-quest {
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .mikkun-surprise-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+  }
+
+  .mikkun-surprise-quest strong {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .mikkun-session-mission {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .mikkun-session-mission em {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 .memory-main-card-art {
