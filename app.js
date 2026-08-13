@@ -3,7 +3,7 @@
 
   const app = document.querySelector("#app");
   const STORAGE_KEY = "nobiru-progress";
-  const APP_LAST_UPDATED = "2026年8月12日";
+  const APP_LAST_UPDATED = "2026年8月13日";
   const LEVEL_ADJUSTMENT_PASSWORD = "1234";
   const MODE_INFO = {
     digits: { label: "数字記憶", short: "数字記憶", xp: 13, penalty: 4 },
@@ -40,6 +40,28 @@
     { rank: 3, min: 11, max: 20, label: "年中さん・はじめ", short: "年中さん", next: "年中さん・チャレンジ" },
     { rank: 4, min: 21, max: 100, label: "年中さん・チャレンジ", short: "年中さん", next: "マスター" },
   ];
+  const MIKKUN_SESSION_MISSIONS = {
+    build: [
+      { icon: "🔧", title: "パーツを あつめて ひみつメカを つくろう", prize: "レインボーレンチ" },
+      { icon: "⚙️", title: "ぴったりの パーツで スーパーアームを つくろう", prize: "ゴールドギア" },
+      { icon: "🛠️", title: "5つの しれんで だんだんだんを パワーアップ", prize: "メカマスターバッジ" },
+    ],
+    route: [
+      { icon: "🧭", title: "いわを よけて ひみつの おたからへ すすめ", prize: "ほしのコンパス" },
+      { icon: "🚀", title: "やじるしパワーで 5つの しまを たんけん", prize: "ダッシュタイヤ" },
+      { icon: "🗺️", title: "まよいの みちを ぬけて ゴールを めざそう", prize: "たんけんマップ" },
+    ],
+    treasure: [
+      { icon: "🎁", title: "かずを みわけて たからばこを ひらこう", prize: "にじいろキー" },
+      { icon: "💎", title: "おなじものを みつけて ほしを あつめよう", prize: "きらきらメダル" },
+      { icon: "👑", title: "5つの おたからで メカおうこくを すくおう", prize: "メカおうかん" },
+    ],
+    lights: [
+      { icon: "💡", title: "さいごに ひかった えを おぼえよう", prize: "ピカピカバッテリー" },
+      { icon: "🌈", title: "ひかりを おぼえて メカを フルパワーに", prize: "パワークリスタル" },
+      { icon: "⚡", title: "ピカッと ひらめいて 5つの ランプを クリア", prize: "ひらめきライト" },
+    ],
+  };
   const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
   const KANJIVG_SOURCES = [
     "https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/",
@@ -681,22 +703,106 @@
     { id: "j2", start: 79, end: 88, label: "中学2年", grade: 8, rows: middleSchoolKanji.slice(400, 800) },
     { id: "j3", start: 89, end: 96, label: "中学3年", grade: 8, rows: middleSchoolKanji.slice(800) },
   ];
-  const quizMasterKanji = [...middleSchoolKanji]
-    .filter(
-      (item) =>
-        item.strokes >= 12 || item.frequency === 0 || item.frequency >= 1800,
-    )
-    .sort((left, right) => {
-      const leftRarity = left.frequency > 0 ? left.frequency : 2600;
-      const rightRarity = right.frequency > 0 ? right.frequency : 2600;
-      return (
-        rightRarity + right.strokes * 55 -
-          (leftRarity + left.strokes * 55) ||
-        right.strokes - left.strokes ||
-        left.character.localeCompare(right.character, "ja")
-      );
+  const quizMasterRareWordEntries = [
+    ["魑魅魍魎", "ちみもうりょう", "山や川にすむとされた怪物や妖怪の総称です。", [["魑", "ち"], ["魅", "み"], ["魍", "もう"], ["魎", "りょう"]]],
+    ["薔薇", "ばら", "とげのある枝に、香り高い花を咲かせる植物です。", [["薔", "しょう"], ["薇", "び"]]],
+    ["檸檬", "れもん", "黄色い実と強い酸味を持つ果物です。", [["檸", "ねい"], ["檬", "もう"]]],
+    ["髑髏", "どくろ", "骨だけになった頭を表す言葉で、しゃれこうべともいいます。", [["髑", "どく"], ["髏", "ろ"]]],
+    ["饕餮", "とうてつ", "古代中国の伝説上の怪物で、大食いのたとえにも使われます。", [["饕", "とう"], ["餮", "てつ"]]],
+    ["躑躅", "つつじ", "春に赤や白などの花を咲かせる低木です。", [["躑", "てき"], ["躅", "ちょく"]]],
+    ["蒟蒻", "こんにゃく", "こんにゃく芋から作る、弾力のある食品です。", [["蒟", "こん"], ["蒻", "じゃく"]]],
+    ["顰蹙", "ひんしゅく", "人から嫌がられ、顔をしかめられるような反感を買うことです。", [["顰", "ひん"], ["蹙", "しゅく"]]],
+    ["齷齪", "あくせく", "目先のことに追われ、落ち着かずせわしない様子です。", [["齷", "あく"], ["齪", "さく"]]],
+    ["躊躇", "ちゅうちょ", "迷って決められず、ためらうことです。", [["躊", "ちゅう"], ["躇", "ちょ"]]],
+    ["蹂躙", "じゅうりん", "権利や尊厳を乱暴に踏みにじることです。", [["蹂", "じゅう"], ["躙", "りん"]]],
+    ["朦朧", "もうろう", "意識や景色がぼんやりして、はっきりしない様子です。", [["朦", "もう"], ["朧", "ろう"]]],
+    ["齟齬", "そご", "話や考えがかみ合わず、食い違うことです。", [["齟", "そ"], ["齬", "ご"]]],
+    ["邂逅", "かいこう", "思いがけず人と出会うことです。", [["邂", "かい"], ["逅", "こう"]]],
+    ["瀟洒", "しょうしゃ", "すっきり洗練され、しゃれている様子です。", [["瀟", "しょう"], ["洒", "しゃ"]]],
+    ["斟酌", "しんしゃく", "相手の事情や気持ちをくみ取り、ほどよく取り計らうことです。", [["斟", "しん"], ["酌", "しゃく"]]],
+    ["贔屓", "ひいき", "気に入った人やものを、特に応援して大切にすることです。", [["贔", "ひ"], ["屓", "き"]]],
+    ["蹉跌", "さてつ", "物事がうまくいかず、途中でつまずくことです。", [["蹉", "さ"], ["跌", "てつ"]]],
+    ["憔悴", "しょうすい", "心配や疲れで、ひどくやつれることです。", [["憔", "しょう"], ["悴", "すい"]]],
+    ["鸚鵡", "おうむ", "人の声をまねることで知られる鳥です。", [["鸚", "おう"], ["鵡", "む"]]],
+    ["鮟鱇", "あんこう", "大きな口を持つ海の魚で、鍋料理でも知られます。", [["鮟", "あん"], ["鱇", "こう"]]],
+    ["玉蜀黍", "とうもろこし", "夏に黄色い粒が穂に並ぶ作物です。", [["蜀", "しょく"], ["黍", "しょ"]]],
+    ["獺祭", "だっさい", "カワウソが捕った魚を並べる様子を表し、酒の名にも使われます。", [["獺", "だつ"], ["祭", "さい"]]],
+    ["螽斯", "きりぎりす", "キリギリスを表す古い漢字表記です。", [["螽", "しゅう"], ["斯", "し"]]],
+    ["鳳凰", "ほうおう", "めでたいしるしとされる、中国の伝説上の霊鳥です。", [["鳳", "ほう"], ["凰", "おう"]]],
+    ["鶺鴒", "せきれい", "水辺で長い尾を上下に振る小鳥です。", [["鶺", "せき"], ["鴒", "れい"]]],
+    ["鵺", "ぬえ", "日本の物語に登場する、さまざまな動物の特徴を持つ怪物です。", [["鵺", "ぬえ"]]],
+    ["瓢箪", "ひょうたん", "くびれた形の実で、乾かして入れ物にも使います。", [["瓢", "ひょう"], ["箪", "たん"]]],
+    ["轆轤", "ろくろ", "陶器を回して形作る道具や、回転する仕掛けを表します。", [["轆", "ろく"], ["轤", "ろ"]]],
+    ["襤褸", "ぼろ", "使い古して破れた衣服や布を表す言葉です。", [["襤", "らん"], ["褸", "る"]]],
+    ["攫う", "さらう", "すばやく奪い取ったり、連れ去ったりすることです。", [["攫", "かく"]]],
+    ["鏤める", "ちりばめる", "小さな美しいものを、あちこちにはめ込んで飾ることです。", [["鏤", "る"]]],
+    ["犇めく", "ひしめく", "多くのものがすき間なく集まり、押し合うように動くことです。", [["犇", "ほん"]]],
+    ["囀る", "さえずる", "小鳥が続けて美しい声で鳴くことです。", [["囀", "てん"]]],
+    ["蠢く", "うごめく", "虫などが、もぞもぞと動くことです。", [["蠢", "しゅん"]]],
+    ["齧る", "かじる", "歯で少しずつかみ取ることです。", [["齧", "げつ"]]],
+    ["蔓延る", "はびこる", "好ましくないものが勢いを増して広がることです。", [["蔓", "まん"]]],
+    ["靡く", "なびく", "風や水の流れに従って横に揺れることです。", [["靡", "び"]]],
+    ["囁く", "ささやく", "相手にだけ聞こえるほどの小さな声で話すことです。", [["囁", "しょう"]]],
+    ["嘯く", "うそぶく", "大きなことを平然と言ったり、知らないふりをしたりすることです。", [["嘯", "しょう"]]],
+    ["躓く", "つまずく", "歩いて物に足を引っかけたり、物事の途中で失敗したりすることです。", [["躓", "ち"]]],
+    ["蹲る", "うずくまる", "体を丸め、低くしゃがみ込むことです。", [["蹲", "そん"]]],
+    ["滾る", "たぎる", "液体が激しく沸き立つことや、感情が強く湧き上がることです。", [["滾", "こん"]]],
+    ["擽る", "くすぐる", "皮膚に軽く触れ、むずむずして笑いたくなる感じにすることです。", [["擽", "りゃく"]]],
+    ["毟る", "むしる", "つかんで強く引き抜くことです。", [["毟", "むし"]]],
+    ["抓る", "つねる", "指先で皮膚を強く挟むことです。", [["抓", "そう"]]],
+  ];
+  const rareKanjiSeen = new Set();
+  const quizMasterRareKanji = quizMasterRareWordEntries.flatMap(
+    ([word, wordReading, meaning, characters]) =>
+      characters.map(([character, primaryReading]) => {
+        const curriculumRow = curriculumKanji.find(
+          (item) => item.character === character,
+        );
+        return {
+          ...(curriculumRow || {}),
+          grade: 10,
+          character,
+          primaryReading,
+          readings: [
+            ...new Set([primaryReading, ...(curriculumRow?.readings || [])]),
+          ],
+          strokes: curriculumRow?.strokes || 0,
+          frequency: curriculumRow?.frequency || 9999,
+          word,
+          wordReading,
+          meaning,
+        };
+      }),
+  ).filter((item) => {
+    if (rareKanjiSeen.has(item.character)) return false;
+    rareKanjiSeen.add(item.character);
+    return true;
+  });
+  const quizMasterSeen = new Set();
+  const quizMasterKanji = [
+    ...quizMasterRareKanji,
+    ...[...middleSchoolKanji]
+      .filter(
+        (item) =>
+          item.strokes >= 12 || item.frequency === 0 || item.frequency >= 1800,
+      )
+      .sort((left, right) => {
+        const leftRarity = left.frequency > 0 ? left.frequency : 2600;
+        const rightRarity = right.frequency > 0 ? right.frequency : 2600;
+        return (
+          rightRarity + right.strokes * 55 -
+            (leftRarity + left.strokes * 55) ||
+          right.strokes - left.strokes ||
+          left.character.localeCompare(right.character, "ja")
+        );
+      }),
+  ]
+    .filter((item) => {
+      if (quizMasterSeen.has(item.character)) return false;
+      quizMasterSeen.add(item.character);
+      return true;
     })
-    .slice(0, 180);
+    .slice(0, 220);
   const KANJI_LIST_STAGES = [
     ...KANJI_CURRICULUM_STAGES.slice(0, 6),
     {
@@ -1372,6 +1478,39 @@
     return quests[seed % quests.length];
   }
 
+  function mikkunMissionFor(type, seed = Date.now()) {
+    const missions = MIKKUN_SESSION_MISSIONS[type] || MIKKUN_SESSION_MISSIONS.build;
+    const safeSeed = Math.abs(Number(seed) || 0);
+    return { ...missions[safeSeed % missions.length], type };
+  }
+
+  function mikkunDailyAdventure() {
+    const adventures = [
+      { mode: "write", type: "build", label: "メカこうじょう" },
+      { mode: "read", type: "route", label: "まよいの しま" },
+      { mode: "math", type: "treasure", label: "おたからどうくつ" },
+      { mode: "memory", type: "lights", label: "ピカッとタワー" },
+    ];
+    const today = new Date();
+    const seedText = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}-${displayName()}`;
+    const seed = Array.from(seedText).reduce(
+      (sum, character) => sum + character.codePointAt(0),
+      0,
+    );
+    const adventure = adventures[seed % adventures.length];
+    return { ...adventure, ...mikkunMissionFor(adventure.type, seed) };
+  }
+
+  function mikkunPrizeForResult(session, ratio) {
+    if (ratio === 100) {
+      return { icon: "🏆", name: session.mikkunMission?.prize || "でんせつメダル", rank: "パーフェクト！" };
+    }
+    if (ratio >= 60) {
+      return { icon: "🌟", name: "きらきらシール", rank: "ミッション クリア！" };
+    }
+    return { icon: "🔩", name: "がんばりネジ", rank: "つぎの パワーに へんしん！" };
+  }
+
   function praiseForCurrentQuestion() {
     const praises = [
       "いいひらめき！",
@@ -1722,6 +1861,7 @@
     const currentMikkunStage = mikkunStage(homeLevel);
     const currentMikkunProgress = mikkunStageProgress(homeLevel, homeXp);
     const dailyQuest = dailyQuestForLearner();
+    const mikkunDailyQuest = mikkun ? mikkunDailyAdventure() : null;
     return `
       <div class="screen home-screen">
         <header class="topbar">
@@ -1751,10 +1891,22 @@
               <span>🚀</span>
               <p>
                 <b>だんだんだんと メカのしまを たんけん！</b>
-                <small>つぎは「${currentMikkunStage.next}」</small>
+                <small>きょうの ぶたいは「${mikkunDailyQuest.label}」</small>
                 <span class="mikkun-stage-meter"><i style="width:${currentMikkunProgress}%"></i></span>
               </p>
             </div>
+            <button
+              type="button"
+              class="mikkun-surprise-quest"
+              data-start="${mikkunDailyQuest.mode}"
+              data-preschool="true"
+              data-preschool-type="${mikkunDailyQuest.type}"
+              aria-label="きょうのびっくりミッション、${mikkunDailyQuest.title}を始める"
+            >
+              <span class="mikkun-surprise-icon" aria-hidden="true">${mikkunDailyQuest.icon}</span>
+              <span><small>きょうの びっくりミッション</small><b>${mikkunDailyQuest.title}</b><i>ごほうび：${mikkunDailyQuest.prize}</i></span>
+              <strong>しゅっぱつ！</strong>
+            </button>
               ` : ""}
           ${mikkun ? "" : `
             <button type="button" class="daily-quest-card" data-start="${dailyQuest.mode}" aria-label="今日のおすすめ、${dailyQuest.title}を始める">
@@ -1857,7 +2009,7 @@
       });
     };
 
-    addExample(row.word, row.wordReading);
+    addExample(row.word, row.wordReading, row.meaning);
     readingProblems.forEach((problem) => {
       if (String(problem.kanji || "").includes(row.character)) {
         addExample(problem.kanji, problem.answer, problem.meaning);
@@ -2011,7 +2163,7 @@
           </div>
           <p class="kanji-list-source-note">
             ${quizMasterStage
-              ? "高校までの漢字学習を終えた人向けに、画数の多さと使用頻度の低さを基準として選んだ、クイズ番組級の難漢字一覧です。"
+              ? "高校までの範囲を超えた難読語を中心に、「魑魅魍魎」「躊躇」「鸚鵡」などで使う難字と、画数・使用頻度から選んだ常用漢字を集めた最難関一覧です。"
               : examStage
               ? "小学6年までの範囲を終えた人向けに、中学受験レベルの四字熟語で使われる漢字を集めたアプリ独自の発展一覧です。"
               : middleSchoolStage
@@ -2111,6 +2263,12 @@
       usePreschoolMenu,
       safePreschoolType,
     );
+    const mikkunMission = usePreschoolMenu
+      ? mikkunMissionFor(
+          safePreschoolType,
+          Date.now() + skill.level + skill.xp + state.streak,
+        )
+      : null;
     state.session = {
       mode,
       total,
@@ -2130,6 +2288,9 @@
       attempts: 0,
       endedEarly: false,
       mikkunRewards: [],
+      mikkunMission,
+      mikkunCombo: 0,
+      mikkunBestCombo: 0,
     };
     state.exitConfirmOpen = false;
     state.view = mode;
@@ -2165,6 +2326,7 @@
     if (state.session?.preschool) {
       const completed = state.session.completed;
       const stage = mikkunStage(state.session.levelAtStart);
+      const mission = state.session.mikkunMission;
       return `
         <div class="lesson-level-row mikkun-lesson-level">
           <span>みっくんの ぼうけん</span><span>${stage.label}</span>${extra}
@@ -2178,6 +2340,13 @@
           </div>
           <b>${completed}/${state.session.total}</b>
         </div>
+        ${mission ? `
+          <div class="mikkun-session-mission">
+            <span aria-hidden="true">${mission.icon}</span>
+            <p><small>ひみつミッション</small><b>${mission.title}</b></p>
+            ${state.session.mikkunCombo >= 2 ? `<em>${state.session.mikkunCombo}れんぞく！</em>` : ""}
+          </div>
+        ` : ""}
       `;
     }
     const lessonLevel =
@@ -3127,6 +3296,11 @@
     state.readingChecked = true;
     session.attempts += 1;
     session.correct += 1;
+    session.mikkunCombo = Number(session.mikkunCombo || 0) + 1;
+    session.mikkunBestCombo = Math.max(
+      Number(session.mikkunBestCombo || 0),
+      session.mikkunCombo,
+    );
     if (!Array.isArray(session.mikkunRewards)) session.mikkunRewards = [];
     session.mikkunRewards.push("dadandandan");
     playCorrectSound();
@@ -3231,9 +3405,12 @@
           : problem.missionType === "treasure"
             ? "おたから ゲット！"
             : "ひかりパワー ゲット！";
+    const comboLabel = state.session.mikkunCombo >= 2
+      ? `<span class="mikkun-combo-pop">${state.session.mikkunCombo}れんぞく！</span>`
+      : "";
     const feedback = state.readingChecked
       ? correct
-        ? `<div class="reading-feedback correct mikkun-win"><b>せいかい！</b> ${rewardLabel}</div>`
+        ? `<div class="reading-feedback correct mikkun-win"><b>せいかい！</b> ${rewardLabel}${comboLabel}</div>`
         : `<div class="reading-feedback wrong"><b>おしい！</b> こたえは「${problem.answerLabel || problem.answer}」。つぎは できるよ！</div>`
       : "";
     return `
@@ -4015,7 +4192,7 @@
     const recentSet = new Set(recent);
     const usedCharacters = new Set();
     const reviewCount = progress.previousRows.length
-      ? Math.max(1, Math.round(Number(total) * 0.2))
+      ? Math.max(1, Math.round(Number(total) * 0.1))
       : 0;
     const currentCount = Math.max(0, Number(total) - reviewCount);
     const selectedRows = [
@@ -4053,10 +4230,14 @@
         Array.from(row.word).every((character) => learnedCharacterSet.has(character)),
     );
     const compoundRate = progress.stage.grade === 8
-      ? 0.25 + progress.ratio * 0.3
-      : progress.ratio < 0.45
-        ? 0
-        : 0.12 + (progress.ratio - 0.45) * 0.45;
+      ? 0.38 + progress.ratio * 0.32
+      : progress.stage.grade <= 2
+        ? progress.ratio < 0.3
+          ? 0.08
+          : 0.16 + (progress.ratio - 0.3) * 0.35
+        : progress.ratio < 0.2
+          ? 0.1
+          : 0.22 + (progress.ratio - 0.2) * 0.4;
     const seenCompoundWords = new Set();
     const compoundCandidates = shuffled(
       selectedRows
@@ -4086,7 +4267,7 @@
         suitableChoicePool,
         mode,
         useWord,
-        progress.ratio >= 0.55,
+        progress.ratio >= 0.32,
       );
       if (mode === "write") {
         return {
@@ -4915,6 +5096,9 @@
     }
     const ratio = session.completed ? Math.round((session.correct / session.completed) * 100) : 0;
     const preschoolComplete = session.preschool && !session.endedEarly;
+    const mikkunPrize = preschoolComplete
+      ? mikkunPrizeForResult(session, ratio)
+      : null;
     return `
       <div class="screen result-screen ${session.preschool ? "mikkun-result-screen" : ""}">
         <header class="result-topbar"><span class="brand-mark">の</span><b>学習結果</b></header>
@@ -4927,6 +5111,13 @@
             ・ ${session.preschool ? mikkunStage(activeSkill(session.mode).level).label : `Lv.${activeSkill(session.mode).level}`}
           </p>
         </section>
+        ${mikkunPrize ? `
+          <section class="mikkun-prize-card" aria-label="今回のごほうび">
+            <span aria-hidden="true">${mikkunPrize.icon}</span>
+            <div><small>こんかいの ごほうび</small><h2>${mikkunPrize.name}</h2><p>${mikkunPrize.rank} ・ さいこう ${session.mikkunBestCombo || 0}れんぞく</p></div>
+            <i aria-hidden="true">✨</i>
+          </section>
+        ` : ""}
         <div class="result-score-card">
           <div class="result-main-score"><b>${session.completed}</b><span>問できた</span></div>
           <div><b>${session.correct}</b><span>${session.preschool ? "ゲットした ほし" : "できた問題"}</span></div>
@@ -5569,6 +5760,11 @@
       if (correct) {
         state.session.correct += 1;
         if (state.session?.preschool) {
+          state.session.mikkunCombo = Number(state.session.mikkunCombo || 0) + 1;
+          state.session.mikkunBestCombo = Math.max(
+            Number(state.session.mikkunBestCombo || 0),
+            state.session.mikkunCombo,
+          );
           if (!Array.isArray(state.session.mikkunRewards)) {
             state.session.mikkunRewards = [];
           }
@@ -5578,6 +5774,7 @@
         earnXp(MODE_INFO[mode].xp);
       } else {
         if (state.session?.preschool) {
+          state.session.mikkunCombo = 0;
           playTapSound();
         } else {
           playWrongSound();
