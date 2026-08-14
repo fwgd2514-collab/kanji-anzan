@@ -1,5 +1,56 @@
 # 6分野・みっくん冒険メニュー版への更新手順
 
+## URLグループ切替・名前登録・認証版（version 47）について
+
+従来ユーザーの使い方を変えず、起動URLの引数で新しいグループへ切り替えられるようにしました。
+
+- 引数のない従来URLは、これまで通り`names.txt`と`nobiru-family-01`のデータを使用
+- `?group=team-02`のようなURLでは、`team-02`専用グループへ切り替え
+- 新グループはグループ用パスワードを入力して参加
+- 新グループでは`names.txt`を使わず、起動画面または設定画面から名前を登録
+- 名前・6分野レベル・XP・最終学習日時をグループごとに分離
+- 端末内の保存領域もグループごとに分離し、同じiPhoneで複数グループを開いても混在しないよう対応
+- FirestoreルールにFirebase Authenticationとメンバー文書による新グループ保護を追加
+
+### 更新URL
+
+従来グループ：
+
+`https://ユーザー名.github.io/リポジトリ名/?update=47`
+
+新しいグループの例：
+
+`https://ユーザー名.github.io/リポジトリ名/?group=team-02&update=47`
+
+グループIDには、40文字以内の半角英数字・ハイフン・アンダーバーを使ってください。パスワードはURLへ入れません。
+
+### Firebaseで先に行う設定
+
+1. Firebase Authenticationの「メール／パスワード」を有効にする
+2. グループ用ユーザー（例：`team-02@nobiru.example`）を作成してパスワードを決める
+3. 作成したユーザーのUIDを控える
+4. Firestoreに`nobiru_groups / team-02 / members / UID`を作成する
+5. このフォルダの新しい`firestore.rules`を貼り直して「公開」を押す
+
+詳しい画面操作は`FIREBASE_SETUP.md`の「新しいグループを追加する」を参照してください。
+
+### GitHubへ反映するファイル
+
+次の10ファイルを同じ場所へ上書きしてください。
+
+1. `app.js`
+2. `styles.css`
+3. `firebase-sync.js`
+4. `firebase-config.js`
+5. `index.html`
+6. `version.json`
+7. `README.md`
+8. `UPDATE_GUIDE.md`
+9. `FIREBASE_SETUP.md`
+10. `firestore.rules`
+
+`firestore.rules`はGitHubへアップロードするだけではFirebase側へ反映されません。FirebaseコンソールのFirestore「ルール」へも全文を貼り付けて公開してください。
+
 ## 漢字難易度・漢字王・みっくんごほうび版（version 46）について
 
 学年の範囲を守りながら通常の漢字問題を一段だけ難しくし、漢字王とみっくん版を大きく強化しました。

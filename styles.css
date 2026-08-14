@@ -46,6 +46,7 @@ button {
 
 input[type="text"],
 input[type="number"],
+input[type="password"],
 select,
 textarea {
   font-size: 16px;
@@ -145,7 +146,8 @@ canvas:focus-visible {
   font-weight: 900;
 }
 
-.learner-gate-field select {
+.learner-gate-field select,
+.learner-gate-field input {
   width: 100%;
   min-height: 58px;
   padding: 0 16px;
@@ -155,6 +157,17 @@ canvas:focus-visible {
   color: var(--navy);
   font-size: 18px;
   font-weight: 900;
+}
+
+.learner-gate-field input::placeholder {
+  color: #aaa8a2;
+  font-weight: 750;
+}
+
+.learner-gate-field input:focus,
+.learner-gate-field select:focus {
+  border-color: var(--coral);
+  outline: 3px solid rgba(255, 122, 89, 0.14);
 }
 
 .learner-gate-confirm {
@@ -167,6 +180,60 @@ canvas:focus-visible {
   color: #99968f;
   font-size: 10px;
   line-height: 1.55;
+}
+
+.group-access-screen .learner-gate-card > p.group-access-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #49658c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.group-access-icon {
+  background: #eef4ff;
+  color: #456696;
+  font-size: 21px;
+}
+
+.group-form-error {
+  margin: 10px 2px 0 !important;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: #fff0ed;
+  color: #b94f3d !important;
+  font-size: 11px !important;
+  font-weight: 850;
+  line-height: 1.55 !important;
+  text-align: left;
+}
+
+.registered-learner-screen {
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.registered-name-form {
+  margin-top: 4px;
+}
+
+.register-learner-button {
+  margin-top: 10px;
+  border: 1px solid #ffc0ae;
+  background: #fff0ea;
+  color: #ac543f;
+}
+
+.secondary-button:disabled {
+  border-color: #ddd9d2;
+  background: #efede8;
+  color: #aaa7a0;
+  cursor: not-allowed;
 }
 
 .app-update-date {
@@ -4402,6 +4469,16 @@ html.is-writing body {
 
 .save-learner-button.primary-button.wide {
   margin-top: 10px;
+}
+
+.profile-registration-block {
+  margin-top: 17px;
+  padding-top: 16px;
+  border-top: 1px solid #e7e2da;
+}
+
+.profile-registration-block > .eyebrow {
+  margin-bottom: 9px;
 }
 
 .cloud-sync-time {

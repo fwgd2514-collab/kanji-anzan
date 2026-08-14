@@ -36,6 +36,10 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 - パスワード入力欄を押しても確認画面が閉じないよう、背景タップとの判定を分離
 - 登録されている全員の6分野レベル一覧を表示
 - Firebase設定後は、名前ごとの6分野レベル・XPを別端末と共有
+- 引数のない従来URLは、今まで通り`names.txt`と既存グループのデータを使用
+- `?group=グループID`付きURLでは、Firebase認証で保護された別グループへ切り替え
+- 新グループは`names.txt`を使わず、画面から名前を追加してグループ内だけで共有
+- グループごとに端末内保存領域とFirestoreの保存先を分け、レベルや名前の混在を防止
 - 正解・レベル変更後にFirebaseへ自動保存し、最終同期時刻を表示
 - 選んだ分野の現在レベルに対応した問題を出題
 - 旧版の共通レベルは、初回だけ各分野へ自動で引き継ぎ
@@ -128,7 +132,7 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 - `version.json`：iPhoneに最新版を読み込ませるための更新番号
 - `firebase-config.js`：Firebaseの接続設定
 - `firebase-sync.js`：Firestoreとの同期機能
-- `firestore.rules`：Firestoreへ設定する試用用ルール
+- `firestore.rules`：既存グループを維持し、新グループを認証で分離するFirestoreルール
 - `FIREBASE_SETUP.md`：Firebaseの設定手順
 - `UPDATE_GUIDE.md`：今回の更新をFirebase・GitHubへ反映する詳しい手順
 - `.nojekyll`：GitHub Pages用設定
@@ -157,6 +161,8 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 
 ## 名前を変更する
 
+従来URLでは、これまで通り次の方法を使います。
+
 `names.txt` をメモ帳などで開き、1行に1人ずつ名前を入力し、UTF-8形式で保存します。
 「くん」「さん」なども含め、入力した名前がそのまま画面に表示されます。
 保存した `names.txt` をGitHubへアップロードし、設定画面の「名簿を再読み込み」を押すと選択肢へ反映されます。
@@ -166,6 +172,16 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 
 GitHub Pagesを開いたまま別画面へ移動し、戻ってきた場合も `names.txt` の更新を自動確認します。
 名前ごとの6分野のレベルとXPは、その端末のブラウザ内に個別保存されます。
+
+## 引数で新しいグループを開く
+
+従来URLは変更せず、`?group=team-02`のようにグループIDを付けた時だけ別グループへ切り替わります。新グループは`names.txt`を使わず、グループ用パスワードの確認後に画面から名前を登録します。
+
+```text
+https://ユーザー名.github.io/リポジトリ名/?group=team-02
+```
+
+Firebase Authenticationのユーザー作成とFirestoreメンバー登録が必要です。詳しい手順は`FIREBASE_SETUP.md`を参照してください。
 
 ## Firebaseで別端末と共有する
 

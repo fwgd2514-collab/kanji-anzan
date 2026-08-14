@@ -65,14 +65,30 @@ service cloud.firestore {
         && request.resource.data.updatedAt >= 0;
     }
 
+    function isDefaultGroup(groupId) {
+      return groupId == 'nobiru-family-01';
+    }
+
+    function isGroupMember(groupId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/nobiru_groups/$(groupId)/members/$(request.auth.uid));
+    }
+
+    match /nobiru_groups/{groupId}/members/{memberId} {
+      allow get: if request.auth != null && request.auth.uid == memberId;
+      allow list, create, update, delete: if false;
+    }
+
     match /nobiru_groups/{groupId}/learners/{learnerId} {
-      allow read: if true;
-      allow create, update: if isLearnerProfile() || isLegacyProfile();
+      allow read: if isDefaultGroup(groupId) || isGroupMember(groupId);
+      allow create, update: if (isDefaultGroup(groupId) || isGroupMember(groupId))
+        && (isLearnerProfile() || isLegacyProfile());
       allow delete: if false;
 
       match /skills/{mode} {
-        allow read: if true;
-        allow create, update: if isValidSkill(mode);
+        allow read: if isDefaultGroup(groupId) || isGroupMember(groupId);
+        allow create, update: if (isDefaultGroup(groupId) || isGroupMember(groupId))
+          && isValidSkill(mode);
         allow delete: if false;
       }
     }

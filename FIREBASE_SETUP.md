@@ -1,46 +1,120 @@
-# Firebaseでレベルを端末間共有する
+# Firebase設定手順（端末間同期・複数グループ）
 
-この設定を行うと、GitHub Pagesの公開方法はそのままで、名前ごとの6分野のレベル・XP・連続日数・最終学習日時をFirestoreへ保存できます。
-Firebaseが未設定、オフライン、または接続エラーの場合も、端末内保存で学習を続けられます。
+このアプリは、GitHub Pagesでの公開方法を変えずにFirebaseへ学習記録を保存できます。
 
-## 1. Firebaseプロジェクトを作る
+- 従来URL：今まで通り`names.txt`を使い、既存データを表示
+- `?group=グループID`付きURL：パスワードで保護された別グループを表示し、名前は画面から登録
 
-1. [Firebaseコンソール](https://console.firebase.google.com/)を開きます。
-2. 「プロジェクトを追加」を選びます。
-3. 分かりやすいプロジェクト名を入力します。
-4. Google Analyticsは、この学習アプリの同期だけなら無効でも構いません。
+新しいグループでは、名前・6分野のレベル・XP・連続日数・最終学習日時が他の新グループから見えないように分離されます。
 
-## 2. Webアプリを登録する
+## 1. 既存ユーザーへの影響
 
-1. Firebaseの「プロジェクトの概要」を開きます。
-2. Webアプリのアイコン `</>` を選びます。
-3. アプリ名を入力して登録します。
-4. 表示された `firebaseConfig` の内容を控えます。
+次の従来URLは変更しません。
 
-## 3. Firestoreを作る
+```text
+https://ユーザー名.github.io/リポジトリ名/
+```
 
-1. Firebase左側の「Database と Storage」から「Firestore」を開きます。
-2. 「データベースの作成」を選びます。作成済みの場合はこの操作は不要です。
-3. ロケーションを選べる場合、日本で使うなら東京 `asia-northeast1` を選びます。既に `nam5` などが自動設定されている場合は、そのまま利用できます。
-4. 作成後、「ルール」タブを開きます。
-5. このフォルダの `firestore.rules` の内容をすべて貼り付けて「公開」を押します。
+`firebase-config.js`の既定グループ`nobiru-family-01`と、従来のブラウザ保存キー`nobiru-progress`をそのまま使います。名前もこれまで通り`names.txt`から読み込みます。
 
-以前のルールを公開済みでも、最終学習日時を保存する版へ更新した際は、新しい `firestore.rules` をもう一度貼り直して公開してください。
+新グループだけ、次のような引数付きURLを使います。
 
-## 4. アプリへ設定を入れる
+```text
+https://ユーザー名.github.io/リポジトリ名/?group=team-02
+```
 
-`firebase-config.js` をメモ帳で開きます。
+最新版を指定する場合は、引数を`&`でつなぎます。
 
-1. `firebaseConfig` 内の値を、Firebaseコンソールに表示された値へ置き換えます。
-2. `enabled: false` を `enabled: true` へ変更します。
-3. `groupId` は英数字で分かりやすい文字列に変更できます。
+```text
+https://ユーザー名.github.io/リポジトリ名/?group=team-02&update=47
+```
 
-設定例：
+## 2. Firebase Authenticationを有効にする
+
+1. [Firebaseコンソール](https://console.firebase.google.com/)で、現在このアプリに使っているプロジェクトを開きます。
+2. 左側の「構築」または「プロダクトのカテゴリ」から「Authentication」を開きます。
+3. 初回だけ「始める」を押します。
+4. 「Sign-in method」または「ログイン方法」タブを開きます。
+5. 「メール／パスワード」を選びます。
+6. 上側の「メール／パスワード」を有効にして保存します。「メールリンク」は無効のままで構いません。
+
+### GitHub Pagesのドメインを許可する
+
+1. Authenticationの「設定」を開きます。
+2. 「承認済みドメイン」を開きます。
+3. GitHub Pagesのドメインを追加します。
+
+例：URLが`https://sample.github.io/nobiru/`なら、追加する値は次の通りです。
+
+```text
+sample.github.io
+```
+
+`https://`や、後ろのリポジトリ名は入力しません。
+
+## 3. 新しいグループ用ユーザーを作る
+
+ここではグループIDを`team-02`とします。グループIDは、40文字以内の半角英数字・ハイフン・アンダーバーで決めてください。
+
+1. Authenticationの「Users」または「ユーザー」タブを開きます。
+2. 「ユーザーを追加」を押します。
+3. メールアドレス欄へ`team-02@nobiru.example`と入力します。
+4. グループの利用者へ知らせるパスワードを決めて入力します。
+5. 「ユーザーを追加」を押します。
+6. 作成されたユーザーの「ユーザーUID」をコピーして控えます。
+
+`@nobiru.example`はアプリ内のグループ認証にだけ使う識別子です。実際のメール受信には使いません。パスワードを忘れた場合は、Firebaseコンソールから再設定します。
+
+重要：パスワードは`firebase-config.js`、GitHubのファイル、URLのどこにも書かないでください。
+
+## 4. Firestoreへグループのメンバーを登録する
+
+1. Firebase左側の「Firestore」または「Database と Storage」→「Firestore」を開きます。
+2. 上部の「データ」タブを開きます。
+3. `nobiru_groups`コレクションを開きます。ない場合は「コレクションを開始」で作ります。
+4. ドキュメントIDを`team-02`にします。
+5. 親ドキュメントを初めて作る場合は、フィールド`displayName`、種類`string`、値`team-02`を追加して保存します。
+6. `team-02`ドキュメントを開き、「コレクションを開始」を押します。
+7. サブコレクションIDを`members`にします。
+8. ドキュメントIDへ、手順3でコピーしたFirebase Authenticationの「ユーザーUID」を貼り付けます。
+9. フィールド`role`、種類`string`、値`member`を追加して保存します。
+
+完成時の形は次の通りです。
+
+```text
+nobiru_groups
+└─ team-02
+   └─ members
+      └─ Firebase AuthenticationのUID
+         └─ role: "member"
+```
+
+アプリで最初の名前を登録すると、同じ`team-02`の下へ`learners`が自動作成されます。
+
+## 5. Firestoreルールを更新する
+
+1. Firestore上部の「ルール」タブを開きます。
+2. 現在表示されているルールをすべて選択して削除します。
+3. このフォルダの`firestore.rules`をメモ帳で開き、全文をコピーして貼り付けます。
+4. 「公開」を押します。
+
+新しいルールでは次のように動作します。
+
+- `nobiru-family-01`：既存ユーザーを今まで通り利用可能
+- それ以外：ログイン中のUIDが、そのグループの`members`にある場合だけ読み書き可能
+- 名前やレベルを保存できる項目と数値範囲は従来通り制限
+
+`firebase-config.js`の既定`groupId`を変更する場合は、`firestore.rules`内の`nobiru-family-01`も同じ値へ変更してください。通常は変更しません。
+
+## 6. アプリのFirebase設定を確認する
+
+`firebase-config.js`は次の形です。すでに端末間同期が動いている場合、`firebaseConfig`の値は変更しません。
 
 ```js
 window.NOBIRU_FIREBASE = {
   enabled: true,
   groupId: "nobiru-family-01",
+  groupEmailDomain: "nobiru.example",
   firebaseConfig: {
     apiKey: "Firebaseに表示された値",
     authDomain: "Firebaseに表示された値",
@@ -52,17 +126,49 @@ window.NOBIRU_FIREBASE = {
 };
 ```
 
-## 5. GitHubへアップロードする
+新しいグループを増やすたびに`firebase-config.js`を書き換える必要はありません。Authenticationのユーザー、Firestoreの`members`、グループURLを追加するだけです。
 
-このフォルダ内のファイルをすべてGitHubへ再アップロードします。
-公開ページの「設定」画面で「Firebaseと同期済み」または「同期ON」と表示されれば完了です。
+## 7. GitHubへ更新ファイルをアップロードする
 
-別の端末でも同じGitHub PagesのURLを開くと、同じ `groupId` の6分野レベル一覧を取得します。
+今回、GitHubの同じ場所へ上書きするファイルは次の10個です。
 
-旧版から更新する場合は、GitHubへファイルをアップロードする前に、更新後の `firestore.rules` をFirebaseで再公開してください。詳しくは `UPDATE_GUIDE.md` を参照してください。
+1. `app.js`
+2. `styles.css`
+3. `firebase-sync.js`
+4. `firebase-config.js`
+5. `index.html`
+6. `version.json`
+7. `README.md`
+8. `UPDATE_GUIDE.md`
+9. `FIREBASE_SETUP.md`
+10. `firestore.rules`
 
-## 試用版のセキュリティについて
+`firestore.rules`はGitHubへアップロードするだけではFirebaseのルールは変わりません。必ずFirebaseコンソールの「ルール」タブでも貼り付けて公開してください。
 
-同梱のルールは、保存できる項目と数値の範囲を制限していますが、ログイン認証は行いません。
-名前・レベルの秘匿性が低い小規模な試用を想定しています。
-第三者による書き換えも防ぎたい場合は、次の段階でFirebase Authenticationを追加してください。
+## 8. 動作確認
+
+1. 従来URLを開き、今までの名前一覧とレベルが表示されることを確認します。
+2. 新グループURL`?group=team-02&update=47`を開きます。
+3. グループ用パスワードを入力します。
+4. 「新しく登録する名前」へ名前を入力し、「この名前を登録して始める」を押します。
+5. 1問学習してレベルを保存します。
+6. 別端末で同じ新グループURLとパスワードを使い、登録名とレベルが表示されることを確認します。
+7. 別のグループURLを開き、`team-02`の名前が表示されないことを確認します。
+
+一度ログインした端末ではFirebaseが認証状態を保持するため、通常は次回からグループ用パスワードの入力を省略できます。
+
+## 9. 別のグループを追加する例
+
+2つ目の新グループを`team-03`にする場合は、次の3点を追加します。
+
+1. Authenticationユーザー：`team-03@nobiru.example`
+2. Firestoreメンバー：`nobiru_groups / team-03 / members / そのユーザーのUID`
+3. 利用URL：`https://ユーザー名.github.io/リポジトリ名/?group=team-03`
+
+各グループで異なるパスワードを設定してください。
+
+## セキュリティ上の注意
+
+URLの`group`は保存先を選ぶための識別子で、秘密情報ではありません。新グループの保護はFirebase AuthenticationのパスワードとFirestoreルールで行います。
+
+既存グループは「今まで通り」を優先して認証なしの動作を残しています。そのため、従来URLを知っている人への既存グループの非公開化までは行いません。既存グループも完全に保護する場合は、全利用者を新グループ方式へ移行する追加作業が必要です。

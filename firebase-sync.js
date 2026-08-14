@@ -12,18 +12,54 @@
   ];
   let firestore = null;
   let firestoreApi = null;
+  let firebaseAuth = null;
+  let authApi = null;
   let initializing = null;
+
+  function sanitizeGroupId(value, fallback = "nobiru-family-01", maxLength = 80) {
+    const sanitized = String(value || "")
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, maxLength);
+    return sanitized || fallback;
+  }
 
   function settings() {
     const root = window.NOBIRU_FIREBASE || {};
     const firebaseConfig = root.firebaseConfig || {};
+    const defaultGroupId = sanitizeGroupId(root.groupId || "nobiru-family-01");
+    const requestedGroupId = new URLSearchParams(window.location.search).get("group");
+    const hasRequestedGroup = Boolean(String(requestedGroupId || "").trim());
+    const groupId = hasRequestedGroup
+      ? sanitizeGroupId(requestedGroupId, "invalid-group", 40)
+      : defaultGroupId;
+    const isDefaultGroup = groupId === defaultGroupId;
+    const emailDomain = String(root.groupEmailDomain || "nobiru.example")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]/g, "") || "nobiru.example";
     return {
       enabled: root.enabled === true,
-      groupId: String(root.groupId || "nobiru-family-01")
-        .trim()
-        .replace(/[^a-zA-Z0-9_-]/g, "-")
-        .slice(0, 80),
+      defaultGroupId,
+      groupId,
+      isDefaultGroup,
+      nameMode: isDefaultGroup ? "file" : "registration",
+      authRequired: !isDefaultGroup,
+      authEmail: `${groupId.toLowerCase()}@${emailDomain}`,
       firebaseConfig,
+    };
+  }
+
+  function getGroupInfo() {
+    const current = settings();
+    return {
+      defaultGroupId: current.defaultGroupId,
+      groupId: current.groupId,
+      isDefaultGroup: current.isDefaultGroup,
+      nameMode: current.nameMode,
+      authRequired: current.authRequired,
     };
   }
 
@@ -47,9 +83,32 @@
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   }
 
+  async function waitForAuthState() {
+    if (!firebaseAuth || !authApi) return;
+    if (typeof firebaseAuth.authStateReady === "function") {
+      await firebaseAuth.authStateReady();
+      return;
+    }
+    await new Promise((resolve) => {
+      let unsubscribe = () => {};
+      unsubscribe = authApi.onAuthStateChanged(firebaseAuth, () => {
+        unsubscribe();
+        resolve();
+      });
+    });
+  }
+
   async function initialize() {
-    if (!isConfigured()) return { enabled: false };
-    if (firestore) return { enabled: true };
+    const current = settings();
+    if (!isConfigured()) return { enabled: false, authenticated: false };
+    if (firestore && (!current.authRequired || firebaseAuth)) {
+      if (current.authRequired) await waitForAuthState();
+      return {
+        enabled: true,
+        authRequired: current.authRequired,
+        authenticated: !current.authRequired || Boolean(firebaseAuth?.currentUser),
+      };
+    }
     if (initializing) return initializing;
 
     initializing = (async () => {
@@ -59,11 +118,24 @@
       firestoreApi = await import(
         `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-firestore.js`
       );
+      if (current.authRequired) {
+        authApi = await import(
+          `https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-auth.js`
+        );
+      }
       const existing = appApi.getApps().find((app) => app.name === "nobiru-sync");
       const firebaseApp =
-        existing || appApi.initializeApp(settings().firebaseConfig, "nobiru-sync");
+        existing || appApi.initializeApp(current.firebaseConfig, "nobiru-sync");
       firestore = firestoreApi.getFirestore(firebaseApp);
-      return { enabled: true };
+      if (current.authRequired) {
+        firebaseAuth = authApi.getAuth(firebaseApp);
+        await waitForAuthState();
+      }
+      return {
+        enabled: true,
+        authRequired: current.authRequired,
+        authenticated: !current.authRequired || Boolean(firebaseAuth?.currentUser),
+      };
     })();
 
     try {
@@ -71,6 +143,26 @@
     } finally {
       initializing = null;
     }
+  }
+
+  function requireAuthorizedGroup() {
+    const current = settings();
+    if (current.authRequired && !firebaseAuth?.currentUser) {
+      throw new Error("GROUP_AUTH_REQUIRED");
+    }
+  }
+
+  async function signIn(password) {
+    const current = settings();
+    const connection = await initialize();
+    if (!connection.enabled) throw new Error("FIREBASE_NOT_CONFIGURED");
+    if (!current.authRequired) return { authenticated: true };
+    const credential = await authApi.signInWithEmailAndPassword(
+      firebaseAuth,
+      current.authEmail,
+      String(password || ""),
+    );
+    return { authenticated: Boolean(credential.user) };
   }
 
   function learnerDocument(name) {
@@ -97,9 +189,29 @@
     );
   }
 
+  async function loadLearnerNames() {
+    await initialize();
+    if (!firestore) return [];
+    requireAuthorizedGroup();
+    const current = settings();
+    const learnerCollection = firestoreApi.collection(
+      firestore,
+      "nobiru_groups",
+      current.groupId,
+      "learners",
+    );
+    const snapshot = await firestoreApi.getDocs(learnerCollection);
+    return [...new Set(
+      snapshot.docs
+        .map((documentSnapshot) => String(documentSnapshot.data()?.displayName || "").trim())
+        .filter(Boolean),
+    )].sort((a, b) => a.localeCompare(b, "ja"));
+  }
+
   async function loadProfiles(names) {
     await initialize();
     if (!firestore) return {};
+    requireAuthorizedGroup();
     const pairs = await Promise.all(
       names.map(async (name) => {
         const [profileSnapshot, ...skillSnapshots] = await Promise.all([
@@ -131,6 +243,7 @@
   async function saveProfile(name, profile, changedMode = "") {
     await initialize();
     if (!firestore) return;
+    requireAuthorizedGroup();
     const updatedAt = Math.max(
       0,
       Math.floor(Number(profile.updatedAt) || Date.now()),
@@ -164,8 +277,11 @@
   }
 
   window.NobiruCloud = {
+    getGroupInfo,
     isConfigured,
     initialize,
+    signIn,
+    loadLearnerNames,
     loadProfiles,
     saveProfile,
   };
