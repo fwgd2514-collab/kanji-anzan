@@ -7,7 +7,7 @@
     groupId: "nobiru-family-01",
     isDefaultGroup: true,
     nameMode: "file",
-    authRequired: false,
+    groupLabel: "今までのグループ",
   };
   const STORAGE_KEY = ACTIVE_GROUP.isDefaultGroup
     ? "nobiru-progress"
@@ -840,9 +840,6 @@
     learnerGateReady: false,
     learnerConfirmed: false,
     hasPreviousLearner: false,
-    groupAccessReady: !ACTIVE_GROUP.authRequired,
-    groupAuthBusy: false,
-    groupAuthError: "",
     groupRegistrationBusy: false,
     groupRegistrationError: "",
     profiles: {},
@@ -945,7 +942,6 @@
       flushPendingCloudSaves();
       return;
     }
-    if (ACTIVE_GROUP.authRequired && !state.groupAccessReady) return;
     const namesTask =
       location.protocol === "file:" ? Promise.resolve() : loadLearnerNames();
     namesTask.finally(() => syncCloudProfiles());
@@ -953,34 +949,10 @@
   window.addEventListener?.("pagehide", flushPendingCloudSaves);
 
   async function bootstrapApplication() {
-    const cloud = window.NobiruCloud;
-    if (ACTIVE_GROUP.authRequired) {
-      if (!cloud?.isConfigured?.()) {
-        state.groupAuthError = "Firebaseの設定が見つかりません。";
-        state.learnerGateReady = true;
-        render();
-        return;
-      }
-      try {
-        const connection = await cloud.initialize();
-        state.groupAccessReady = Boolean(connection.authenticated);
-        if (!state.groupAccessReady) {
-          state.learnerGateReady = true;
-          render();
-          return;
-        }
-      } catch {
-        state.groupAuthError = "Firebaseへ接続できません。通信状態を確認してください。";
-        state.learnerGateReady = true;
-        render();
-        return;
-      }
-    }
-
-    const namesLoaded = await loadLearnerNames();
+    await loadLearnerNames();
     state.learnerGateReady = true;
     render();
-    if (!ACTIVE_GROUP.authRequired || namesLoaded !== false) initializeCloudSync();
+    initializeCloudSync();
   }
 
   function loadProgress() {
@@ -1055,7 +1027,6 @@
 
   async function loadLearnerNames(showFeedback = false) {
     if (ACTIVE_GROUP.nameMode === "registration") {
-      if (!state.groupAccessReady) return false;
       try {
         const names = await window.NobiruCloud.loadLearnerNames();
         const changed = applyLearnerNames(names, "Firebaseの登録名");
@@ -1065,9 +1036,7 @@
         }
         return true;
       } catch {
-        state.groupAccessReady = false;
         state.cloudReady = false;
-        state.groupAuthError = "このグループを利用できません。パスワードまたはFirebase設定を確認してください。";
         if (showFeedback) showToast("登録名を読み込めませんでした");
         render();
         return false;
@@ -1291,14 +1260,7 @@
     }
     setCloudStatus("Firebaseへ接続しています…", "busy");
     try {
-      const connection = await cloud.initialize();
-      if (connection.authRequired && !connection.authenticated) {
-        state.cloudReady = false;
-        state.groupAccessReady = false;
-        setCloudStatus("グループ認証が必要です", "error");
-        render();
-        return;
-      }
+      await cloud.initialize();
       state.cloudReady = true;
       await syncCloudProfiles();
     } catch {
@@ -1857,12 +1819,9 @@
       return `
         <div class="screen learner-gate-screen learner-gate-loading" aria-live="polite">
           <span class="brand-mark">の</span>
-          <p>${ACTIVE_GROUP.authRequired ? "グループを確認しています…" : "名前の一覧を読み込んでいます…"}</p>
+          <p>名前の一覧を読み込んでいます…</p>
         </div>
       `;
-    }
-    if (ACTIVE_GROUP.authRequired && !state.groupAccessReady) {
-      return groupAccessGateTemplate();
     }
     if (ACTIVE_GROUP.nameMode === "registration") {
       return registeredLearnerGateTemplate();
@@ -1916,42 +1875,6 @@
     `;
   }
 
-  function groupAccessGateTemplate() {
-    return `
-      <div class="screen learner-gate-screen group-access-screen">
-        <div class="learner-gate-brand"><span class="brand-mark">の</span><b>のびる</b></div>
-        <section class="learner-gate-card group-access-card" aria-labelledby="group-access-title">
-          <span class="learner-gate-icon group-access-icon" aria-hidden="true">鍵</span>
-          <p class="eyebrow">GROUP ACCESS</p>
-          <h1 id="group-access-title">グループに入る</h1>
-          <p class="group-access-id">グループ：<b>${escapeHtml(ACTIVE_GROUP.groupId)}</b></p>
-          <p>管理者から案内されたグループ用パスワードを入力してください。</p>
-          <label class="learner-gate-field" for="groupAccessPassword">
-            <span>グループ用パスワード</span>
-            <input
-              id="groupAccessPassword"
-              type="password"
-              inputmode="text"
-              autocomplete="current-password"
-              maxlength="128"
-              placeholder="パスワードを入力"
-              ${state.groupAuthBusy ? "disabled" : ""}
-            />
-          </label>
-          ${state.groupAuthError ? `<p class="group-form-error" role="alert">${escapeHtml(state.groupAuthError)}</p>` : ""}
-          <button type="button" class="primary-button wide learner-gate-confirm" data-action="group-sign-in" ${state.groupAuthBusy ? "disabled" : ""}>
-            ${state.groupAuthBusy ? "確認しています…" : "このグループに入る"}
-          </button>
-          <small>パスワードはURLやアプリのファイルには保存されません。</small>
-        </section>
-        <p class="app-update-date">最終更新：${APP_LAST_UPDATED}</p>
-        <button type="button" class="gate-update-button" data-action="refresh-app" aria-label="最新版に更新する">
-          <span aria-hidden="true">↻</span><b>最新版に更新</b>
-        </button>
-      </div>
-    `;
-  }
-
   function registeredLearnerGateTemplate() {
     const previousLearnerAvailable =
       state.hasPreviousLearner && state.learnerNames.includes(state.learnerName);
@@ -1961,7 +1884,7 @@
         <div class="learner-gate-brand"><span class="brand-mark">の</span><b>のびる</b></div>
         <section class="learner-gate-card" aria-labelledby="learner-gate-title">
           <span class="learner-gate-icon" aria-hidden="true">人</span>
-          <p class="eyebrow">${escapeHtml(ACTIVE_GROUP.groupId)} · WHO IS LEARNING?</p>
+          <p class="eyebrow">${escapeHtml(ACTIVE_GROUP.groupLabel)} · WHO IS LEARNING?</p>
           <h1 id="learner-gate-title">
             ${previousLearnerAvailable
               ? `前回の「${escapeHtml(state.learnerName)}」で<br />続けますか？`
@@ -5486,7 +5409,7 @@
             </button>
           </div>
           <p class="settings-note names-file-note">
-            グループ：${escapeHtml(ACTIVE_GROUP.groupId)}<br />
+            グループ：${escapeHtml(ACTIVE_GROUP.groupLabel)}<br />
             名前とレベルは、このグループ内だけで共有されます。
           </p>
         `
@@ -6427,9 +6350,6 @@
       "save-learner"() {
         saveLearnerSelection();
       },
-      "group-sign-in"() {
-        signInToGroup();
-      },
       "register-group-learner"() {
         registerGroupLearner(actionButton.dataset.source || "startup");
       },
@@ -6526,7 +6446,6 @@
     if (event.key !== "Enter") return;
     const actionByInput = {
       levelAdjustmentPassword: "confirm-level-password",
-      groupAccessPassword: "group-sign-in",
       startupNewLearnerName: "register-group-learner",
       profileNewLearnerName: "register-group-learner",
     };
@@ -6591,50 +6510,6 @@
       await syncCloudProfiles();
     } else if (window.NobiruCloud?.isConfigured?.()) {
       await initializeCloudSync();
-    }
-  }
-
-  async function signInToGroup() {
-    if (!ACTIVE_GROUP.authRequired || state.groupAuthBusy) return;
-    const passwordInput = document.querySelector("#groupAccessPassword");
-    const password = String(passwordInput?.value || "");
-    if (!password) {
-      state.groupAuthError = "グループ用パスワードを入力してください。";
-      render();
-      document.querySelector("#groupAccessPassword")?.focus();
-      return;
-    }
-
-    state.groupAuthBusy = true;
-    state.groupAuthError = "";
-    const button = document.querySelector("[data-action='group-sign-in']");
-    if (button) {
-      button.disabled = true;
-      button.textContent = "確認しています…";
-    }
-    if (passwordInput) passwordInput.disabled = true;
-    try {
-      const cloud = window.NobiruCloud;
-      await cloud.signIn(password);
-      const names = await cloud.loadLearnerNames();
-      state.groupAccessReady = true;
-      state.cloudReady = false;
-      applyLearnerNames(names, "Firebaseの登録名");
-      state.cloudReady = true;
-      state.cloudLastSyncedAt = Date.now();
-      setCloudStatus("Firebaseと同期済み", "online");
-      state.learnerGateReady = true;
-      await syncCloudProfiles();
-    } catch {
-      state.groupAccessReady = false;
-      state.cloudReady = false;
-      state.groupAuthError = "グループに入れませんでした。パスワードとFirebaseのメンバー設定を確認してください。";
-    } finally {
-      state.groupAuthBusy = false;
-      render();
-      if (!state.groupAccessReady) {
-        window.setTimeout(() => document.querySelector("#groupAccessPassword")?.focus(), 40);
-      }
     }
   }
 

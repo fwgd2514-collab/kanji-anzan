@@ -1,0 +1,26 @@
+{
+  "name": "のびる｜新しいグループ",
+  "short_name": "のびる2",
+  "description": "漢字・暗算・記憶をレベル別に学べるスマホ学習アプリ",
+  "lang": "ja",
+  "start_url": "./index2.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbfaf5",
+  "theme_color": "#07184d",
+  "icons": [
+    {
+      "src": "./assets/app-icon-192-v1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/app-icon-512-v1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -36,9 +36,9 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 - パスワード入力欄を押しても確認画面が閉じないよう、背景タップとの判定を分離
 - 登録されている全員の6分野レベル一覧を表示
 - Firebase設定後は、名前ごとの6分野レベル・XPを別端末と共有
-- 引数のない従来URLは、今まで通り`names.txt`と既存グループのデータを使用
-- `?group=グループID`付きURLでは、Firebase認証で保護された別グループへ切り替え
-- 新グループは`names.txt`を使わず、画面から名前を追加してグループ内だけで共有
+- `index.html`は、今まで通り`names.txt`と既存グループのデータを使用
+- `index2.html`は、新しいグループ専用の名前とレベルを表示
+- 新グループはパスワードなしで開き、`names.txt`を使わず画面から名前を登録
 - グループごとに端末内保存領域とFirestoreの保存先を分け、レベルや名前の混在を防止
 - 正解・レベル変更後にFirebaseへ自動保存し、最終同期時刻を表示
 - 選んだ分野の現在レベルに対応した問題を出題
@@ -120,7 +120,9 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 
 ## ファイル
 
-- `index.html`：アプリを開くファイル
+- `index.html`：従来グループを開くファイル
+- `index2.html`：新しい名前登録式グループを開くファイル
+- `manifest2.webmanifest`：新グループをiPhoneホーム画面から正しく開く設定
 - `styles.css`：画面デザイン
 - `app.js`：学習機能
 - `question-data.js`：漢字・熟語・四字熟語の問題データ
@@ -132,7 +134,7 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 - `version.json`：iPhoneに最新版を読み込ませるための更新番号
 - `firebase-config.js`：Firebaseの接続設定
 - `firebase-sync.js`：Firestoreとの同期機能
-- `firestore.rules`：既存グループを維持し、新グループを認証で分離するFirestoreルール
+- `firestore.rules`：グループ別の学習記録を保存するFirestoreルール
 - `FIREBASE_SETUP.md`：Firebaseの設定手順
 - `UPDATE_GUIDE.md`：今回の更新をFirebase・GitHubへ反映する詳しい手順
 - `.nojekyll`：GitHub Pages用設定
@@ -173,15 +175,15 @@ GitHub Pagesへそのままアップロードできる静的Webアプリです�
 GitHub Pagesを開いたまま別画面へ移動し、戻ってきた場合も `names.txt` の更新を自動確認します。
 名前ごとの6分野のレベルとXPは、その端末のブラウザ内に個別保存されます。
 
-## 引数で新しいグループを開く
+## 新しいグループを開く
 
-従来URLは変更せず、`?group=team-02`のようにグループIDを付けた時だけ別グループへ切り替わります。新グループは`names.txt`を使わず、グループ用パスワードの確認後に画面から名前を登録します。
+従来ユーザーは`index.html`、新しいグループは`index2.html`を開きます。新グループは`names.txt`を使わず、画面から名前を登録します。
 
 ```text
-https://ユーザー名.github.io/リポジトリ名/?group=team-02
+https://ユーザー名.github.io/リポジトリ名/index2.html
 ```
 
-Firebase Authenticationのユーザー作成とFirestoreメンバー登録が必要です。詳しい手順は`FIREBASE_SETUP.md`を参照してください。
+Firebase Authenticationやパスワード設定は不要です。詳しい手順は`FIREBASE_SETUP.md`を参照してください。
 
 ## Firebaseで別端末と共有する
 

@@ -13,17 +13,17 @@
     <meta name="theme-color" content="#07184d" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="のびる" />
+    <meta name="apple-mobile-web-app-title" content="のびる2" />
     <meta name="msapplication-TileColor" content="#07184d" />
     <link rel="icon" href="./assets/favicon-v1.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32-v1.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="./assets/favicon-48-v1.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon-v1.png" />
-    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="manifest" href="./manifest2.webmanifest" />
     <link rel="preload" href="./assets/learning-card-atlas-v2.png" as="image" />
     <link rel="preload" href="./assets/learning-card-atlas-extra.png" as="image" />
     <link rel="preload" href="./assets/learning-card-atlas-adventure-v1.png" as="image" />
-    <title>のびる｜漢字と暗算</title>
+    <title>のびる｜新しいグループ</title>
   </head>
   <body>
     <main class="app-shell">
@@ -32,6 +32,12 @@
       </div>
     </main>
     <script>
+      window.NOBIRU_PAGE_GROUP = {
+        groupId: "nobiru-group-02",
+        label: "新しいグループ",
+        nameMode: "registration",
+      };
+
       (() => {
         const fallbackVersion = "20260814-simple-index2-groups-48";
         let loadedVersion = "";

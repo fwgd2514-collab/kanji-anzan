@@ -182,25 +182,6 @@ canvas:focus-visible {
   line-height: 1.55;
 }
 
-.group-access-screen .learner-gate-card > p.group-access-id {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: 2px 0 12px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #49658c;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.group-access-icon {
-  background: #eef4ff;
-  color: #456696;
-  font-size: 21px;
-}
-
 .group-form-error {
   margin: 10px 2px 0 !important;
   padding: 9px 11px;
