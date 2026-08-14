@@ -38,6 +38,18 @@
     digits: 10,
   };
   const DEFAULT_NAMES = ["ゆうき", "あおい", "さくら", "はると"];
+  const INITIAL_GRADE_LEVELS = [
+    { value: "e1", label: "小学1年生", level: 1 },
+    { value: "e2", label: "小学2年生", level: 11 },
+    { value: "e3", label: "小学3年生", level: 21 },
+    { value: "e4", label: "小学4年生", level: 33 },
+    { value: "e5", label: "小学5年生", level: 45 },
+    { value: "e6", label: "小学6年生", level: 57 },
+    { value: "j1", label: "中学1年生", level: 69 },
+    { value: "j2", label: "中学2年生", level: 79 },
+    { value: "j3", label: "中学3年生", level: 89 },
+    { value: "high", label: "高校生以上", level: 97 },
+  ];
   const MIKKUN_NAME = "みっくん";
   const MAX_LEVEL = 120;
   const MIKKUN_MAX_LEVEL = 100;
@@ -842,6 +854,8 @@
     hasPreviousLearner: false,
     groupRegistrationBusy: false,
     groupRegistrationError: "",
+    groupRegistrationDraftName: "",
+    groupRegistrationDraftGrade: "",
     profiles: {},
     lastFirstByMode: {
       write: "",
@@ -1079,6 +1093,16 @@
       .map((name) => name.trim().slice(0, 20))
       .filter((name) => name && !name.startsWith("#"));
     return [...new Set(names)].slice(0, 50);
+  }
+
+  function initialGradeOptionsTemplate(selectedValue = "") {
+    return INITIAL_GRADE_LEVELS.map(
+      (grade) => `<option value="${grade.value}" ${grade.value === selectedValue ? "selected" : ""}>${grade.label}</option>`,
+    ).join("");
+  }
+
+  function initialLevelForGrade(value) {
+    return INITIAL_GRADE_LEVELS.find((grade) => grade.value === value)?.level || 0;
   }
 
   function applyLearnerNames(names, source) {
@@ -1923,9 +1947,18 @@
                 maxlength="20"
                 autocomplete="off"
                 placeholder="名前を入力（20文字まで）"
+                value="${escapeHtml(state.groupRegistrationDraftName)}"
                 ${state.groupRegistrationBusy ? "disabled" : ""}
               />
             </label>
+            <label class="learner-gate-field registration-grade-field" for="startupNewLearnerGrade">
+              <span>今の学年（最初の登録時だけ）</span>
+              <select id="startupNewLearnerGrade" required ${state.groupRegistrationBusy ? "disabled" : ""}>
+                <option value="" ${state.groupRegistrationDraftGrade ? "" : "selected"} disabled>学年を選んでください</option>
+                ${initialGradeOptionsTemplate(state.groupRegistrationDraftGrade)}
+              </select>
+            </label>
+            <p class="registration-grade-note">選んだ学年の最初のレベルから始まります。</p>
             ${state.groupRegistrationError ? `<p class="group-form-error" role="alert">${escapeHtml(state.groupRegistrationError)}</p>` : ""}
             <button type="button" class="secondary-button wide register-learner-button" data-action="register-group-learner" data-source="startup" ${state.groupRegistrationBusy ? "disabled" : ""}>
               ${state.groupRegistrationBusy ? "登録しています…" : "この名前を登録して始める"}
@@ -5401,8 +5434,16 @@
             <p class="eyebrow">ADD LEARNER</p>
             <label class="name-field" for="profileNewLearnerName">
               <span>新しい人を登録する</span>
-              <input id="profileNewLearnerName" type="text" maxlength="20" autocomplete="off" placeholder="名前を入力（20文字まで）" />
+              <input id="profileNewLearnerName" type="text" maxlength="20" autocomplete="off" placeholder="名前を入力（20文字まで）" value="${escapeHtml(state.groupRegistrationDraftName)}" />
             </label>
+            <label class="name-field registration-grade-field" for="profileNewLearnerGrade">
+              <span>今の学年（最初の登録時だけ）</span>
+              <select id="profileNewLearnerGrade" required>
+                <option value="" ${state.groupRegistrationDraftGrade ? "" : "selected"} disabled>学年を選んでください</option>
+                ${initialGradeOptionsTemplate(state.groupRegistrationDraftGrade)}
+              </select>
+            </label>
+            <p class="registration-grade-note">選んだ学年の最初のレベルから始まります。</p>
             ${state.groupRegistrationError ? `<p class="group-form-error" role="alert">${escapeHtml(state.groupRegistrationError)}</p>` : ""}
             <button type="button" class="secondary-button wide register-learner-button" data-action="register-group-learner" data-source="profile" ${state.groupRegistrationBusy ? "disabled" : ""}>
               ${state.groupRegistrationBusy ? "登録しています…" : "この名前を追加する"}
@@ -6447,12 +6488,14 @@
     const actionByInput = {
       levelAdjustmentPassword: "confirm-level-password",
       startupNewLearnerName: "register-group-learner",
+      startupNewLearnerGrade: "register-group-learner",
       profileNewLearnerName: "register-group-learner",
+      profileNewLearnerGrade: "register-group-learner",
     };
     const action = actionByInput[event.target.id];
     if (!action) return;
     event.preventDefault();
-    if (event.target.id === "profileNewLearnerName") {
+    if (event.target.id.startsWith("profileNewLearner")) {
       document.querySelector("[data-action='register-group-learner'][data-source='profile']")?.click();
       return;
     }
@@ -6516,12 +6559,25 @@
   async function registerGroupLearner(source = "startup") {
     if (ACTIVE_GROUP.nameMode !== "registration" || state.groupRegistrationBusy) return;
     const inputId = source === "profile" ? "profileNewLearnerName" : "startupNewLearnerName";
+    const gradeId = source === "profile" ? "profileNewLearnerGrade" : "startupNewLearnerGrade";
     const input = document.querySelector(`#${inputId}`);
+    const gradeSelect = document.querySelector(`#${gradeId}`);
     const cleanName = String(input?.value || "").trim().slice(0, 20);
+    const selectedGrade = String(gradeSelect?.value || "");
+    state.groupRegistrationDraftName = cleanName;
+    state.groupRegistrationDraftGrade = selectedGrade;
+    const grade = INITIAL_GRADE_LEVELS.find((item) => item.value === selectedGrade);
+    const initialLevel = initialLevelForGrade(selectedGrade);
     if (!cleanName) {
       state.groupRegistrationError = "登録する名前を入力してください。";
       render();
       document.querySelector(`#${inputId}`)?.focus();
+      return;
+    }
+    if (!grade || !initialLevel) {
+      state.groupRegistrationError = "今の学年を選んでください。";
+      render();
+      document.querySelector(`#${gradeId}`)?.focus();
       return;
     }
     if (state.learnerNames.includes(cleanName)) {
@@ -6540,10 +6596,11 @@
       button.textContent = "登録しています…";
     }
     if (input) input.disabled = true;
+    if (gradeSelect) gradeSelect.disabled = true;
     try {
       const now = Date.now();
       const profile = normalizeProfile({
-        level: 1,
+        level: initialLevel,
         xp: 0,
         streak: 0,
         updatedAt: now,
@@ -6556,6 +6613,8 @@
       state.learnerName = cleanName;
       state.hasPreviousLearner = true;
       state.groupRegistrationError = "";
+      state.groupRegistrationDraftName = "";
+      state.groupRegistrationDraftGrade = "";
       applyActiveProfile();
       saveProgress();
       state.cloudReady = true;
@@ -6564,10 +6623,10 @@
       if (source === "startup") {
         state.learnerConfirmed = true;
         state.view = "home";
-        showToast(`${displayName()}で学習を始めます`);
+        showToast(`${grade.label}のレベルから学習を始めます`);
         window.scrollTo({ top: 0, left: 0 });
       } else {
-        showToast(`${cleanName}を登録しました`);
+        showToast(`${cleanName}を${grade.label}のレベルで登録しました`);
       }
     } catch {
       state.groupRegistrationError = "名前を登録できませんでした。通信状態とFirebaseの設定を確認してください。";

@@ -203,6 +203,20 @@ canvas:focus-visible {
   margin-top: 4px;
 }
 
+.registered-name-form .registration-grade-field,
+.profile-registration-block .registration-grade-field {
+  margin-top: 12px;
+}
+
+.registration-grade-note {
+  margin: 7px 3px 0 !important;
+  color: #7e8490 !important;
+  font-size: 10px !important;
+  font-weight: 750;
+  line-height: 1.5 !important;
+  text-align: left;
+}
+
 .register-learner-button {
   margin-top: 10px;
   border: 1px solid #ffc0ae;
